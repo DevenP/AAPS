@@ -4,31 +4,30 @@
 @using AAPS.Web.Components.Shared
 @inject IProviderService ProviderService
 
-<MudText Typo="Typo.h4" Class="mb-4">Providers</MudText>
-
 <GenericGrid TItem="ProviderDTO" 
-             Title="Provider Registry" 
+             Title="Providers" 
+             Columns="@(new[] { "Id", "FirstName", "LastName", "Email" })"
              GetData="ProviderService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Id", "First Name", "Last Name", "Email", "Status" })"
-             ExportMapper="@(p => new object[] { p.Id, p.FirstName, p.LastName, p.Email, p.Status })">
+             ExportHeaders="@(new[] { "ID", "First", "Last" })"
+             ExportMapper="@(p => new object[] { p.Id, p.FirstName, p.LastName })">
     
     <HeaderContent>
-        <MudTh><MudTableSortLabel SortLabel="Id" T="ProviderDTO">Id</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">First Name</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortLabel="LastName" T="ProviderDTO">Last Name</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortLabel="Email" T="ProviderDTO">Email</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortLabel="Status" T="ProviderDTO">Status</MudTableSortLabel></MudTh>
+        <GridCell TItem="ProviderDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="ProviderDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="FirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">First Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="LastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="LastName" T="ProviderDTO">Last Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="Email" IsHeader="true">Email</GridCell>
     </HeaderContent>
     
     <RowTemplate Context="provider">
-        <MudTd DataLabel="Id">@provider.Id</MudTd>
-        <MudTd DataLabel="FirstName">@provider.FirstName</MudTd>
-        <MudTd DataLabel="LastName">@provider.LastName</MudTd>
-        <MudTd DataLabel="Email">@provider.Email</MudTd>
-        <MudTd DataLabel="Status">
-            <MudChip T="string" Color="@(provider.Status == "Active" ? Color.Success : Color.Default)" Size="Size.Small">
-                @provider.Status
-            </MudChip>
-        </MudTd>
+        <GridCell TItem="ProviderDTO" Column="Id">@provider.Id</GridCell>
+        <GridCell TItem="ProviderDTO" Column="FirstName">@provider.FirstName</GridCell>
+        <GridCell TItem="ProviderDTO" Column="LastName">@provider.LastName</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Email">@provider.Email</GridCell>
     </RowTemplate>
 </GenericGrid>

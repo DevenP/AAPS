@@ -1,0 +1,21 @@
+﻿@typeparam TItem
+@using MudBlazor
+
+@if (ParentGrid?.IsVisible(Column) ?? true)
+{
+    @if (IsHeader)
+    {
+        <MudTh>@ChildContent</MudTh>
+    }
+    else
+    {
+        <MudTd DataLabel="@Column">@ChildContent</MudTd>
+    }
+}
+
+@code {
+    [CascadingParameter(Name = "ParentGrid")] public GenericGrid<TItem> ParentGrid { get; set; }
+    [Parameter] public string Column { get; set; }
+    [Parameter] public bool IsHeader { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

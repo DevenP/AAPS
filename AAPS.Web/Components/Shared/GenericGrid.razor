@@ -5,53 +5,67 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
-<CascadingValue Value="this">
-    <MudTable ServerData="ReloadData" Dense="true" Hover="true" @ref="_table"
-              FixedHeader="true" FixedFooter="true" Height="70vh" RowsPerPage="25"
-              Class="sticky-table">
-        <ToolBarContent>
-            <MudText Typo="Typo.h6">@Title</MudText>
-            <MudSpacer />
+<MudTable ServerData="ReloadData" Dense="true" Hover="true" @ref="_table"
+          FixedHeader="true" FixedFooter="true" Height="70vh" RowsPerPage="25"
+          Class="sticky-table mud-width-full">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6" Color="Color.Primary">@Title</MudText>
+        <MudSpacer />
 
-            @if (ColumnFilters.Any())
-            {
+        @* Restored Filter Chips *@
+        @if (ColumnFilters.Any())
+        {
+            <MudHidden Breakpoint="Breakpoint.MdAndDown">
                 <MudChipSet T="string" AllClosable="true" OnClose="RemoveFilter" Class="mr-4">
                     @foreach (var filter in ColumnFilters)
                     {
-                        <MudChip T="string" Value="@filter.Key" Text="@($"{filter.Key}: {filter.Value}")" Color="Color.Info" Variant="Variant.Outlined" />
+                        <MudChip T="string" Value="@filter.Key" Text="@($"{filter.Key}: {filter.Value}")"
+                                 Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small" />
                     }
                 </MudChipSet>
-                <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="ClearAllFilters" Size="Size.Small">Clear All</MudButton>
+            </MudHidden>
+            <MudIconButton Icon="@Icons.Material.Filled.FilterListOff" Color="Color.Error" OnClick="ClearAllFilters" Title="Clear All" Size="Size.Small" Class="mr-2" />
+        }
+
+        <MudTextField T="string" ValueChanged="OnSearch" Placeholder="Global Search..."
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      IconSize="Size.Medium" Class="mt-0 mr-4" Immediate="false" />
+
+        <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Label="Columns" Color="Color.Inherit" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Dense="true" Class="mr-2">
+            @foreach (var col in _columnVisibility)
+            {
+                <MudMenuItem AutoClose="false">
+                    <MudCheckBox T="bool" Value="@col.Value" ValueChanged="@(v => ToggleColumn(col.Key, v))"
+                                 Label="@col.Key" Color="Color.Primary" Dense="true" />
+                </MudMenuItem>
             }
+        </MudMenu>
 
-            <MudTextField T="string" ValueChanged="OnSearch" Placeholder="Global Search..."
-                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                          IconSize="Size.Medium" Class="mt-0 mr-4"></MudTextField>
+        <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" OnClick="OpenFilter" Color="Color.Primary" Title="Advanced Search" />
+        <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" Title="Export CSV" />
+    </ToolBarContent>
 
-            <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" OnClick="OpenFilter" Color="Color.Primary" />
-            <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" />
+    <HeaderContent>
+        <CascadingValue Name="ParentGrid" Value="this" IsFixed="false">
+            @HeaderContent
+        </CascadingValue>
+    </HeaderContent>
 
-            <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Color="Color.Inherit" Label="Columns" AnchorOrigin="Origin.BottomCenter">
-                @foreach (var col in _columnVisibility)
-                {
-                    <MudMenuItem>
-                        <MudCheckBox T="bool" Value="@col.Value"
-                                     ValueChanged="@(v => ToggleColumn(col.Key, v))"
-                                     Label="@col.Key" />
-                    </MudMenuItem>
-                }
-            </MudMenu>
-        </ToolBarContent>
+    <RowTemplate>
+        <CascadingValue Name="ParentGrid" Value="this" IsFixed="false">
+            @RowTemplate(context)
+        </CascadingValue>
+    </RowTemplate>
 
-        <HeaderContent>@HeaderContent</HeaderContent>
+    <NoRecordsContent>
+        <MudAlert Severity="Severity.Info">No matching records found.</MudAlert>
+    </NoRecordsContent>
 
-        <RowTemplate>@RowTemplate(context)</RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+    </PagerContent>
+</MudTable>
 
-        <PagerContent>
-            <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
-        </PagerContent>
-    </MudTable>
-</CascadingValue>
 <style>
     .sticky-table .mud-table-container {
         display: flex;
@@ -62,6 +76,21 @@
         background-color: var(--mud-palette-surface);
         z-index: 2;
     }
+
+    .mud-table-toolbar {
+        background-color: var(--mud-palette-background-grey);
+        border-bottom: 1px solid var(--mud-palette-divider);
+    }
+
+    /* Shrinks the padding in every cell even further than the default 'Dense' */
+    .sticky-table .mud-table-cell {
+        padding: 4px 8px;
+    }
+
+    /* Makes the font slightly smaller for high-density data viewing */
+    .sticky-table .mud-table-root {
+        font-size: 0.825rem;
+    }
 </style>
 
 @code {
@@ -69,35 +98,39 @@
     [Parameter] public Func<PagedRequest, CancellationToken, Task<PagedResult<TItem>>> GetData { get; set; }
     [Parameter] public RenderFragment HeaderContent { get; set; }
     [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
+    [Parameter] public string[] Columns { get; set; }
     [Parameter] public string[] ExportHeaders { get; set; }
     [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; }
 
     private MudTable<TItem> _table;
     private string _search = "";
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
+    private Dictionary<string, bool> _columnVisibility = new();
+
+    protected override void OnInitialized()
+    {
+        if (Columns != null)
+            foreach (var col in Columns) _columnVisibility[col] = true;
+    }
+
+    public bool IsVisible(string col) => !_columnVisibility.ContainsKey(col) || _columnVisibility[col];
+
+    private void ToggleColumn(string name, bool visible) { _columnVisibility[name] = visible; StateHasChanged(); }
 
     private async Task<TableData<TItem>> ReloadData(TableState state, CancellationToken ct)
     {
-        var request = new PagedRequest(
-            Search: _search,
-            ColumnFilters: ColumnFilters,
-            SortBy: state.SortLabel,
-            SortDir: state.SortDirection == SortDirection.Descending ? "desc" : "asc",
-            Page: state.Page + 1,
-            PageSize: state.PageSize
-        );
-
+        var request = new PagedRequest(_search, ColumnFilters, state.SortLabel,
+            state.SortDirection == SortDirection.Descending ? "desc" : "asc", state.Page + 1, state.PageSize);
         var result = await GetData(request, ct);
         return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
     }
 
     private async Task OpenFilter()
     {
-        var parameters = new DialogParameters { ["InitialFilters"] = ColumnFilters };
+        var parameters = new DialogParameters { ["InitialFilters"] = new Dictionary<string, string>(ColumnFilters) };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<FilterDialog<TItem>>("Advanced Search", parameters, options);
         var result = await dialog.Result;
-
         if (!result.Canceled)
         {
             ColumnFilters = (Dictionary<string, string>)result.Data;
@@ -107,41 +140,12 @@
 
     private async Task Export()
     {
-        var request = new PagedRequest(_search, ColumnFilters, PageSize: -1);
-
-        var res = await GetData(request, default);
-
+        var res = await GetData(new PagedRequest(_search, ColumnFilters, PageSize: -1), default);
         var csv = CsvHelper.ToCsv(res.Items, ExportHeaders, ExportMapper);
-
         await JS.InvokeVoidAsync("downloadFile", $"{Title}.csv", "text/csv", Encoding.UTF8.GetBytes(csv));
     }
 
     private void OnSearch(string s) { _search = s; _table.ReloadServerData(); }
     private async Task RemoveFilter(MudChip<string> c) { ColumnFilters.Remove(c.Value); await _table.ReloadServerData(); }
     private async Task ClearAllFilters() { ColumnFilters.Clear(); await _table.ReloadServerData(); }
-
-    // Dictionary to track: Column Name -> Is Visible
-    private Dictionary<string, bool> _columnVisibility = new();
-
-    [Parameter] public string[] Columns { get; set; } // Pass all possible column names
-
-    protected override void OnInitialized()
-    {
-        if (Columns != null)
-        {
-            foreach (var col in Columns) _columnVisibility[col] = true;
-        }
-    }
-
-    private void ToggleColumn(string name, bool visible)
-    {
-        _columnVisibility[name] = visible;
-        StateHasChanged();
-    }
-
-    // Helper for your RowTemplate
-    public bool IsVisible(string columnName)
-    {
-        return !_columnVisibility.ContainsKey(columnName) || _columnVisibility[columnName];
-    }
 }
