@@ -1,0 +1,45 @@
+﻿@typeparam TItem
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Advanced Search</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudContainer Style="max-height: 450px; overflow-y: auto">
+            @foreach (var prop in typeof(TItem).GetProperties().Where(p => p.PropertyType == typeof(string)))
+            {
+                <MudTextField T="string"
+                              Label="@prop.Name"
+                              Value="@GetFilterValue(prop.Name)"
+                              ValueChanged="@(s => SetFilterValue(prop.Name, s))"
+                              Margin="Margin.Dense"
+                              Class="mb-2"
+                              Clearable="true" />
+            }
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Apply Filters</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public Dictionary<string, string> InitialFilters { get; set; } = new();
+
+    private Dictionary<string, string> _filters = new();
+
+    protected override void OnInitialized()
+    {
+        _filters = new Dictionary<string, string>(InitialFilters);
+    }
+
+    private string GetFilterValue(string name) => _filters.ContainsKey(name) ? _filters[name] : "";
+
+    private void SetFilterValue(string name, string value) => _filters[name] = value;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_filters.Where(x => !string.IsNullOrWhiteSpace(x.Value)).ToDictionary(x => x.Key, x => x.Value)));
+
+    private void Cancel() => MudDialog.Cancel();
+}

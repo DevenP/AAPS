@@ -1,0 +1,34 @@
+﻿@page "/providers"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IProviderService ProviderService
+
+<MudText Typo="Typo.h4" Class="mb-4">Providers</MudText>
+
+<GenericGrid TItem="ProviderDTO" 
+             Title="Provider Registry" 
+             GetData="ProviderService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Id", "First Name", "Last Name", "Email", "Status" })"
+             ExportMapper="@(p => new object[] { p.Id, p.FirstName, p.LastName, p.Email, p.Status })">
+    
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortLabel="Id" T="ProviderDTO">Id</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">First Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="LastName" T="ProviderDTO">Last Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="Email" T="ProviderDTO">Email</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="Status" T="ProviderDTO">Status</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    
+    <RowTemplate Context="provider">
+        <MudTd DataLabel="Id">@provider.Id</MudTd>
+        <MudTd DataLabel="FirstName">@provider.FirstName</MudTd>
+        <MudTd DataLabel="LastName">@provider.LastName</MudTd>
+        <MudTd DataLabel="Email">@provider.Email</MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string" Color="@(provider.Status == "Active" ? Color.Success : Color.Default)" Size="Size.Small">
+                @provider.Status
+            </MudChip>
+        </MudTd>
+    </RowTemplate>
+</GenericGrid>

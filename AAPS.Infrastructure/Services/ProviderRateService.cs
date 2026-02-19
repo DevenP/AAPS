@@ -1,0 +1,97 @@
+﻿using AAPS.Application.Abstractions.Data;
+using AAPS.Application.Abstractions.Services;
+using AAPS.Application.Common.Paging;
+using AAPS.Application.DTO;
+using AAPS.Domain.Entities;
+using AAPS.Infrastructure.Common.Extensions;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
+
+namespace AAPS.Infrastructure.Services;
+
+public class ProviderRateService : IProviderRateService
+{
+    private readonly IAppDbContext _db;
+
+    public ProviderRateService(IAppDbContext db) => _db = db;
+
+    public async Task<Application.Common.Paging.PagedResult<ProviderRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        var query = _db.ProviderRates.AsNoTracking().Select(ToDTO);
+
+        if (request.ColumnFilters?.Any() == true)
+        {
+            foreach (var col in request.ColumnFilters)
+            {
+                if (string.IsNullOrWhiteSpace(col.Value)) continue;
+                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
+            }
+        }
+
+        return await query.ToPagedResultAsync(request, ct);
+    }
+
+    public async Task<ProviderRateDTO?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        return await _db.ProviderRates
+            .AsNoTracking()
+            .Where(r => r.ProviderRate_Id == id)
+            .Select(ToDTO)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var entity = await _db.ProviderRates.FindAsync(new object[] { id }, ct);
+        if (entity != null)
+        {
+            _db.ProviderRates.Remove(entity);
+            await _db.SaveChangesAsync(ct);
+        }
+    }
+
+    public async Task<int> CreateAsync(ProviderRateDTO dto, CancellationToken ct = default)
+    {
+        var entity = new ProviderRate
+        {
+            Provider_Id = dto.ProviderId,
+            ServiceType = dto.ServiceType,
+            District = dto.District,
+            Rate = dto.Rate,
+            Effective = dto.EffectiveDate,
+            Active = dto.IsActive,
+            Lang = dto.Language
+        };
+        _db.ProviderRates.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return entity.ProviderRate_Id;
+    }
+
+    public async Task UpdateAsync(int id, ProviderRateDTO dto, CancellationToken ct = default)
+    {
+        var entity = await _db.ProviderRates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+        entity.Provider_Id = dto.ProviderId;
+        entity.ServiceType = dto.ServiceType;
+        entity.District = dto.District;
+        entity.Rate = dto.Rate;
+        entity.Effective = dto.EffectiveDate;
+        entity.Active = dto.IsActive;
+        entity.Lang = dto.Language;
+        await _db.SaveChangesAsync(ct);
+    }
+
+
+    private static readonly Expression<Func<ProviderRate, ProviderRateDTO>> ToDTO = r => new ProviderRateDTO
+    {
+        Id = r.ProviderRate_Id,
+        ProviderId = r.Provider_Id,
+        ServiceType = r.ServiceType,
+        District = r.District,
+        Rate = r.Rate,
+        EffectiveDate = r.Effective,
+        IsActive = r.Active ?? false,
+        Language = r.Lang
+    };
+
+}

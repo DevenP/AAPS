@@ -2,5 +2,5 @@
   <Project Path="AAPS.Application/AAPS.Application.csproj" Id="c17243c1-3ae3-4914-8e06-74e40126a8ed" />
   <Project Path="AAPS.Domain/AAPS.Domain.csproj" Id="aaae6ed9-3eb2-47bd-ad53-0734777ab0c3" />
   <Project Path="AAPS.Infrastructure/AAPS.Infrastructure.csproj" Id="bd8f78ff-f4f1-4f0f-baeb-d63cfcc9b453" />
-  <Project Path="AAPS.Web/AAPS.Web.csproj" />
+  <Project Path="AAPS.Web/AAPS.Web.csproj" Id="3bd1d335-d73c-434d-aa2e-3116ac6e0dc8" />
 </Solution>
