@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudPopoverProvider />
@@ -6,36 +8,61 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar >
+    <MudAppBar Elevation="1" Dense="true" Fixed="true">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        My Application
-
-        @* <MudSwitch @bind-Value="_isDarkMode" Color="Color.Primary" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode" /> *@
+        <MudText Typo="Typo.h6" Class="ml-3">AAPS Portal</MudText>
+        <MudSpacer />
+        @* AppBar Toggle is GONE from here *@
     </MudAppBar>
-    <MudDrawer @bind-Open="@_drawerOpen">
-        <NavMenu/>
+
+    <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Variant="DrawerVariant.Responsive">
+        <CascadingValue Name="ParentLayout" Value="this">
+            <NavMenu />
+        </CascadingValue>
     </MudDrawer>
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Medium">
-            @Body
-        </MudContainer>
+
+    <MudMainContent Class="pa-4">
+        @Body
     </MudMainContent>
 </MudLayout>
 
+<style>
+    .mud-main-content {
+        padding-top: var(--mud-appbar-height) !important;
+    }
+</style>
+
 @code {
     bool _drawerOpen = true;
+    public bool _isDarkMode;
 
-    void DrawerToggle()
+    void DrawerToggle() => _drawerOpen = !_drawerOpen;
+
+    public async Task ToggleDarkMode()
     {
-        _drawerOpen = !_drawerOpen;
+        _isDarkMode = !_isDarkMode;
+        // Save to cookie so it survives navigation
+        await JS.InvokeVoidAsync("setThemeCookie", _isDarkMode);
+        StateHasChanged();
     }
 
-    private MudTheme _theme = new() {         PaletteLight = new PaletteLight()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            Primary = Colors.BlueGray.Darken4,
-            AppbarBackground = Colors.BlueGray.Default,
-        },
-    };
+            // Check cookie on load/navigation
+            var isDark = await JS.InvokeAsync<bool>("eval", "document.cookie.includes('theme=dark')");
+            if (isDark != _isDarkMode)
+            {
+                _isDarkMode = isDark;
+                StateHasChanged();
+            }
+        }
+    }
 
-    private bool _isDarkMode;
+    private MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight() { Primary = "#3f51b5", AppbarBackground = "#ffffff", Background = "#f4f7f9" },
+        PaletteDark = new PaletteDark() { Primary = "#7986cb", Surface = "#1e1e2d", Background = "#151521" }
+    };
 }

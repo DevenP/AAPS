@@ -4,16 +4,19 @@
 @using AAPS.Web.Components.Shared
 @inject IProviderService ProviderService
 
-<GenericGrid TItem="ProviderDTO" 
-             Title="Providers" 
-             Columns="@(new[] { "Id", "FirstName", "LastName", "Email" })"
+<GenericGrid TItem="ProviderDTO"
+             Title="Providers"
+             Columns="@(new[] { "Id", "Status", "FirstName", "LastName", "Email", "Phone", "Ssn", "TaxId", "NpiNumber", "Birthdate", "CorporationName", "ServiceType", "City", "State", "HasPets" })"
              GetData="ProviderService.GetPagedAsync"
-             ExportHeaders="@(new[] { "ID", "First", "Last" })"
-             ExportMapper="@(p => new object[] { p.Id, p.FirstName, p.LastName })">
-    
+             ExportHeaders="@(new[] { "Id", "Status", "FirstName", "LastName", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
+             ExportMapper="@(p => new object[] { p.Id, p.Status, p.FirstName, p.LastName, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
+
     <HeaderContent>
         <GridCell TItem="ProviderDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="ProviderDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="Status" IsHeader="true">
+            <MudTableSortLabel SortLabel="Status" T="ProviderDTO">Status</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="FirstName" IsHeader="true">
             <MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">First Name</MudTableSortLabel>
@@ -22,12 +25,47 @@
             <MudTableSortLabel SortLabel="LastName" T="ProviderDTO">Last Name</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="Email" IsHeader="true">Email</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Phone" IsHeader="true">Phone</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Ssn" IsHeader="true">SSN</GridCell>
+        <GridCell TItem="ProviderDTO" Column="TaxId" IsHeader="true">Tax ID</GridCell>
+        <GridCell TItem="ProviderDTO" Column="NpiNumber" IsHeader="true">NPI</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Birthdate" IsHeader="true">DOB</GridCell>
+        <GridCell TItem="ProviderDTO" Column="CorporationName" IsHeader="true">Corp Name</GridCell>
+        <GridCell TItem="ProviderDTO" Column="ServiceType" IsHeader="true">Service</GridCell>
+        <GridCell TItem="ProviderDTO" Column="City" IsHeader="true">City</GridCell>
+        <GridCell TItem="ProviderDTO" Column="State" IsHeader="true">ST</GridCell>
+        <GridCell TItem="ProviderDTO" Column="HasPets" IsHeader="true">Pets</GridCell>
     </HeaderContent>
-    
+
     <RowTemplate Context="provider">
         <GridCell TItem="ProviderDTO" Column="Id">@provider.Id</GridCell>
-        <GridCell TItem="ProviderDTO" Column="FirstName">@provider.FirstName</GridCell>
-        <GridCell TItem="ProviderDTO" Column="LastName">@provider.LastName</GridCell>
-        <GridCell TItem="ProviderDTO" Column="Email">@provider.Email</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Status">
+            <MudChip T="string" Color="@(provider.Status == "Active" ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Filled">
+                @provider.Status
+            </MudChip>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="FirstName"><MudTooltip Text="@provider.FirstName">@provider.FirstName</MudTooltip></GridCell>
+        <GridCell TItem="ProviderDTO" Column="LastName"><MudTooltip Text="@provider.LastName">@provider.LastName</MudTooltip></GridCell>
+        <GridCell TItem="ProviderDTO" Column="Email">
+            <MudTooltip Text="@provider.Email">
+                <MudLink href="@($"mailto:{provider.Email}")" Underline="Underline.Hover">@provider.Email</MudLink>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="Phone">@provider.Phone</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Ssn">@provider.Ssn</GridCell>
+        <GridCell TItem="ProviderDTO" Column="TaxId">@provider.TaxId</GridCell>
+        <GridCell TItem="ProviderDTO" Column="NpiNumber">@provider.NpiNumber</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Birthdate">@provider.Birthdate?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="ProviderDTO" Column="CorporationName"><MudTooltip Text="@provider.CorporationName">@provider.CorporationName</MudTooltip></GridCell>
+        <GridCell TItem="ProviderDTO" Column="ServiceType">@provider.ServiceType</GridCell>
+        <GridCell TItem="ProviderDTO" Column="City">@provider.City</GridCell>
+        <GridCell TItem="ProviderDTO" Column="State">@provider.State</GridCell>
+        <GridCell TItem="ProviderDTO" Column="HasPets">
+            @if (provider.HasPets)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Pets" Size="Size.Small" Color="Color.Info" />
+            }
+        </GridCell>
     </RowTemplate>
 </GenericGrid>
+

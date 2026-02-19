@@ -1,0 +1,35 @@
+﻿@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Export Data</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_fileName"
+                      Label="File Name"
+                      HelperText="System will add .csv automatically"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      AutoFocus="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="Submit">Download</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } // Updated interface
+    [Parameter] public string DefaultName { get; set; } = "Export";
+
+    private string _fileName = "";
+
+    protected override void OnInitialized()
+    {
+        // Default name + Timestamp (e.g., Providers_20260218_2315)
+        _fileName = $"{DefaultName}_{DateTime.Now:yyyyMMdd_HHmm}";
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_fileName));
+    private void Cancel() => MudDialog.Cancel();
+}

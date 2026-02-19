@@ -4,10 +4,20 @@
 @using System.Text
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager Nav
 
-<MudTable ServerData="ReloadData" Dense="true" Hover="true" @ref="_table"
-          FixedHeader="true" FixedFooter="true" Height="70vh" RowsPerPage="25"
-          Class="sticky-table mud-width-full">
+<MudTable ServerData="ReloadData" 
+    Dense="true" 
+    Hover="true" 
+    Striped="true"
+    @ref="_table"
+    FixedHeader="true" 
+    FixedFooter="true" 
+    Height="75vh" 
+    RowsPerPage="25"
+          HorizontalScrollbar="true"
+    Class="sticky-table mud-width-full">
     <ToolBarContent>
         <MudText Typo="Typo.h6" Color="Color.Primary">@Title</MudText>
         <MudSpacer />
@@ -70,6 +80,8 @@
     .sticky-table .mud-table-container {
         display: flex;
         flex-direction: column;
+        /* Ensure the container allows horizontal scrolling */
+        overflow-x: auto !important;
     }
 
     .mud-table-head {
@@ -82,16 +94,46 @@
         border-bottom: 1px solid var(--mud-palette-divider);
     }
 
-    /* Shrinks the padding in every cell even further than the default 'Dense' */
+    /* Combined High-Density + No-Wrap Logic */
     .sticky-table .mud-table-cell {
         padding: 4px 8px;
+        white-space: nowrap !important; /* Prevents text from wrapping to new lines */
+        overflow: hidden; /* Keeps cell height consistent */
+        text-overflow: ellipsis; /* Adds '...' to long text */
+        border-right: 1px solid var(--mud-palette-divider); /* Excel-style grid lines */
     }
 
-    /* Makes the font slightly smaller for high-density data viewing */
     .sticky-table .mud-table-root {
         font-size: 0.825rem;
     }
+
+    /* Force row height to stay compact regardless of content */
+    .mud-table-row {
+        height: 32px !important;
+    }
+
+    /* Ensure Chips and Icons don't expand the row */
+    .mud-chip.mud-chip-size-small {
+        height: 20px;
+        font-size: 0.75rem;
+        margin: 0;
+    }
+
+    .mud-icon-root.mud-icon-size-small {
+        font-size: 1rem;
+    }
+
+    /* Custom Zebra Stripe color for better visibility in the Indigo theme */
+    .mud-table-striped .mud-table-row:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.03); /* Very subtle grey for Light Mode */
+    }
+
+    /* Ensure stripes look good in Dark Mode too */
+    .mud-dark .mud-table-striped .mud-table-row:nth-of-type(odd) {
+        background-color: rgba(255, 255, 255, 0.04);
+    }
 </style>
+
 
 @code {
     [Parameter] public string Title { get; set; }
@@ -106,9 +148,27 @@
     private string _search = "";
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
     private Dictionary<string, bool> _columnVisibility = new();
+    private bool _isFirstLoad = true;
 
     protected override void OnInitialized()
     {
+        // 1. Read from URL on first load
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("search", out var s)) _search = s;
+        if (query.TryGetValue("page", out var p) && int.TryParse(p, out var page)) _initialPage = page - 1;
+        if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb;
+        
+        // Load Column Filters from URL (e.g., ?col_FirstName=John)
+        foreach (var key in query.Keys.Where(k => k.StartsWith("col_")))
+        {
+            ColumnFilters[key.Replace("col_", "")] = query[key];
+        }
+
+        if (Columns != null)
+            foreach (var col in Columns) _columnVisibility[col] = true;
+
         if (Columns != null)
             foreach (var col in Columns) _columnVisibility[col] = true;
     }
@@ -116,14 +176,6 @@
     public bool IsVisible(string col) => !_columnVisibility.ContainsKey(col) || _columnVisibility[col];
 
     private void ToggleColumn(string name, bool visible) { _columnVisibility[name] = visible; StateHasChanged(); }
-
-    private async Task<TableData<TItem>> ReloadData(TableState state, CancellationToken ct)
-    {
-        var request = new PagedRequest(_search, ColumnFilters, state.SortLabel,
-            state.SortDirection == SortDirection.Descending ? "desc" : "asc", state.Page + 1, state.PageSize);
-        var result = await GetData(request, ct);
-        return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
-    }
 
     private async Task OpenFilter()
     {
@@ -140,12 +192,102 @@
 
     private async Task Export()
     {
-        var res = await GetData(new PagedRequest(_search, ColumnFilters, PageSize: -1), default);
-        var csv = CsvHelper.ToCsv(res.Items, ExportHeaders, ExportMapper);
-        await JS.InvokeVoidAsync("downloadFile", $"{Title}.csv", "text/csv", Encoding.UTF8.GetBytes(csv));
+        var parameters = new DialogParameters { ["DefaultName"] = Title };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ExportDialog>("Export Data", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is string chosenName)
+        {
+            // Fetch all matching records
+            var request = new PagedRequest(_search, ColumnFilters, PageSize: -1);
+            var res = await GetData(request, default);
+
+            string csv;
+
+            // If the user provided a custom mapper, use it.
+            // Otherwise, automatically map EVERY property in the DTO.
+            if (ExportMapper != null && ExportHeaders != null)
+            {
+                csv = CsvHelper.ToCsv(res.Items, ExportHeaders, ExportMapper);
+            }
+            else
+            {
+                var props = typeof(TItem).GetProperties();
+                var headers = props.Select(p => p.Name).ToArray();
+                csv = CsvHelper.ToCsv(res.Items, headers, item => props.Select(p => p.GetValue(item)).ToArray());
+            }
+
+            var cleanName = chosenName.EndsWith(".csv") ? chosenName : $"{chosenName}.csv";
+            await JS.InvokeVoidAsync("downloadFile", cleanName, "text/csv", Encoding.UTF8.GetBytes(csv));
+        }
     }
 
+
+
     private void OnSearch(string s) { _search = s; _table.ReloadServerData(); }
-    private async Task RemoveFilter(MudChip<string> c) { ColumnFilters.Remove(c.Value); await _table.ReloadServerData(); }
-    private async Task ClearAllFilters() { ColumnFilters.Clear(); await _table.ReloadServerData(); }
+
+    private async Task RemoveFilter(MudChip<string> c)
+    {
+        ColumnFilters.Remove(c.Value);
+        await _table.ReloadServerData(); // This calls ReloadData -> UpdateUrl
+    }
+
+    private async Task ClearAllFilters()
+    {
+        ColumnFilters.Clear();
+        await _table.ReloadServerData();
+    }
+
+    private async Task<TableData<TItem>> ReloadData(TableState state, CancellationToken ct)
+    {
+        // 2. Adjust for initial load from URL
+        if (_isFirstLoad)
+        {
+            state.Page = _initialPage;
+            state.SortLabel = _initialSortBy;
+            _isFirstLoad = false;
+        }
+
+        var request = new PagedRequest(_search, ColumnFilters, state.SortLabel,
+            state.SortDirection == SortDirection.Descending ? "desc" : "asc", state.Page + 1, state.PageSize);
+
+        // 3. Sync to URL
+        UpdateUrl(request);
+
+        var result = await GetData(request, ct);
+        return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
+    }
+
+    private void UpdateUrl(PagedRequest req)
+    {
+        // 1. Build the base path (e.g., "/providers")
+        var baseUrl = Nav.ToAbsoluteUri(Nav.Uri).GetLeftPart(UriPartial.Path);
+
+        // 2. Build the parameter dictionary
+        var queryParams = new Dictionary<string, string?>();
+
+        if (!string.IsNullOrWhiteSpace(req.Search)) queryParams["search"] = req.Search;
+        if (req.Page > 1) queryParams["page"] = req.Page.ToString();
+        if (!string.IsNullOrWhiteSpace(req.SortBy)) queryParams["sortBy"] = req.SortBy;
+        if (req.SortDir == "desc") queryParams["sortDir"] = "desc";
+
+        if (req.ColumnFilters != null)
+        {
+            foreach (var filter in req.ColumnFilters)
+            {
+                if (!string.IsNullOrWhiteSpace(filter.Value))
+                    queryParams[$"col_{filter.Key}"] = filter.Value;
+            }
+        }
+
+        // 3. Generate the full string and navigate
+        var newUri = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(baseUrl, queryParams);
+        Nav.NavigateTo(newUri, replace: true);
+    }
+
+
+
+    private int _initialPage = 0;
+    private string? _initialSortBy;
 }

@@ -1,17 +1,52 @@
-﻿<MudNavMenu>
+﻿@using AAPS.Web.Components.Layout
+@inject IJSRuntime JS
+
+<MudNavMenu Bordered="true" Color="Color.Primary" Class="pa-2">
+    <div class="pa-4 mb-2">
+        <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">AAPS NAVIGATION</MudText>
+    </div>
+
     <MudNavLink Href="/" Icon="@Icons.Material.Filled.Home" Match="NavLinkMatch.All">Home</MudNavLink>
     <MudNavLink Icon="@Icons.Material.Filled.MiscellaneousServices" Href="/operations" Match="NavLinkMatch.Prefix">Operations</MudNavLink>
     <MudNavLink Icon="@Icons.Material.Filled.Approval" Href="/approvals" Match="NavLinkMatch.Prefix">Approvals</MudNavLink>
+
     <MudNavGroup Icon="@Icons.Material.Filled.Person" Title="Provider" Expanded="true">
         <MudNavLink Icon="@Icons.Material.Filled.People" Href="/providers" Match="NavLinkMatch.Prefix">Providers</MudNavLink>
         <MudNavLink Icon="@Icons.Material.Filled.Payments" Href="/providerbilling" Match="NavLinkMatch.Prefix">Provider Billing</MudNavLink>
         <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="/providerrates" Match="NavLinkMatch.Prefix">Provider Rates</MudNavLink>
     </MudNavGroup>
+
     <MudNavLink Icon="@Icons.Material.Filled.Summarize" Href="/evaluations" Match="NavLinkMatch.Prefix">Evaluations</MudNavLink>
-    <MudNavGroup Icon="@Icons.Material.Filled.AccountBalance"Title="Accounting" Expanded="true">
+
+    <MudNavGroup Icon="@Icons.Material.Filled.AccountBalance" Title="Accounting" Expanded="true">
         <MudNavLink Icon="@Icons.Material.Filled.Payments" Href="/billing" Match="NavLinkMatch.Prefix">Billing</MudNavLink>
         <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="/rates" Match="NavLinkMatch.Prefix">Rates</MudNavLink>
     </MudNavGroup>
+
     <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="/voucherPayments" Match="NavLinkMatch.Prefix">Voucher Payments</MudNavLink>
-    <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink>
+
+    <MudDivider Class="my-4" />
+
+    <MudNavLink Href="/about" Icon="@Icons.Material.Filled.Info" Match="NavLinkMatch.Prefix">About</MudNavLink>
+
+    <div class="my-4"></div>
+
+    <MudNavLink OnClick="ToggleTheme"
+                Icon="@(_layout?._isDarkMode == true ? Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)"
+                IconColor="Color.Info"
+                Style="cursor: pointer">
+        @(_layout?._isDarkMode == true ? "Dark Mode: On" : "Dark Mode: Off")
+    </MudNavLink>
 </MudNavMenu>
+
+@code {
+    [CascadingParameter(Name = "ParentLayout")] public MainLayout? _layout { get; set; }
+
+    private async Task ToggleTheme()
+    {
+        if (_layout != null)
+        {
+            await _layout.ToggleDarkMode();
+        }
+    }
+}

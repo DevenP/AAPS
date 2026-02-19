@@ -7,4 +7,9 @@
     anchorElement.click();
     anchorElement.remove();
     URL.revokeObjectURL(url);
-}
+};
+
+window.setThemeCookie = (isDarkMode) => {
+    const mode = isDarkMode ? "dark" : "light";
+    document.cookie = `theme=${mode}; path=/; max-age=31536000; SameSite=Lax`;
+};

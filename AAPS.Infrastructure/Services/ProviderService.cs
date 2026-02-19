@@ -7,6 +7,7 @@ using AAPS.Infrastructure.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
+using System.Runtime.Intrinsics.X86;
 
 namespace AAPS.Infrastructure.Services;
 
@@ -25,7 +26,16 @@ public class ProviderService : IProviderService
             foreach (var col in request.ColumnFilters)
             {
                 if (string.IsNullOrWhiteSpace(col.Value)) continue;
-                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
+
+                // SPECIAL CASE: Search by last 4 of SSN in the database
+                if (col.Key == nameof(ProviderDTO.Ssn))
+                {
+                    query = query.Where(p => p.Ssn.EndsWith(col.Value));
+                }
+                else
+                {
+                    query = query.Where($"{col.Key}.Contains(@0)", col.Value);
+                }
             }
         }
 
@@ -88,7 +98,9 @@ public class ProviderService : IProviderService
     private static readonly Expression<Func<Provider, ProviderDTO>> ToDTO = p => new ProviderDTO
     {
         Id = p.Provider_Id,
-        Ssn = p.Ssn,
+        Ssn = p.Ssn != null && p.Ssn.Length >= 4
+          ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4)
+          : "N/A",
         LastName = p.LastName,
         FirstName = p.FirstName,
         Phone = p.Phone,
