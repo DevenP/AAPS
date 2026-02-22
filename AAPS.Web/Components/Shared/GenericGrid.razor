@@ -34,7 +34,8 @@
 
         <MudSpacer />
 
-        @if (ColumnFilters.Any())
+
+@*         @if (ColumnFilters.Any())
         {
             <MudHidden Breakpoint="Breakpoint.MdAndDown">
                 <MudChipSet T="string" AllClosable="true" OnClose="RemoveFilter" Class="mr-4">
@@ -46,11 +47,44 @@
                 </MudChipSet>
             </MudHidden>
             <MudIconButton Icon="@Icons.Material.Filled.FilterListOff" Color="Color.Error" OnClick="ClearAllFilters" Title="Clear All" Size="Size.Small" Class="mr-2" />
+        } *@
+        @if (ColumnFilters.Any())
+        {
+            <MudHidden Breakpoint="Breakpoint.MdAndDown">
+                <div style="display: flex; flex-wrap: nowrap; overflow-x: auto; max-width: 400px;">
+                    <MudChipSet T="string" AllClosable="true" OnClose="RemoveFilter" Class="mr-2">
+                        @foreach (var filter in ColumnFilters)
+                        {
+                            <MudChip T="string" Value="@filter.Key" Text="@($"{filter.Key}: {filter.Value}")"
+                                     Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small" />
+                        }
+                    </MudChipSet>
+                </div>
+            </MudHidden>
+            <MudIconButton Icon="@Icons.Material.Filled.FilterListOff" Color="Color.Error" OnClick="ClearAllFilters" Size="Size.Small" Class="mr-2" />
         }
 
+
+        @if (CustomActionContent != null)
+        {
+            @CustomActionContent
+        }
+@* 
         <MudTextField T="string" ValueChanged="OnSearch" Placeholder="Global Search..."
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                      IconSize="Size.Medium" Class="mt-0 mr-4" Immediate="false" />
+                      IconSize="Size.Medium" Class="mt-0 mr-4" Immediate="false" /> *@
+
+        <MudTextField T="string"
+                      Value="_search"
+                      Immediate="true"
+                      DebounceInterval="500"
+                      OnDebounceIntervalElapsed="OnSearch"
+                      ValueChanged="@(v => _search = v)"
+                      Placeholder="Global Search..."
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Class="mt-0 mr-4" />
+
 
         <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Label="Columns" Color="Color.Inherit" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Dense="true" Class="mr-2" MaxHeight="500">
             @foreach (var col in _columnVisibility)
@@ -167,6 +201,8 @@
     [Parameter] public Func<PagedRequest, CancellationToken, Task<PagedResult<TItem>>> GetData { get; set; }
     [Parameter] public RenderFragment HeaderContent { get; set; }
     [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
+    [Parameter] public RenderFragment? CustomActionContent { get; set; }
+
     /// <summary>
     /// Columns to inclue in the menu toggle check list
     /// </summary>
@@ -302,18 +338,53 @@
         return propertyName;
     }
 
-    private void OnSearch(string s) { _search = s; _table.ReloadServerData(); }
-
-    private async Task RemoveFilter(MudChip<string> c)
+    private async Task OnSearch(string text)
     {
-        ColumnFilters.Remove(c.Value);
-        await _table.ReloadServerData(); // This calls ReloadData -> UpdateUrl
+        _search = text;
+
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            // Add it to the dictionary so the Chip appears
+            ColumnFilters["Global"] = text;
+        }
+        else
+        {
+            // Remove it if the search is cleared
+            ColumnFilters.Remove("Global");
+        }
+
+        _currentPage = 0;
+        await _table.ReloadServerData();
+    }
+
+    private async Task RemoveFilter(MudChip<string> chip)
+    {
+        var key = chip.Value;
+        ColumnFilters.Remove(key);
+
+        if (key == "Global")
+        {
+            _search = string.Empty; // Clear the actual search box too
+        }
+
+        await _table.ReloadServerData();
     }
 
     private async Task ClearAllFilters()
     {
+        // 1. Wipe the dictionary (Removes the Chips)
         ColumnFilters.Clear();
+
+        // 2. Wipe the Global Search string (Clears the Text Box)
+        _search = string.Empty;
+
+        // 3. Reset to Page 1 and Refresh
+        _currentPage = 0;
+
+        // This will trigger UpdateUrl and clean the ?search= parameter too
         await _table.ReloadServerData();
+
+        StateHasChanged();
     }
 
     private async Task<TableData<TItem>> ReloadData(TableState state, CancellationToken ct)
@@ -343,31 +414,33 @@
 
     private void UpdateUrl(PagedRequest req)
     {
-        // 1. Build the base path (e.g., "/providers")
         var baseUrl = Nav.ToAbsoluteUri(Nav.Uri).GetLeftPart(UriPartial.Path);
-
-        // 2. Build the parameter dictionary
         var queryParams = new Dictionary<string, string?>();
 
+        // 1. Standard Paging/Search Params
         if (!string.IsNullOrWhiteSpace(req.Search)) queryParams["search"] = req.Search;
         if (req.Page > 1) queryParams["page"] = req.Page.ToString();
         if (!string.IsNullOrWhiteSpace(req.SortBy)) queryParams["sortBy"] = req.SortBy;
         if (req.SortDir == "desc") queryParams["sortDir"] = "desc";
 
+        // 2. Column Filters Loop
         if (req.ColumnFilters != null)
         {
             foreach (var filter in req.ColumnFilters)
             {
+                // --- THE FIX ---
+                // Don't add a 'col_Global' parameter to the URL!
+                // We already handled it above with queryParams["search"]
+                if (filter.Key == "Global") continue;
+
                 if (!string.IsNullOrWhiteSpace(filter.Value))
                     queryParams[$"col_{filter.Key}"] = filter.Value;
             }
         }
 
-        // 3. Generate the full string and navigate
         var newUri = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(baseUrl, queryParams);
         Nav.NavigateTo(newUri, replace: true);
     }
-
 
 
     private int _initialPage = 0;

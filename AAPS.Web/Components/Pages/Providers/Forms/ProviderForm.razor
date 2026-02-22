@@ -1,8 +1,9 @@
-﻿@using AAPS.Application.DTO
+﻿@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
 @using MudBlazor.Extensions
-@using MudBlazor.Extensions.Components
 @using System.Reflection
 @using System.ComponentModel
+@inject IProviderContactService ContactService
 
 <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
 
@@ -33,12 +34,15 @@
                               Validation="@(Validator)" For="@(() => Model.LastName)" Immediate="true" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                @* SSN Masking: Forces 000-00-0000 format visually *@
-                <MudMask @bind-Value="Model.Ssn"
-                         Label="SSN"
-                         Mask="@(new PatternMask("000-00-0000"))"
-                         Validation="@Validator"
-                         For="@(() => Model.Ssn)" />
+                <MudTextField @bind-Value="Model.Ssn"
+                              Label="SSN"
+                              Variant="Variant.Text"
+                              Mask="@(new PatternMask("000-00-0000"))"
+                              Validation="@Validator"
+                              For="@(() => Model.Ssn)"
+                              Immediate="true"
+                              Clearable="true"
+                              Margin="Margin.None" />
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.TaxId" Label="Tax ID"
@@ -48,8 +52,6 @@
                 <MudSelect @bind-Value="Model.IsActive" T="bool?" Label="Status" AnchorOrigin="Origin.BottomCenter">
                     <MudSelectItem T="bool?" Value="true">Active</MudSelectItem>
                     <MudSelectItem T="bool?" Value="false">Inactive</MudSelectItem>
-                    @* Optional: Add a null option if you want to allow "Unknown" *@
-                    <MudSelectItem T="bool?" Value="null">Unknown / Pending</MudSelectItem>
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="6">
@@ -105,13 +107,69 @@
         </MudGrid>
     </MudTabPanel>
 
+    @* Tab 4: Provider Contact History *@
+    <MudTabPanel Text="Contact Logs" Icon="@Icons.Material.Filled.History">
+        <div class="pa-4">
+            <MudTable Items="@contacts" Dense="true" Hover="true" Elevation="0" Context="contact">
+                <ToolBarContent>
+                    <MudText Typo="Typo.subtitle1">Communication Logs</MudText>
+                    <MudSpacer />
+                    <MudButton OnClick="AddContactRow" StartIcon="@Icons.Material.Filled.Add"
+                               Color="Color.Primary" Size="Size.Small" Variant="Variant.Outlined">
+                        Add Log
+                    </MudButton>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Date</MudTh>
+                    <MudTh>Notes</MudTh>
+                    <MudTh Style="width:50px"></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Date">@contact.ContactDate?.ToString("MM/dd/yyyy")</MudTd>
+                    <MudTd DataLabel="Notes">
+                        @* Inline Edit for Notes *@
+                        <MudTextField @bind-Value="contact.Notes" Margin="Margin.Dense" />
+                    </MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                       Color="Color.Error" OnClick="@(() => contacts.Remove(contact))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </div>
+    </MudTabPanel>
 </MudTabs>
 
 @code {
-    [Parameter] public ProviderDTO Model { get; set; } = new();
+    [Parameter] public ProviderDTO Model { get; set; }
 
-    // This must be 'object' to match the MudForm Validation property
+    public List<ProviderContactDTO> contacts = new();
+
     [CascadingParameter] public object Validator { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Model.Id > 0)
+        {
+            // Fetch the history for this specific provider
+            var result = await ContactService.GetByProviderIdAsync(Model.Id);
+            contacts = result.ToList();
+        }
+        else
+        {
+            // Just start with a fresh, empty list for a new provider
+            contacts = new List<ProviderContactDTO>();
+        }
+    }
+
+    private void AddContactRow()
+    {
+        contacts.Insert(0, new ProviderContactDTO
+        {
+            ProviderId = Model.Id,
+            ContactDate = DateTime.Now
+        });
+    }
 
     private bool IsVisible(string propName)
     {
@@ -126,4 +184,6 @@
         var attr = prop?.GetCustomAttribute<ReadOnlyAttribute>();
         return attr?.IsReadOnly ?? false;
     }
+
+    public List<ProviderContactDTO> GetUpdatedContacts() => contacts;
 }

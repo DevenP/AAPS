@@ -67,8 +67,6 @@ namespace AAPS.Web
             // Packages
             builder.Services.AddMudServices();
 
-            builder.Services.AddMudExtensions();
-
         }
 
         private static void CreateVendorPortalsDataEndpoints(WebApplication app) 
@@ -168,6 +166,4 @@ namespace AAPS.Web
         }
 
     }
-
-
 }

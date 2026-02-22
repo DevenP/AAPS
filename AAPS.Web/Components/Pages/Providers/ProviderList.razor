@@ -13,6 +13,17 @@
              GetData="ProviderService.GetPagedAsync"
              ExportHeaders="@(new[] { "Id", "IsActive", "FirstName", "LastName", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
              ExportMapper="@(p => new object[] { p.Id, p.IsActive, p.FirstName, p.LastName, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
+    
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add Provider
+        </MudButton>
+    </CustomActionContent>
 
     <HeaderContent>
         <GridCell TItem="ProviderDTO" Column="Actions" IsHeader="true">Actions</GridCell>
@@ -49,10 +60,15 @@
     <RowTemplate Context="provider">
         @* Action Button *@
         <GridCell TItem="ProviderDTO" Column="Actions">
-            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                           Size="Size.Small"
-                           Color="Color.Primary"
-                           OnClick="@(() => OpenEditDialog(provider))" />
+            <div class="d-flex">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small" Color="Color.Primary"
+                               OnClick="@(() => OpenEditDialog(provider))" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small" Color="Color.Error"
+                               OnClick="@(() => OnDeleteClicked(provider))" />
+            </div>
         </GridCell>
 
         <GridCell TItem="ProviderDTO" Column="Id">@provider.Id</GridCell>
@@ -112,6 +128,13 @@
 
     private GenericGrid<ProviderDTO> _grid;
 
+
+    [Inject] IDialogService DialogService { get; set; }
+
+    private ProviderValidator _validator = new();
+
+    private ProviderForm? _providerForm;
+
     // Highlight the row in soft amber if it's a duplicate
     private string RowStyle(ProviderDTO provider, int index)
     {
@@ -120,71 +143,82 @@
         return "";
     }
 
-    [Inject] IDialogService DialogService { get; set; }
-
-    private ProviderValidator _validator = new();
-
-    private async Task OpenEditDialog(ProviderDTO provider)
+    // If 'provider' is passed, it's an EDIT. If it's null, it's an ADD.
+    private async Task OpenEditDialog(ProviderDTO? provider = null)
     {
-        var model = await ProviderService.GetByIdAsync(provider.Id);
+        ProviderDTO model;
 
-        if (model == null) return;
+        if (provider == null)
+        {
+            // 1. ADD SCENARIO: Start with a blank object
+            model = new ProviderDTO { IsActive = true };
+        }
+        else
+        {
+            // 2. EDIT SCENARIO: Fetch the fresh data (unmasked SSN, etc.)
+            model = await ProviderService.GetByIdAsync(provider.Id);
+            if (model == null) return;
+        }
 
         var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
         parameters.Add(x => x.Item, model);
-        parameters.Add(x => x.Title, "Edit Provider");
+        parameters.Add(x => x.Title, provider == null ? "Add New Provider" : "Edit Provider");
         parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
 
-        // Explicitly tell Blazor that 'context' is a ProviderDTO
-        RenderFragment<ProviderDTO> form = (context) => @<ProviderForm Model="context" />;
-        parameters.Add(x => x.ChildContent, form);
+        // We use the @ref to grab the contacts list later
+        parameters.Add(x => x.ChildContent, (ProviderDTO context) =>
+            @<ProviderForm @ref="_providerForm" Model="context" />);
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
-
         var dialog = await DialogService.ShowAsync<EntityDialog<ProviderDTO>>(" ", parameters, options);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is ProviderDTO updatedDto)
+        // 3. THE SAVE LOGIC: Covers both Add and Edit
+        if (!result.Canceled && result.Data is ProviderDTO savedDto)
         {
-            var success = await ProviderService.UpdateAsync(updatedDto);
+            // Capture the list immediately.
+            // If _providerForm is null here, it means the ref didn't bind.
+            var contacts = _providerForm?.contacts ?? new List<ProviderContactDTO>();
+
+            // DEBUG HINT: If you put a breakpoint here, check if 'contacts' has any items
+            var success = await ProviderService.UpdateWithContactsAsync(savedDto, contacts);
+
             if (success)
             {
-                Snackbar.Add("Provider updated successfully!", Severity.Success);
+                Snackbar.Add("Saved successfully!", Severity.Success);
                 await _grid.ReloadServerData();
-            }
-            else
-            {
-                Snackbar.Add("Provider not found.", Severity.Error);
+                _providerForm = null; // Reset the ref for the next use
             }
         }
     }
 
-    private async Task OpenAddDialog()
+    private async Task OnDeleteClicked(ProviderDTO provider)
     {
-        // Start with a blank DTO
-        var model = new ProviderDTO { IsActive = true };
+        bool? result = await DialogService.ShowMessageBox(
+            "Warning",
+            $"Are you sure you want to delete {provider.FirstName} {provider.LastName}?",
+            yesText: "Delete!", cancelText: "Cancel");
 
-        var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
-        parameters.Add(x => x.Item, model);
-        parameters.Add(x => x.Title, "Add New Provider");
-        parameters.Add(x => x.IsNew, true);
-        parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
-
-        RenderFragment<ProviderDTO> form = (context) => @<ProviderForm Model="context" />;
-        parameters.Add(x => x.ChildContent, form);
-
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<EntityDialog<ProviderDTO>>(" ", parameters, options);
-        var result = await dialog.Result;
-
-        if (!result.Canceled && result.Data is ProviderDTO newDto)
+        if (result == true)
         {
-            var newId = await ProviderService.AddAsync(newDto);
-            if (newId > 0)
+            try
             {
-                Snackbar.Add("Provider created successfully!", Severity.Success);
-                await _grid.ReloadServerData();
+                var success = await ProviderService.DeleteAsync(provider.Id);
+                if (success)
+                {
+                    Snackbar.Add("Provider deleted.", Severity.Success);
+                    await _grid.ReloadServerData();
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred during deletion.", Severity.Error);
             }
         }
     }
+
 }

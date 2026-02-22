@@ -1,5 +1,6 @@
 ﻿using AAPS.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace AAPS.Application.Abstractions.Data;
 
@@ -18,5 +19,6 @@ public interface IAppDbContext
     DbSet<Sesi> Seses { get; }
     DbSet<VendorPortal> VendorPortals { get; }
 
+    DatabaseFacade Database { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -32,6 +32,22 @@ public class ProviderContactService : IProviderContactService
             .FirstOrDefaultAsync(ct);
     }
 
+    public async Task<List<ProviderContactDTO>> GetByProviderIdAsync(int providerId, CancellationToken ct = default)
+    {
+        return await _db.Provider_Contacts
+            .AsNoTracking()
+            .Where(x => x.Provider_Id == providerId)
+            .OrderByDescending(x => x.ContactDate) // Newest logs first
+            .Select(x => new ProviderContactDTO
+            {
+                Id = x.Contact_Id,
+                ProviderId = x.Provider_Id,
+                ContactDate = x.ContactDate,
+                Notes = x.ContactNote
+            })
+            .ToListAsync(ct);
+    }
+
     public async Task<int> CreateAsync(ProviderContactDTO dto, CancellationToken ct = default)
     {
         var entity = new Provider_Contact { Provider_Id = dto.ProviderId, ContactDate = dto.ContactDate, ContactNote = dto.Notes };

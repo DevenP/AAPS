@@ -13,5 +13,7 @@ public interface IProviderService
 
     Task<bool> UpdateAsync(ProviderDTO dto, CancellationToken ct = default);
 
-    Task DeleteAsync(int id, CancellationToken ct = default);
+    Task<bool> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts);
+
+    Task<bool> DeleteAsync(int id, CancellationToken ct = default);
 }

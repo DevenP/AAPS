@@ -166,14 +166,90 @@ public class ProviderService : IProviderService
         return await _db.SaveChangesAsync(ct) > 0;
     }
 
-    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    public async Task<bool> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts)
     {
-        var entity = await _db.Providers.FindAsync(new object[] { id }, ct);
-        if (entity != null)
+        using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            _db.Providers.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            // 1. Update/Add the Provider
+            int providerId = dto.Id == 0 ? await AddAsync(dto) : dto.Id;
+            if (dto.Id > 0) await UpdateAsync(dto);
+
+            // 2. Fetch the current state from DB
+            var dbContacts = await _db.Provider_Contacts
+                .Where(c => c.Provider_Id == providerId)
+                .ToListAsync();
+
+            // --- THE DELTA LOGIC ---
+
+            // A. DELETE: Find IDs in DB that are NOT in the incoming list
+            var incomingIds = contacts.Select(c => c.Id).ToList();
+            var toDelete = dbContacts.Where(c => !incomingIds.Contains(c.Contact_Id));
+            _db.Provider_Contacts.RemoveRange(toDelete);
+
+            // B. ADD / UPDATE: Loop through incoming
+            foreach (var c in contacts)
+            {
+                if (string.IsNullOrWhiteSpace(c.Notes)) continue;
+
+                if (c.Id == 0)
+                {
+                    // It's a brand NEW row from the UI
+                    _db.Provider_Contacts.Add(new Provider_Contact
+                    {
+                        Provider_Id = providerId,
+                        ContactNote = c.Notes,
+                        ContactDate = DateTime.Now
+                    });
+                }
+                else
+                {
+                    // It's an EXISTING row - find it and update it
+                    var existing = dbContacts.FirstOrDefault(x => x.Contact_Id == c.Id);
+                    if (existing != null)
+                    {
+                        existing.ContactNote = c.Notes;
+                        // We DON'T change the date, keeping the original timestamp!
+                    }
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return true;
         }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        // 1. Fetch the provider
+        var provider = await _db.Providers.FindAsync(new object[] { id }, ct);
+        if (provider == null) return false;
+
+        // 2. CHECK BUSINESS RULES (The "Guard")
+        var hasActiveMandates = ProviderHasAssignments(provider.Provider_Id);
+        if (hasActiveMandates)
+        {
+            throw new InvalidOperationException("Cannot delete: This provider is still assigned to active mandates.");
+        }
+
+        // 3. WIPE ASSOCIATED DATA (Contacts & Rates)
+        var contacts = _db.Provider_Contacts.Where(c => c.Provider_Id == id);
+        _db.Provider_Contacts.RemoveRange(contacts);
+
+        var rates = _db.ProviderRates.Where(r => r.Provider_Id == id);
+        _db.ProviderRates.RemoveRange(rates);
+
+        // 4. MARK PROVIDER FOR DELETION
+        _db.Providers.Remove(provider);
+
+        // 5. ATOMIC SAVE: SQL deletes everything in one shot
+        return await _db.SaveChangesAsync(ct) > 0;
     }
 
     private static readonly Expression<Func<Provider, ProviderDTO>> ToDTO = p => new ProviderDTO
@@ -218,7 +294,22 @@ public class ProviderService : IProviderService
         Languages = p.Langs,
         DirectDepositInfo = p.DDInfo
     };
+
+    private bool ProviderHasAssignments(int providerId)
+    {
+        var assignedCounts = _db.Seses
+        .Where(s => s.Provider_Id != null && s.Entry_Id != null)
+        .GroupBy(s => s.Provider_Id)
+        .Select(g => new {
+            ProviderId = g.Key,
+            Count = g.Select(x => x.Entry_Id).Distinct().Count()
+        })
+        .AsNoTracking();
+
+        return assignedCounts.Any(a => a.ProviderId == providerId && a.Count > 0);
+    }
 }
+
 
 public static class ProviderStatus
 {
