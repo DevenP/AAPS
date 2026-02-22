@@ -1,0 +1,104 @@
+﻿@page "/operations"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject ISesiService SesiService
+
+<MudText Typo="Typo.h4" Class="mb-4">Operations Dashboard</MudText>
+
+<GenericGrid TItem="OperationsDTO"
+             Title="Operations Registry"
+             Columns="@(new[] { "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "LastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
+             GetData="SesiService.GetOperationsPagedAsync">
+
+    <HeaderContent>
+        <GridCell TItem="OperationsDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="OperationsDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="Alerts" IsHeader="true">Alerts</GridCell>
+        <GridCell TItem="OperationsDTO" Column="DateOfService" IsHeader="true">
+            <MudTableSortLabel SortLabel="DateOfService" T="OperationsDTO">DOS</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="StartTime" IsHeader="true">Time</GridCell>
+        <GridCell TItem="OperationsDTO" Column="StudentId" IsHeader="true">Student ID</GridCell>
+        <GridCell TItem="OperationsDTO" Column="LastName" IsHeader="true">Student Name</GridCell>
+        <GridCell TItem="OperationsDTO" Column="ProviderLastName" IsHeader="true">Provider</GridCell>
+        <GridCell TItem="OperationsDTO" Column="AssignId" IsHeader="true">Assign ID</GridCell>
+        <GridCell TItem="OperationsDTO" Column="BilledRate" IsHeader="true">Rate</GridCell>
+        <GridCell TItem="OperationsDTO" Column="Duration" IsHeader="true">Min</GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="op">
+        <GridCell TItem="OperationsDTO" Column="Id">@op.Id</GridCell>
+
+        @* Combined Alert Icons Column *@
+        <GridCell TItem="OperationsDTO" Column="Alerts">
+            <div class="d-flex gap-1">
+                @if (op.MandateFlag)
+                {
+                    <MudTooltip Text="Missing Approval"><MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.ProviderFlag)
+                {
+                    <MudTooltip Text="Unassigned Provider"><MudIcon Icon="@Icons.Material.Filled.PersonOff" Color="Color.Error" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.IsOverlap)
+                {
+                    <MudTooltip Text="Overlap Service"><MudIcon Icon="@Icons.Material.Filled.EventRepeat" Color="Color.Error" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.IsOverMandate)
+                {
+                    <MudTooltip Text="Over Mandate Service"><MudIcon Icon="@Icons.Material.Filled.LibraryAddCheck" Color="Color.Error" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.IsOverDuration)
+                {
+                    <MudTooltip Text="Over Duration"><MudIcon Icon="@Icons.Material.Filled.TimerOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.IsUnderGroup)
+                {
+                    <MudTooltip Text="Under Group Size"><MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.BRateFlag)
+                {
+                    <MudTooltip Text="Missing Billing Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.PRateFlag)
+                {
+                    <MudTooltip Text="Missing Provider Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip>
+                }
+                @if (op.AssignFlag)
+                {
+                    <MudTooltip Text="Missing Assignment Id"><MudIcon Icon="@Icons.Material.Filled.LinkOff" Color="Color.Info" Size="Size.Small" /></MudTooltip>
+                }
+            </div>
+        </GridCell>
+
+        <GridCell TItem="OperationsDTO" Column="DateOfService">
+            <MudTooltip Text="@op.DateOfService?.ToLongDateString()">
+                <span>@op.DateOfService?.ToString("MM/dd/yy")</span>
+            </MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="OperationsDTO" Column="StartTime">@op.StartTime</GridCell>
+        <GridCell TItem="OperationsDTO" Column="StudentId">@op.StudentId</GridCell>
+
+        <GridCell TItem="OperationsDTO" Column="LastName">
+            <MudTooltip Text="@($"{op.StudentLastName}, {op.StudentFirstName}")">
+                <span>@op.StudentLastName</span>
+            </MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="OperationsDTO" Column="ProviderLastName">
+            <MudTooltip Text="@($"{op.ProviderFirstName} {op.ProviderLastName}")">
+                <span>@op.ProviderLastName</span>
+            </MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="OperationsDTO" Column="AssignId">
+            <span style="font-family: monospace;">@op.AssignId</span>
+        </GridCell>
+
+        <GridCell TItem="OperationsDTO" Column="BilledRate">@op.BilledRate?.ToString("C2")</GridCell>
+        <GridCell TItem="OperationsDTO" Column="Duration">@op.Duration</GridCell>
+    </RowTemplate>
+</GenericGrid>

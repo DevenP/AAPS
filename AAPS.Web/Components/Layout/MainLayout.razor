@@ -62,7 +62,32 @@
 
     private MudTheme _theme = new()
     {
-        PaletteLight = new PaletteLight() { Primary = "#3f51b5", AppbarBackground = "#ffffff", Background = "#f4f7f9" },
-        PaletteDark = new PaletteDark() { Primary = "#7986cb", Surface = "#1e1e2d", Background = "#151521" }
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#3f51b5",                // Deep Indigo
+            AppbarBackground = "#3f51b5",       // Indigo Header (High Contrast)
+            AppbarText = "#ffffff",             // White text for the Indigo header
+            Background = "#f0f2f5",             // Slightly darker grey background for the "depth"
+            DrawerBackground = "#ffffff",       // White sidebar to contrast the grey background
+            DrawerText = "#424242",
+            Surface = "#ffffff",                // White for cards and table backgrounds
+            Divider = "#e0e0e0",                // Subtle grey lines
+            ActionDefault = "#5c6bc0",          // Indigo-ish icons
+            TextPrimary = "#2c3e50"             // Dark Slate text for better readability
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#7986cb",
+            Surface = "#1e1e2d",
+            Background = "#151521",
+            AppbarBackground = "#1e1e2d",
+            DrawerBackground = "#1e1e2d",
+            DrawerText = "rgba(255,255,255, 0.70)"
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "6px"
+        }
     };
+
 }

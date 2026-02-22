@@ -1,0 +1,129 @@
+﻿@using AAPS.Application.DTO
+@using MudBlazor.Extensions
+@using MudBlazor.Extensions.Components
+@using System.Reflection
+@using System.ComponentModel
+
+<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+
+    @* Tab 1: Basic Information *@
+    <MudTabPanel Text="General Info" Icon="@Icons.Material.Filled.Person">
+        <MudGrid>
+            @if (IsVisible(nameof(Model.Id)))
+            {
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.Id"
+                                  Label="Provider ID"
+                                  ReadOnly="@IsLocked(nameof(Model.Id))"
+                                  Variant="@(IsLocked(nameof(Model.Id)) ? Variant.Filled : Variant.Outlined)" />
+                </MudItem>
+            }
+
+            @if (IsVisible(nameof(Model.FirstName)))
+            {
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.FirstName"
+                                  Label="First Name"
+                                  ReadOnly="@IsLocked(nameof(Model.FirstName))" />
+                </MudItem>
+            }
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.LastName" Label="Last Name"
+                              Validation="@(Validator)" For="@(() => Model.LastName)" Immediate="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                @* SSN Masking: Forces 000-00-0000 format visually *@
+                <MudMask @bind-Value="Model.Ssn"
+                         Label="SSN"
+                         Mask="@(new PatternMask("000-00-0000"))"
+                         Validation="@Validator"
+                         For="@(() => Model.Ssn)" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.TaxId" Label="Tax ID"
+                              Validation="@(Validator)" For="@(() => Model.TaxId)" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="Model.IsActive" T="bool?" Label="Status" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="bool?" Value="true">Active</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="false">Inactive</MudSelectItem>
+                    @* Optional: Add a null option if you want to allow "Unknown" *@
+                    <MudSelectItem T="bool?" Value="null">Unknown / Pending</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.NpiNumber" Label="NPI Number" MaxLength="10" />
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+
+    @* Tab 2: Contact & Address *@
+    <MudTabPanel Text="Contact" Icon="@Icons.Material.Filled.ContactPhone">
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.Email" Label="Email"
+                              Validation="@(Validator)" For="@(() => Model.Email)" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudMask @bind-Value="Model.Phone" Label="Phone" Mask="@(new PatternMask("(000) 000-0000"))" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Model.Address" Label="Address" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="Model.City" Label="City" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="Model.State" Label="State" MaxLength="2" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="Model.Zipcode" Label="Zip" />
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+
+    @* Tab 3: Compliance & Dates *@
+    <MudTabPanel Text="Compliance" Icon="@Icons.Material.Filled.VerifiedUser">
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.License1Expiration" Label="License 1 Exp"
+                               Validation="@(Validator)" For="@(() => Model.License1Expiration)" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.W9Date" Label="W9 Date" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.ContractDate" Label="Contract Date" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.MedicalDate" Label="Medical Date" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudCheckBox @bind-Value="Model.HasPets" Label="Has Pets?" Color="Color.Primary" />
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+
+</MudTabs>
+
+@code {
+    [Parameter] public ProviderDTO Model { get; set; } = new();
+
+    // This must be 'object' to match the MudForm Validation property
+    [CascadingParameter] public object Validator { get; set; }
+
+    private bool IsVisible(string propName)
+    {
+        if (string.IsNullOrEmpty(propName)) return true;
+        var prop = typeof(ProviderDTO).GetProperty(propName);
+        var attr = prop?.GetCustomAttribute<BrowsableAttribute>();
+        return attr?.Browsable ?? true;
+    }
+    private bool IsLocked(string propName)
+    {
+        var prop = typeof(ProviderDTO).GetProperty(propName);
+        var attr = prop?.GetCustomAttribute<ReadOnlyAttribute>();
+        return attr?.IsReadOnly ?? false;
+    }
+}

@@ -1,13 +1,12 @@
 using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
-using AAPS.Application.VendorPortals;
+using AAPS.Infrastructure;
 using AAPS.Infrastructure.Data;
 using AAPS.Infrastructure.Data.Scaffolded;
-using AAPS.Infrastructure;
-using AAPS.Infrastructure.VendorPortals;
 using AAPS.Web.Components;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Extensions;
 using MudBlazor.Services;
 
 namespace AAPS.Web
@@ -21,8 +20,6 @@ namespace AAPS.Web
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
-
-            builder.Services.AddMudServices();
 
             RegisterDependencies(builder);
 
@@ -62,14 +59,15 @@ namespace AAPS.Web
             builder.Services.AddScoped<IAppDbContext>(p =>
                 p.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
-            builder.Services.AddScoped<IVendorPortalQueryService, VendorPortalQueryService>();
-
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
-            builder.Services.AddScoped<IVendorPortalCrudService, VendorPortalCrudService>();
 
             // Services
             builder.Services.AddInfrastructureServices();
+
+            // Packages
+            builder.Services.AddMudServices();
+
+            builder.Services.AddMudExtensions();
 
         }
 

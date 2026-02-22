@@ -1,0 +1,58 @@
+﻿@page "/billingrates"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IBillingRateService BillingRateService
+
+<GenericGrid TItem="BillingRateDTO"
+             Title="Billing Rates"
+             Columns="@(new[] { "Id", "District", "ServiceType", "Language", "Rate", "EffectiveDate", "IsActive" })"
+             GetData="BillingRateService.GetPagedAsync"
+             ExportHeaders="@(new[] { "ID", "District", "Service", "Language", "Rate", "Effective Date", "Active" })"
+             ExportMapper="@(r => new object[] { r.Id, r.District, r.ServiceType, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
+
+    <HeaderContent>
+        <GridCell TItem="BillingRateDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="BillingRateDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="District" IsHeader="true">
+            <MudTableSortLabel SortLabel="District" T="BillingRateDTO">District</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="BillingRateDTO">Service</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="Language" IsHeader="true">
+            <MudTableSortLabel SortLabel="Language" T="BillingRateDTO">Language</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="Rate" IsHeader="true">
+            <MudTableSortLabel SortLabel="Rate" T="BillingRateDTO">Rate</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="EffectiveDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="EffectiveDate" T="BillingRateDTO">Effective Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="IsActive" IsHeader="true">Status</GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="rate">
+        <GridCell TItem="BillingRateDTO" Column="Id">@rate.Id</GridCell>
+        <GridCell TItem="BillingRateDTO" Column="District">@rate.District</GridCell>
+        <GridCell TItem="BillingRateDTO" Column="ServiceType">@rate.ServiceType</GridCell>
+        <GridCell TItem="BillingRateDTO" Column="Language">@rate.Language</GridCell>
+        <GridCell TItem="BillingRateDTO" Column="Rate">
+            <MudText Color="Color.Primary" Style="font-weight: 600;">@rate.Rate?.ToString("C2")</MudText>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="EffectiveDate">
+            <MudTooltip Text="@rate.EffectiveDate?.ToLongDateString()">
+                <span>@rate.EffectiveDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="BillingRateDTO" Column="IsActive">
+            <MudChip T="bool"
+                     Color="@(rate.IsActive ? Color.Success : Color.Error)"
+                     Size="Size.Small"
+                     Variant="Variant.Text">
+                @(rate.IsActive ? "Active" : "Inactive")
+            </MudChip>
+        </GridCell>
+    </RowTemplate>
+</GenericGrid>

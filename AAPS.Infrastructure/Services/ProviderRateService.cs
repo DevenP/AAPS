@@ -18,16 +18,24 @@ public class ProviderRateService : IProviderRateService
 
     public async Task<Application.Common.Paging.PagedResult<ProviderRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var query = _db.ProviderRates.AsNoTracking().Select(ToDTO);
-
-        if (request.ColumnFilters?.Any() == true)
-        {
-            foreach (var col in request.ColumnFilters)
-            {
-                if (string.IsNullOrWhiteSpace(col.Value)) continue;
-                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-            }
-        }
+        var query = from rate in _db.ProviderRates.AsNoTracking()
+                    join prov in _db.Providers.AsNoTracking()
+                      on rate.Provider_Id equals prov.Provider_Id into provJoin
+                    from prov in provJoin.DefaultIfEmpty() // Left Join
+                    select new ProviderRateDTO
+                    {
+                        Id = rate.ProviderRate_Id,
+                        ProviderId = rate.Provider_Id,
+                        // Pulling names from the joined Provider table
+                        ProviderFirstName = prov != null ? prov.FirstName : "Unknown",
+                        ProviderLastName = prov != null ? prov.LastName : "Unknown",
+                        ServiceType = rate.ServiceType,
+                        District = rate.District,
+                        Rate = rate.Rate,
+                        EffectiveDate = rate.Effective,
+                        IsActive = rate.Active.HasValue ? rate.Active.Value : false,
+                        Language = rate.Lang
+                    };
 
         return await query.ToPagedResultAsync(request, ct);
     }

@@ -1,0 +1,83 @@
+﻿@page "/vendorportal"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IVendorPortalService VendorPortalService
+
+<GenericGrid TItem="VendorPortalDTO"
+             Title="Vendor Portal"
+             Columns="@(new[] { "Id", "Mismatch", "AssignmentId", "StudentId", "StudentLastName", "ProviderLastName", "ApprovalStartDate", "VenderPortalFile" })"
+             GetData="VendorPortalService.GetPagedAsync">
+
+    <HeaderContent>
+        <GridCell TItem="VendorPortalDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="VendorPortalDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Mismatch" IsHeader="true">Match Status</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="AssignmentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignmentId" T="VendorPortalDTO">Assign ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="VendorPortalDTO">Student ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="StudentLastName" IsHeader="true">Student</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderLastName" IsHeader="true">Provider</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ApprovalStartDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ApprovalStartDate" T="VendorPortalDTO">Start Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile" IsHeader="true">File Source</GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="item">
+        <GridCell TItem="VendorPortalDTO" Column="Id">@item.Id</GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="Mismatch">
+            @if (item.Mismatch == "Approval")
+            {
+                <MudTooltip Text="Mismatch: No Matching Approval/Mandate found">
+                    <MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error" Size="Size.Small" />
+                </MudTooltip>
+            }
+            else if (item.Mismatch == "Provider")
+            {
+                <MudTooltip Text="Mismatch: Provider SSN not found in internal records">
+                    <MudIcon Icon="@Icons.Material.Filled.PersonOff" Color="Color.Warning" Size="Size.Small" />
+                </MudTooltip>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+            }
+        </GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="AssignmentId">
+            <span style="font-family: monospace;">@item.AssignmentId</span>
+        </GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="StudentId">@item.StudentId</GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="StudentLastName">
+            <MudTooltip Text="@($"{item.StudentLastName}, {item.StudentFirstName}")">
+                <span>@item.StudentLastName</span>
+            </MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="ProviderLastName">
+            <MudTooltip Text="@($"{item.ProviderLastName}, {item.ProviderFirstName}")">
+                <span>@item.ProviderLastName</span>
+            </MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="ApprovalStartDate">
+            @item.ApprovalStartDate?.ToString("MM/dd/yyyy")
+        </GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile">
+            <MudTooltip Text="@item.VenderPortalFile">
+                <span style="max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    @item.VenderPortalFile
+                </span>
+            </MudTooltip>
+        </GridCell>
+    </RowTemplate>
+</GenericGrid>

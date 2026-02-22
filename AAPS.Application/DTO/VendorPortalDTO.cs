@@ -1,20 +1,87 @@
-﻿namespace AAPS.Application.DTO
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Runtime.Intrinsics.X86;
+
+namespace AAPS.Application.DTO
 {
     public record VendorPortalDTO
     {
-        public int Id { get; init; }
-        public string? Ssn { get; init; }
-        public string? Boro { get; init; }
-        public string? District { get; init; }
-        public string? School { get; init; }
-        public string? Fund { get; init; }
-        public string? StudentId { get; init; }
-        public string? Duration { get; init; }
-        public string? Frequency { get; init; }
-        public string? GroupSize { get; init; }
-        public DateTime? StartDate { get; init; }
-        public string? AssignmentId { get; init; }
-        public string? FileName { get; init; }
-        public int? EntryId { get; init; }
+        [Browsable(true)]
+        [Display(Name = "Id")]
+        public int Id { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "Provider SSN")]
+        public string? ProviderSSN { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "Boro")]
+        public string? Boro { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "District")]
+        public string? District { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "School")]
+        public string? School { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "Fund")]
+        public string? Fund { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "StudentId")]
+        public string? StudentId { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "Duration")]
+        public string? Duration { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "Frequency")]
+        public string? Frequency { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "GroupSize")]
+        public string? GroupSize { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "ApprovalStartDate")]
+        public DateTime? ApprovalStartDate { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "AssignmentId")]
+        public string? AssignmentId { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "FileName")]
+        public string? VenderPortalFile { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "EntryId")]
+        public int? EntryId { get; set; }
+
+        //
+
+        [Browsable(true)]
+        [Display(Name = "StudentFirstName")]
+        public string? StudentFirstName { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "StudentLastName")]
+        public string? StudentLastName { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "ProviderFirstName")]
+        public string? ProviderFirstName { get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "ProviderLastName")]
+        public string? ProviderLastName{ get; set; }
+
+        [Browsable(true)]
+        [Display(Name = "Mismatch")]
+        public string? Mismatch { get; set; } // 'Approval' or 'Provider'
     }
 }

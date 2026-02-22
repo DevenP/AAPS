@@ -5,6 +5,9 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.WebUtilities
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel
 @inject NavigationManager Nav
 
 <MudTable ServerData="ReloadData" 
@@ -12,17 +15,25 @@
     Hover="true" 
     Striped="true"
     @ref="_table"
+    @bind-CurrentPage="_currentPage"
     FixedHeader="true" 
     FixedFooter="true" 
     Height="75vh" 
     RowsPerPage="25"
-          HorizontalScrollbar="true"
+    HorizontalScrollbar="true"
+    SortLabel="Id" InitialDirection="SortDirection.Ascending"
+    RowStyleFunc="@RowStyleFunc"
     Class="sticky-table mud-width-full">
     <ToolBarContent>
+
         <MudText Typo="Typo.h6" Color="Color.Primary">@Title</MudText>
+
+        <MudText Typo="Typo.caption" Class="ml-4 mt-1">
+            Page @(_table.CurrentPage + 1) of @(Math.Ceiling((double)_totalItems / _pageSize))
+        </MudText>
+
         <MudSpacer />
 
-        @* Restored Filter Chips *@
         @if (ColumnFilters.Any())
         {
             <MudHidden Breakpoint="Breakpoint.MdAndDown">
@@ -41,12 +52,12 @@
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                       IconSize="Size.Medium" Class="mt-0 mr-4" Immediate="false" />
 
-        <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Label="Columns" Color="Color.Inherit" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Dense="true" Class="mr-2">
+        <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Label="Columns" Color="Color.Inherit" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Dense="true" Class="mr-2" MaxHeight="500">
             @foreach (var col in _columnVisibility)
             {
                 <MudMenuItem AutoClose="false">
                     <MudCheckBox T="bool" Value="@col.Value" ValueChanged="@(v => ToggleColumn(col.Key, v))"
-                                 Label="@col.Key" Color="Color.Primary" Dense="true" />
+                                 Label="@GetDisplayName(col.Key)" Color="Color.Primary" Dense="true" />
                 </MudMenuItem>
             }
         </MudMenu>
@@ -74,6 +85,22 @@
     <PagerContent>
         <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
     </PagerContent>
+@* 
+    <PagerContent>
+        <div class="d-flex align-center pa-1" style="background-color: var(--mud-palette-surface);">
+         
+            <MudText Typo="Typo.caption" Class="ml-4" Style="opacity: 0.7;">
+                Page @(_currentPage + 1) of @(Math.Max(1, Math.Ceiling((double)_totalItems / _pageSize)))
+            </MudText>
+
+            <MudSpacer />
+
+            <MudTablePager HideRowsPerPage="false"
+                           RowsPerPageString="Rows:"
+                           PageSizeOptions="new int[]{10, 25, 50, 100}" />
+        </div>
+    </PagerContent> *@
+
 </MudTable>
 
 <style>
@@ -140,37 +167,71 @@
     [Parameter] public Func<PagedRequest, CancellationToken, Task<PagedResult<TItem>>> GetData { get; set; }
     [Parameter] public RenderFragment HeaderContent { get; set; }
     [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
+    /// <summary>
+    /// Columns to inclue in the menu toggle check list
+    /// </summary>
     [Parameter] public string[] Columns { get; set; }
+    /// <summary>
+    /// Headers to include in the export file
+    /// </summary>
     [Parameter] public string[] ExportHeaders { get; set; }
+    /// <summary>
+    /// Data mapping for the headers
+    /// </summary>
     [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; }
+    [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; }
 
     private MudTable<TItem> _table;
     private string _search = "";
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
     private Dictionary<string, bool> _columnVisibility = new();
     private bool _isFirstLoad = true;
+    private int _currentPage;
+
+    private int _totalItems;
+    private int _pageSize;
 
     protected override void OnInitialized()
     {
-        // 1. Read from URL on first load
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
         var query = QueryHelpers.ParseQuery(uri.Query);
 
+        // 1. Basic Paging/Sorting from URL
         if (query.TryGetValue("search", out var s)) _search = s;
-        if (query.TryGetValue("page", out var p) && int.TryParse(p, out var page)) _initialPage = page - 1;
+        if (query.TryGetValue("page", out var p) && int.TryParse(p, out var page))
+        {
+            _initialPage = page - 1;
+            _currentPage = _initialPage;
+        }
         if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb;
-        
-        // Load Column Filters from URL (e.g., ?col_FirstName=John)
+
+        // 2. Load Column Filters (Data search)
         foreach (var key in query.Keys.Where(k => k.StartsWith("col_")))
         {
             ColumnFilters[key.Replace("col_", "")] = query[key];
         }
 
-        if (Columns != null)
-            foreach (var col in Columns) _columnVisibility[col] = true;
+        // 3. BUILD THE VISIBILITY DICTIONARY (The Correct Way)
+        _columnVisibility.Clear(); // Ensure it's empty
+        var allProps = typeof(TItem).GetProperties();
 
-        if (Columns != null)
-            foreach (var col in Columns) _columnVisibility[col] = true;
+        foreach (var prop in allProps)
+        {
+            // Skip properties marked with [Browsable(false)]
+            var browsable = prop.GetCustomAttribute<System.ComponentModel.BrowsableAttribute>();
+            if (browsable != null && !browsable.Browsable) continue;
+
+            // Determine if it should be visible:
+            // Either it was passed in the 'Columns' parameter OR it's currently being filtered in the URL
+            bool isVisible = Columns != null && Columns.Contains(prop.Name);
+
+            _columnVisibility[prop.Name] = isVisible;
+        }
+    }
+
+    public Task ReloadServerData()
+    {
+        return _table.ReloadServerData();
     }
 
     public bool IsVisible(string col) => !_columnVisibility.ContainsKey(col) || _columnVisibility[col];
@@ -223,7 +284,23 @@
         }
     }
 
+    public string GetDisplayName(string propertyName)
+    {
+        // 1. Get the property from the DTO type (TItem)
+        var prop = typeof(TItem).GetProperty(propertyName);
+        if (prop == null) return propertyName;
 
+        // 2. Check for [Display(Name = "")] (from DataAnnotations)
+        var displayAttr = prop.GetCustomAttribute<DisplayAttribute>();
+        if (displayAttr != null) return displayAttr.Name ?? propertyName;
+
+        // 3. Check for [DisplayName("")] (from ComponentModel)
+        var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
+        if (displayNameAttr != null) return displayNameAttr.DisplayName;
+
+        // 4. Fallback to the C# property name if no attribute exists
+        return propertyName;
+    }
 
     private void OnSearch(string s) { _search = s; _table.ReloadServerData(); }
 
@@ -256,6 +333,11 @@
         UpdateUrl(request);
 
         var result = await GetData(request, ct);
+
+        _pageSize = state.PageSize;
+
+        _totalItems = result.TotalCount;
+
         return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
     }
 

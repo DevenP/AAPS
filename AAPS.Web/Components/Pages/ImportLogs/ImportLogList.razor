@@ -1,0 +1,46 @@
+﻿@page "/importlogs"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IImportLogService ImportLogService
+
+<GenericGrid TItem="ImportLogDTO"
+             Title="Import History"
+             Columns="@(new[] { "Id", "ImportDate", "FileName", "ImportRecord" })"
+             GetData="ImportLogService.GetPagedAsync">
+
+    <HeaderContent>
+        <GridCell TItem="ImportLogDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="ImportLogDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ImportLogDTO" Column="ImportDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ImportDate" T="ImportLogDTO">Import Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ImportLogDTO" Column="FileName" IsHeader="true">
+            <MudTableSortLabel SortLabel="FileName" T="ImportLogDTO">File Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ImportLogDTO" Column="ImportRecord" IsHeader="true">Record Details</GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="log">
+        <GridCell TItem="ImportLogDTO" Column="Id">@log.Id</GridCell>
+        <GridCell TItem="ImportLogDTO" Column="ImportDate">
+            <MudTooltip Text="@log.ImportDate?.ToLongTimeString()">
+                <span>@log.ImportDate?.ToString("MM/dd/yyyy HH:mm")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="ImportLogDTO" Column="FileName">
+            <MudHighlighter Text="@log.FileName" />
+        </GridCell>
+        <GridCell TItem="ImportLogDTO" Column="ImportRecord">
+            @if (!string.IsNullOrEmpty(log.ImportRecord))
+            {
+                <MudTooltip Text="@log.ImportRecord">
+                    <span style="max-width: 400px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        @log.ImportRecord
+                    </span>
+                </MudTooltip>
+            }
+        </GridCell>
+    </RowTemplate>
+</GenericGrid>

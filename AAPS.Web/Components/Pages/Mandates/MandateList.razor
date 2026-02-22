@@ -1,0 +1,62 @@
+﻿@page "/approvals"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IMandateService MandateService
+
+<GenericGrid @ref="_grid" TItem="MandateDTO"
+             Title="Approvals"
+             Columns="@(new[] { "Id", "StudentId", "LastName", "FirstName", "ServiceType", "MandateStart", "MandateEnd", "Provider", "GroupSize", "Duration", "AdminDbn", "CseDistrict" })"
+             GetData="MandateService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Entry ID", "Student ID", "Last Name", "First Name", "Service", "Start", "End", "Provider", "Group", "Min", "DBN", "DOB" })"
+             ExportMapper="@(m => new object[] { m.Id, m.StudentId, m.LastName, m.FirstName, m.ServiceType, m.MandateStart?.ToShortDateString(), m.MandateEnd?.ToShortDateString(), m.Provider, m.GroupSize, m.Duration, m.AdminDbn, m.DateOfBirth?.ToShortDateString() })">
+
+    <HeaderContent>
+        <GridCell TItem="MandateDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="MandateDTO">Entry ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="MandateDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="LastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="LastName" T="MandateDTO">Last Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="FirstName" IsHeader="true">First Name</GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceType" IsHeader="true">Service</GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateStart" IsHeader="true">
+            <MudTableSortLabel SortLabel="MandateStart" T="MandateDTO">Start</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateEnd" IsHeader="true">
+            <MudTableSortLabel SortLabel="MandateEnd" T="MandateDTO">End</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="Provider" IsHeader="true">Provider</GridCell>
+        <GridCell TItem="MandateDTO" Column="GroupSize" IsHeader="true">Group</GridCell>
+        <GridCell TItem="MandateDTO" Column="Duration" IsHeader="true">Min</GridCell>
+        <GridCell TItem="MandateDTO" Column="AdminDbn" IsHeader="true">DBN</GridCell>
+        <GridCell TItem="MandateDTO" Column="CseDistrict" IsHeader="true">CSE Dist</GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="m">
+        <GridCell TItem="MandateDTO" Column="Id">@m.Id</GridCell>
+        <GridCell TItem="MandateDTO" Column="StudentId">@m.StudentId</GridCell>
+        <GridCell TItem="MandateDTO" Column="LastName">
+            <MudTooltip Text="@m.LastName"><span>@m.LastName</span></MudTooltip>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="FirstName">@m.FirstName</GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceType">@m.ServiceType</GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateStart">@m.MandateStart?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateEnd">@m.MandateEnd?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="Provider">
+            <MudTooltip Text="@m.Provider"><span>@m.Provider</span></MudTooltip>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="GroupSize">@m.GroupSize</GridCell>
+        <GridCell TItem="MandateDTO" Column="Duration">@m.Duration</GridCell>
+        <GridCell TItem="MandateDTO" Column="AdminDbn">@m.AdminDbn</GridCell>
+        <GridCell TItem="MandateDTO" Column="CseDistrict">@m.CseDistrict</GridCell>
+    </RowTemplate>
+</GenericGrid>
+
+@code {
+
+    private GenericGrid<MandateDTO> _grid;
+}

@@ -1,0 +1,91 @@
+﻿@page "/providerbilling"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject ISesiService SesiService
+
+<GenericGrid TItem="SesiDTO"
+             Title="Provider Billing"
+             Columns="@(new[] { "StudentId", "LastName", "FirstName", "DateOfService", "StartTime", "EndTime", "Duration", "ServiceType", "BilledRate", "ProviderRate", "BilledDate", "BilledPaidDate" })"
+             GetData="SesiService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Student ID", "Last", "First", "DOS", "Start", "End", "Min", "Service", "B-Rate", "P-Rate", "Billed", "Paid" })"
+             ExportMapper="@(s => new object[] { s.Id, s.StudentId, s.StudentLastName, s.StudentFirstName, s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.BilledRate, s.ProviderRate, s.BilledDate, s.BilledPaidDate })">
+
+    <HeaderContent>
+@*         <GridCell TItem="SesiDTO" Column="Id" IsHeader="true">
+            <MudTableSortLabel SortLabel="Id" T="SesiDTO">ID</MudTableSortLabel>
+        </GridCell> *@
+        <GridCell TItem="SesiDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="SesiDTO">Student ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="LastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="LastName" T="SesiDTO">Last Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="FirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="FirstName" T="SesiDTO">First Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="DateOfService" IsHeader="true">
+            <MudTableSortLabel SortLabel="DateOfService" T="SesiDTO">Service Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="StartTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="StartTime" T="SesiDTO">Start Time</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="EndTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="EndTime" T="SesiDTO">End Time</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="Duration" IsHeader="true">
+            <MudTableSortLabel SortLabel="Duration" T="SesiDTO">Duration</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="ServiceType" IsHeader="true">Service
+            <MudTableSortLabel SortLabel="ServiceType" T="SesiDTO">Service</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="BilledRate" IsHeader="true">B-Rate
+            <MudTableSortLabel SortLabel="BilledRate" T="SesiDTO">B-Rate</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="ProviderRate" IsHeader="true">P-Rate
+            <MudTableSortLabel SortLabel="ProviderRate" T="SesiDTO">P-Rate</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="BilledDate" IsHeader="true">Billed
+            <MudTableSortLabel SortLabel="BilledDate" T="SesiDTO">Billed</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="BilledPaidDate" IsHeader="true">Paid
+            <MudTableSortLabel SortLabel="BilledPaidDate" T="SesiDTO">Paid</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="sesi">
+        <GridCell TItem="SesiDTO" Column="StudentId">@sesi.StudentId</GridCell>
+        <GridCell TItem="SesiDTO" Column="LastName">
+            <MudTooltip Text="@sesi.StudentLastName"><span>@sesi.StudentLastName</span></MudTooltip>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="FirstName">
+            <MudTooltip Text="@sesi.StudentFirstName"><span>@sesi.StudentFirstName</span></MudTooltip>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="DateOfService">
+            <MudTooltip Text="@sesi.DateOfService?.ToLongDateString()">
+                <span>@sesi.DateOfService?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="SesiDTO" Column="StartTime">@sesi.StartTime</GridCell>
+        <GridCell TItem="SesiDTO" Column="EndTime">@sesi.EndTime</GridCell>
+        <GridCell TItem="SesiDTO" Column="Duration">@sesi.Duration</GridCell>
+        <GridCell TItem="SesiDTO" Column="ServiceType">@sesi.ServiceType</GridCell>
+        <GridCell TItem="SesiDTO" Column="BilledRate">@sesi.BilledRate?.ToString("C2")</GridCell>
+        <GridCell TItem="SesiDTO" Column="ProviderRate">@sesi.ProviderRate?.ToString("C2")</GridCell>
+
+        <GridCell TItem="SesiDTO" Column="BilledDate">
+            <MudChip T="string" Color="@(sesi.BilledDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
+                @(sesi.BilledDate?.ToString("MM/dd/yy") ?? "Unbilled")
+            </MudChip>
+        </GridCell>
+
+        <GridCell TItem="SesiDTO" Column="BilledPaidDate">
+            @if (sesi.BilledPaidDate != null)
+            {
+                <MudTooltip Text="@($"Paid on {sesi.BilledPaidDate?.ToString("MM/dd/yyyy")}")">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                </MudTooltip>
+            }
+        </GridCell>
+    </RowTemplate>
+</GenericGrid>

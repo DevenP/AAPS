@@ -20,20 +20,22 @@
 
     <MudNavGroup Icon="@Icons.Material.Filled.AccountBalance" Title="Accounting" Expanded="true">
         <MudNavLink Icon="@Icons.Material.Filled.Payments" Href="/billing" Match="NavLinkMatch.Prefix">Billing</MudNavLink>
-        <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="/rates" Match="NavLinkMatch.Prefix">Rates</MudNavLink>
+        <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="/billingrates" Match="NavLinkMatch.Prefix">Billing Rates</MudNavLink>
     </MudNavGroup>
 
-    <MudNavLink Icon="@Icons.Material.Filled.AttachMoney" Href="/voucherPayments" Match="NavLinkMatch.Prefix">Voucher Payments</MudNavLink>
+    <MudNavLink Icon="@Icons.Material.Filled.ReportProblem" Href="/vendorportal" Match="NavLinkMatch.Prefix">Vendor Portal</MudNavLink>
+
+    <MudNavLink Icon="@Icons.Material.Filled.Paid" Href="/voucherPayments" Match="NavLinkMatch.Prefix">Voucher Payments</MudNavLink>
 
     <MudDivider Class="my-4" />
 
-    <MudNavLink Href="/about" Icon="@Icons.Material.Filled.Info" Match="NavLinkMatch.Prefix">About</MudNavLink>
+    <MudNavLink Href="/importlogs" Icon="@Icons.Material.Filled.ReceiptLong" Match="NavLinkMatch.Prefix">Import Logs</MudNavLink>
 
     <div class="my-4"></div>
 
     <MudNavLink OnClick="ToggleTheme"
                 Icon="@(_layout?._isDarkMode == true ? Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)"
-                IconColor="Color.Info"
+                IconColor="Color.Primary"
                 Style="cursor: pointer">
         @(_layout?._isDarkMode == true ? "Dark Mode: On" : "Dark Mode: Off")
     </MudNavLink>

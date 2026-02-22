@@ -19,47 +19,42 @@ public class EvalService : IEvalService
         _db = db;
     }
 
-    //public async Task<Application.Common.Paging.PagedResult<EvalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
-    //{
-    //    var query = _db.Evals.AsNoTracking().Select(ToDTO);
-
-    //    if (request.ColumnFilters?.Any() == true)
-    //    {
-    //        foreach (var col in request.ColumnFilters)
-    //        {
-    //            if (string.IsNullOrWhiteSpace(col.Value)) continue;
-
-    //            query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-    //        }
-    //    }
-
-    //    return await query.ToPagedResultAsync(request, ct);
-    //}
-
     public async Task<Application.Common.Paging.PagedResult<EvalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         // 1. Start the Manual Left Join
-        var query = from e in _db.Evals
-                    join p in _db.Providers on e.Provider_Id equals p.Provider_Id into grouping
-                    from p in grouping.DefaultIfEmpty() // This makes it a LEFT JOIN
+        var query = from ev in _db.Evals.AsNoTracking()
+                    join prov in _db.Providers.AsNoTracking() on ev.Provider_Id equals prov.Provider_Id into grouping
+                    from prov in grouping.DefaultIfEmpty() // This makes it a LEFT JOIN
                     select new EvalDTO
                     {
-                        Id = e.Eval_Id,
-                        // Manual Concatenation since there's no navigation property
-                        ProviderName = p != null ? p.LastName + ", " + p.FirstName : "Unassigned",
-                        StudentFirstName = e.StudentFirst,
-                        StudentLastName = e.StudentLast,
-                        StudentId = e.Student_ID,
-                        Status = e.Status,
-                        EvalReceivedDate = e.EvalReceived,
-                        ReportReceivedDate = e.ReportReceived,
-                        BilledDate = e.Billed,
-                        BilledPaidDate = e.bPaid,
-                        ProviderPaidDate = e.pPaid,
-                        AssignedDate = e.Assigned,
-                        District = e.District,
-                        ServiceType = e.ServiceType
-                        // ... map other fields as needed
+                        Id = ev.Eval_Id,
+                        StudentFirstName = ev.StudentFirst,
+                        StudentLastName = ev.StudentLast,
+                        StudentId = ev.Student_ID,
+                        Phone = ev.Phone,
+                        Email = ev.Email,
+                        ParentFirstName = ev.ParentFirst,
+                        ParentLastName = ev.ParentLast,
+                        EvalReceivedDate = ev.EvalReceived,
+                        ProviderId = ev.Provider_Id,
+                        ProviderFirstName = prov != null ? prov.FirstName : "Unassigned",
+                        ProviderLastName = prov != null ? prov.LastName : "Unassigned",
+                        AssignedDate = ev.Assigned,
+                        ReportReceivedDate = ev.ReportReceived,
+                        EvalDate = ev.EvalDate,
+                        ReportSubmittedDate = ev.ReportSubmitted,
+                        District = ev.District,
+                        Language = ev.Language,
+                        ServiceType = ev.ServiceType,
+                        Contact = ev.Contact,
+                        ProviderPaidAmount = ev.pAmount,
+                        BillingAmount = ev.bAmount,
+                        ProviderPaidDate = ev.pPaid,
+                        BillPaidDate = ev.bPaid,
+                        BilledDate = ev.Billed,
+                        Memo = ev.Memo,
+                        AppointmentDate = ev.Appointment,
+                        Status = ev.Status,
                     };
 
         // 2. Handle Advanced Column Filters (Now works on ProviderName too!)
@@ -112,10 +107,10 @@ public class EvalService : IEvalService
             Language = dto.Language,
             ServiceType = dto.ServiceType,
             Contact = dto.Contact,
-            pAmount = dto.ProviderAmount,
-            bAmount = dto.BilledAmount,
+            pAmount = dto.ProviderPaidAmount,
+            bAmount = dto.BillingAmount,
             pPaid = dto.ProviderPaidDate,
-            bPaid = dto.BilledPaidDate,
+            bPaid = dto.BillPaidDate,
             Billed = dto.BilledDate,
             Memo = dto.Memo,
             Appointment = dto.AppointmentDate,
@@ -148,10 +143,10 @@ public class EvalService : IEvalService
         entity.Language = dto.Language;
         entity.ServiceType = dto.ServiceType;
         entity.Contact = dto.Contact;
-        entity.pAmount = dto.ProviderAmount;
-        entity.bAmount = dto.BilledAmount;
+        entity.pAmount = dto.ProviderPaidAmount;
+        entity.bAmount = dto.BillingAmount;
         entity.pPaid = dto.ProviderPaidDate;
-        entity.bPaid = dto.BilledPaidDate;
+        entity.bPaid = dto.BillPaidDate;
         entity.Billed = dto.BilledDate;
         entity.Memo = dto.Memo;
         entity.Appointment = dto.AppointmentDate;
@@ -191,10 +186,10 @@ public class EvalService : IEvalService
         Language = e.Language,
         ServiceType = e.ServiceType,
         Contact = e.Contact,
-        ProviderAmount = e.pAmount,
-        BilledAmount = e.bAmount,
+        ProviderPaidAmount = e.pAmount,
+        BillingAmount = e.bAmount,
         ProviderPaidDate = e.pPaid,
-        BilledPaidDate = e.bPaid,
+        BillPaidDate = e.bPaid,
         BilledDate = e.Billed,
         Memo = e.Memo,
         AppointmentDate = e.Appointment,

@@ -1,20 +1,73 @@
 ﻿@typeparam TItem
 @using MudBlazor
+@using System.Reflection
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
 
 <MudDialog>
     <DialogContent>
         <MudContainer Style="max-height: 450px; overflow-y: auto" Class="pa-4">
             <MudGrid Spacing="2">
-                @foreach (var prop in typeof(TItem).GetProperties().Where(p => p.PropertyType == typeof(string)))
+                @foreach (var prop in GetFilteredProperties())
                 {
-                    <MudItem xs="12">
-                        <MudTextField T="string"
-                                      Label="@prop.Name"
-                                      @bind-Value="_localFilters[prop.Name]"
-                                      Margin="Margin.Dense"
-                                      Variant="Variant.Outlined"
-                                      Clearable="true" />
-                    </MudItem>
+                    //var displayName = prop.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? prop.Name;
+                    var displayName = GetDisplayName(prop.Name);
+                    var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                    var propName = prop.Name;
+
+                    @if (type == typeof(DateTime))
+                    {
+                        var fromKey = propName + "_From";
+                        var toKey = propName + "_To";
+
+                        <MudItem xs="6">
+                            <MudTextField T="string"
+                                          Label="@($"{displayName} From")"
+                                          Value="@GetFilterValue(fromKey)"
+                                          ValueChanged="@(s => SetFilterValue(fromKey, s))"
+                                          InputType="InputType.Date"
+                                          Margin="Margin.Dense"
+                                          Variant="Variant.Outlined"
+                                          Clearable="true" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudTextField T="string"
+                                          Label="@($"{displayName} To")"
+                                          Value="@GetFilterValue(toKey)"
+                                          ValueChanged="@(s => SetFilterValue(toKey, s))"
+                                          InputType="InputType.Date"
+                                          Margin="Margin.Dense"
+                                          Variant="Variant.Outlined"
+                                          Clearable="true" />
+                        </MudItem>
+                    }
+                    else if (type == typeof(bool))
+                    {
+                        <MudItem xs="12">
+                            <MudSelect T="string"
+                                       Label="@displayName"
+                                       Value="@GetFilterValue(propName)"
+                                       ValueChanged="@(s => SetFilterValue(propName, s))"
+                                       Margin="Margin.Dense"
+                                       Variant="Variant.Outlined"
+                                       Clearable="true">
+                                <MudSelectItem Value="@("true")">Yes</MudSelectItem>
+                                <MudSelectItem Value="@("false")">No</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    }
+                    else
+                    {
+                        <MudItem xs="12">
+                            <MudTextField T="string"
+                                          Label="@displayName"
+                                          Value="@GetFilterValue(propName)"
+                                          ValueChanged="@(s => SetFilterValue(propName, s))"
+                                          Margin="Margin.Dense"
+                                          Variant="Variant.Outlined"
+                                          Clearable="true" />
+                        </MudItem>
+                    }
                 }
             </MudGrid>
         </MudContainer>
@@ -27,16 +80,62 @@
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
-    [Parameter] public Dictionary<string, string> InitialFilters { get; set; }
+    [Parameter] public Dictionary<string, string> InitialFilters { get; set; } = new();
 
     private Dictionary<string, string> _localFilters = new();
 
     protected override void OnInitialized()
     {
-        foreach (var p in typeof(TItem).GetProperties().Where(x => x.PropertyType == typeof(string)))
-            _localFilters[p.Name] = InitialFilters.ContainsKey(p.Name) ? InitialFilters[p.Name] : "";
+        if (InitialFilters != null)
+        {
+            foreach (var item in InitialFilters)
+            {
+                _localFilters[item.Key] = item.Value;
+            }
+        }
     }
 
+    private IEnumerable<PropertyInfo> GetFilteredProperties()
+    {
+        return typeof(TItem).GetProperties()
+            .Where(p =>
+            {
+                // Check if Browsable(false) is present
+                var browsable = p.GetCustomAttribute<BrowsableAttribute>();
+                if (browsable != null && !browsable.Browsable) return false;
+
+                // Otherwise, keep our existing type checks
+                return p.PropertyType == typeof(string) ||
+                       Nullable.GetUnderlyingType(p.PropertyType) == typeof(DateTime) ||
+                       p.PropertyType == typeof(DateTime) ||
+                       Nullable.GetUnderlyingType(p.PropertyType) == typeof(bool) ||
+                       p.PropertyType == typeof(bool);
+            });
+    }
+
+    private string GetDisplayName(string propertyName)
+    {
+        // 1. Get the property from the DTO type (TItem)
+        var prop = typeof(TItem).GetProperty(propertyName);
+        if (prop == null) return propertyName;
+
+        // 2. Check for [Display(Name = "")] (from DataAnnotations)
+        var displayAttr = prop.GetCustomAttribute<DisplayAttribute>();
+        if (displayAttr != null) return displayAttr.Name ?? propertyName;
+
+        // 3. Check for [DisplayName("")] (from ComponentModel)
+        var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
+        if (displayNameAttr != null) return displayNameAttr.DisplayName;
+
+        // 4. Fallback to the C# property name if no attribute exists
+        return propertyName;
+    }
+
+    private string GetFilterValue(string key) => _localFilters.TryGetValue(key, out var val) ? val : "";
+
+    private void SetFilterValue(string key, string value) => _localFilters[key] = value;
+
     private void Submit() => MudDialog.Close(DialogResult.Ok(_localFilters.Where(f => !string.IsNullOrWhiteSpace(f.Value)).ToDictionary(x => x.Key, x => x.Value)));
+
     private void Cancel() => MudDialog.Cancel();
 }

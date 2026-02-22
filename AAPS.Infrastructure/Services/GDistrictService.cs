@@ -21,15 +21,6 @@ public class GDistrictService : IGDistrictService
     {
         var query = _db.GDistricts.AsNoTracking().Select(ToDTO);
 
-        if (request.ColumnFilters?.Any() == true)
-        {
-            foreach (var col in request.ColumnFilters)
-            {
-                if (string.IsNullOrWhiteSpace(col.Value)) continue;
-                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-            }
-        }
-
         return await query.ToPagedResultAsync(request, ct);
     }
 

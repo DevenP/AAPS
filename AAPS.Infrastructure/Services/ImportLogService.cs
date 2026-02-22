@@ -7,7 +7,6 @@ using AAPS.Infrastructure.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace AAPS.Infrastructure.Services;
 
@@ -20,15 +19,6 @@ public class ImportLogService : IImportLogService
     public async Task<Application.Common.Paging.PagedResult<ImportLogDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         var query = _db.ImportLogs.AsNoTracking().Select(ToDTO);
-
-        if (request.ColumnFilters?.Any() == true)
-        {
-            foreach (var col in request.ColumnFilters)
-            {
-                if (string.IsNullOrWhiteSpace(col.Value)) continue;
-                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-            }
-        }
 
         return await query.ToPagedResultAsync(request, ct);
     }

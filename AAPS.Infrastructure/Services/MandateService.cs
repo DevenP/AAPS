@@ -18,20 +18,48 @@ public class MandateService : IMandateService
 
     public async Task<Application.Common.Paging.PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var query = _db.Mandates.AsNoTracking().Select(ToDTO);
+        var assignedIds = _db.Seses
+            .Where(s => s.Entry_Id != null)
+            .Select(s => s.Entry_Id)
+            .Distinct();
 
-        if (request.ColumnFilters?.Any() == true)
-        {
-            foreach (var col in request.ColumnFilters)
-            {
-                if (string.IsNullOrWhiteSpace(col.Value)) continue;
-                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-            }
-        }
+        var query = from m in _db.Mandates.AsNoTracking()
+                    select new MandateDTO
+                    {
+                        Id = m.Entry_Id,
+                        ConferenceDate = m.Conf_Date,
+                        StudentId = m.Student_ID,
+                        LastName = m.Last_Name,
+                        FirstName = m.First_Name,
+                        HomeDistrict = m.Home_District,
+                        Cse = m.CSE,
+                        CseDistrict = m.CSE_District,
+                        Grade = m.Grade,
+                        DateOfBirth = m.Date_of_Birth,
+                        AdminDbn = m.Admin_DBN,
+                        D75 = m.D75,
+                        ServiceType = m.Service_Type,
+                        Language = m.Lang,
+                        GroupSize = m.Grp_Size,
+                        Duration = m.Dur,
+                        ServiceLocation = m.Service_Location,
+                        RemainingFrequency = m.Remaining_Freq,
+                        Provider = m.Provider,
+                        FirstAttendDate = m.First_Attend_Date,
+                        MandateId = m.Mandate_ID,
+                        PrimaryPhone1 = m.Primary_Contact_Phone_1,
+                        PrimaryPhone2 = m.Primary_Contact_Phone_2,
+                        MandateStart = m.MandateStart,
+                        MandateEnd = m.MandateEnd,
+                        FileName = m.FileName,
+                        RowNumber = m.RowNumber,
+                        ServiceStartDate = m.Service_Start_Date,
+                        IsMismatched = !assignedIds.Contains(m.Entry_Id)
+                    };
+
 
         return await query.ToPagedResultAsync(request, ct);
     }
-
 
     public async Task<MandateDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
@@ -152,7 +180,7 @@ public class MandateService : IMandateService
         MandateEnd = m.MandateEnd,
         FileName = m.FileName,
         RowNumber = m.RowNumber,
-        ServiceStartDate = m.Service_Start_Date
+        ServiceStartDate = m.Service_Start_Date,
     };
 
 }

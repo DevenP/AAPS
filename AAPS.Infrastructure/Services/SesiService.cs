@@ -5,12 +5,8 @@ using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Operation.Overlay;
-using System.Diagnostics;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using System.Runtime.Intrinsics.X86;
-using System.Text.RegularExpressions;
 
 namespace AAPS.Infrastructure.Services;
 
@@ -24,18 +20,8 @@ public class SesiService : ISesiService
     {
         var query = _db.Seses.AsNoTracking().Select(ToDTO);
 
-        if (request.ColumnFilters?.Any() == true)
-        {
-            foreach (var col in request.ColumnFilters)
-            {
-                if (string.IsNullOrWhiteSpace(col.Value)) continue;
-                query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-            }
-        }
-
         return await query.ToPagedResultAsync(request, ct);
     }
-
 
     public async Task<SesiDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
@@ -51,8 +37,8 @@ public class SesiService : ISesiService
         var entity = new Sesi
         {
             Student_ID = dto.StudentId,
-            Last_Name = dto.LastName,
-            First_Name = dto.FirstName,
+            Last_Name = dto.StudentLastName,
+            First_Name = dto.StudentFirstName,
             Grade = dto.Grade,
             date_of_Birth = dto.DateOfBirth,
             Home_District = dto.HomeDistrict,
@@ -105,8 +91,8 @@ public class SesiService : ISesiService
         var entity = await _db.Seses.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
 
         entity.Student_ID = dto.StudentId;
-        entity.Last_Name = dto.LastName;
-        entity.First_Name = dto.FirstName;
+        entity.Last_Name = dto.StudentLastName;
+        entity.First_Name = dto.StudentFirstName;
         entity.Grade = dto.Grade;
         entity.date_of_Birth = dto.DateOfBirth;
         entity.Home_District = dto.HomeDistrict;
@@ -152,7 +138,6 @@ public class SesiService : ISesiService
         await _db.SaveChangesAsync(ct);
     }
 
-
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
         var entity = await _db.Seses.FindAsync(new object[] { id }, ct);
@@ -163,12 +148,125 @@ public class SesiService : ISesiService
         }
     }
 
+    public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        // 1. Get the single 'best' Assignment ID for each EntryId to prevent row doubling
+        var topAssignments = _db.VendorPortals.AsNoTracking()
+            .GroupBy(v => v.Entry_Id)
+            .Select(g => new {
+                EntryId = g.Key,
+                AssignId = g.OrderBy(x => x.VendorPortal_Id).Select(x => x.Assign_Id).FirstOrDefault()
+            });
+
+        // 2. Main Operations Query
+        var query = from s in _db.Seses.AsNoTracking()
+                    join m in _db.Mandates.AsNoTracking() on s.Entry_Id equals m.Entry_Id into mGroup
+                    from m in mGroup.DefaultIfEmpty()
+                    join p in _db.Providers.AsNoTracking() on s.Provider_Id equals p.Provider_Id into pGroup
+                    from p in pGroup.DefaultIfEmpty()
+                    join v in topAssignments on s.Entry_Id equals v.EntryId into vGroup
+                    from v in vGroup.DefaultIfEmpty()
+
+                    select new OperationsDTO
+                    {
+                        Id = s.Sesis_Id,
+                        StudentId = s.Student_ID,
+                        StudentLastName = s.Last_Name,
+                        StudentFirstName = s.First_Name,
+                        DateOfService = s.date_of_Service,
+                        StartTime = s.Start_Time,
+                        EndTime = s.End_Time,
+                        Duration = s.Duration,
+                        ServiceType = s.Service_Type,
+                        BilledRate = s.bRate,
+                        ProviderRate = s.pRate,
+                        BilledDate = s.Billed,
+                        BilledPaidDate = s.bPaid,
+                        ProviderId = s.Provider_Id,
+                        EntryId = s.Entry_Id,
+
+                        // Alerts / Flags (The 'Alerts' Icons logic)
+                        MandateFlag = s.Entry_Id == null,
+                        ProviderFlag = s.Provider_Id == null,
+                        BRateFlag = s.bRate == null,
+                        PRateFlag = s.pRate == null,
+                        AssignFlag = v == null || string.IsNullOrEmpty(v.AssignId),
+
+                        // Logic Flags (from your DB bits)
+                        IsOverDuration = s.OverDuration.HasValue ? s.OverDuration.Value : false,
+                        IsOverlap = s.Overlap.HasValue ? s.Overlap.Value : false,
+                        IsOverMandate = s.OverMandate.HasValue ? s.OverMandate.Value : false,
+                        IsUnderGroup = s.UnderGroup.HasValue ? s.UnderGroup.Value : false,
+
+                        // Joined Info
+                        ProviderLastName = s.Provider_Last_Name,
+                        ProviderFirstName = s.Provider_First_Name,
+                        AssignId = v != null ? v.AssignId : null,
+                        MandateStart = m != null ? m.MandateStart : null,
+
+
+                        // Masked SSN
+                        Ssn = (p != null && p.Ssn != null && p.Ssn.Length >= 4)
+                              ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4)
+                              : (p.Ssn ?? "N/A"),
+                              
+                    };
+
+        return await query.ToPagedResultAsync(request, ct);
+    }
+
+    //public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
+    //{
+    //    var query = from s in _db.Seses.AsNoTracking()
+    //                join m in _db.Mandates.AsNoTracking() on s.Entry_Id equals m.Entry_Id into mJoin
+    //                from m in mJoin.DefaultIfEmpty()
+    //                join p in _db.Providers.AsNoTracking() on s.Provider_Id equals p.Provider_Id into pJoin
+    //                from p in pJoin.DefaultIfEmpty()
+    //                    // Simplified VendorPortal logic
+    //                join v in _db.VendorPortals.AsNoTracking() on s.Entry_Id equals v.Entry_Id into vJoin
+    //                from v in vJoin.DefaultIfEmpty()
+
+    //                select new OperationsDTO
+    //                {
+    //                    // Map Sesis base fields
+    //                    Id = s.Sesis_Id,
+    //                    StudentId = s.Student_ID,
+    //                    DateOfService = s.date_of_Service,
+    //                    StartTime = s.Start_Time,
+    //                    IsOverDuration = s.OverDuration.HasValue ? s.OverDuration.Value : false,
+    //                    IsOverlap = s.Overlap.HasValue ? s.Overlap.Value : false,
+    //                    IsOverMandate = s.OverMandate.HasValue ? s.OverMandate.Value : false,
+    //                    IsUnderGroup = s.UnderGroup.HasValue ? s.UnderGroup.Value : false,
+    //                    StudentFirstName = s.First_Name,
+    //                    StudentLastName = s.Last_Name,
+
+
+    //                    // ... include other SesiDTO fields ...
+
+    //                    // Flags from Stored Proc
+    //                    MandateFlag = s.Entry_Id == null,
+    //                    ProviderFlag = s.Provider_Id == null,
+    //                    BRateFlag = s.bRate == null,
+    //                    PRateFlag = s.pRate == null,
+    //                    AssignFlag = v == null || v.Assign_Id == null,
+
+    //                    // Joined Data
+    //                    AssignId = v != null ? v.Assign_Id : null,
+    //                    MandateStart = m != null ? m.MandateStart : null,
+    //                    FullAddress = p != null ? $"{p.Address}, {p.City}, {p.State} {p.Zipcode}" : null,
+    //                    Ssn = p != null && p.Ssn.Length >= 4 ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4) : ""
+    //                };
+
+    //    return await query.ToPagedResultAsync(request, ct);
+    //}
+
+
     private static readonly Expression<Func<Sesi, SesiDTO>> ToDTO = s => new SesiDTO
     {
         Id = s.Sesis_Id,
         StudentId = s.Student_ID,
-        LastName = s.Last_Name,
-        FirstName = s.First_Name,
+        StudentLastName = s.Last_Name,
+        StudentFirstName = s.First_Name,
         Grade = s.Grade,
         DateOfBirth = s.date_of_Birth,
         HomeDistrict = s.Home_District,

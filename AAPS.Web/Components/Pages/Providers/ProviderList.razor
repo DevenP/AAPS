@@ -1,22 +1,26 @@
 ﻿@page "/providers"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Providers.Forms
 @using AAPS.Web.Components.Shared
 @inject IProviderService ProviderService
+@inject ISnackbar Snackbar
 
-<GenericGrid TItem="ProviderDTO"
+<GenericGrid @ref="_grid" TItem="ProviderDTO"
              Title="Providers"
-             Columns="@(new[] { "Id", "Status", "FirstName", "LastName", "Email", "Phone", "Ssn", "TaxId", "NpiNumber", "Birthdate", "CorporationName", "ServiceType", "City", "State", "HasPets" })"
+             RowStyleFunc="RowStyle"
+             Columns="@(new[] { "Actions","Id", "IsActive", "FirstName", "LastName", "Email", "Phone", "Ssn", "TaxId", "NpiNumber", "Birthdate", "CorporationName", "ServiceType", "City", "State", "HasPets" })"
              GetData="ProviderService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Id", "Status", "FirstName", "LastName", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
-             ExportMapper="@(p => new object[] { p.Id, p.Status, p.FirstName, p.LastName, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
+             ExportHeaders="@(new[] { "Id", "IsActive", "FirstName", "LastName", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
+             ExportMapper="@(p => new object[] { p.Id, p.IsActive, p.FirstName, p.LastName, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
 
     <HeaderContent>
+        <GridCell TItem="ProviderDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="ProviderDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="ProviderDTO">ID</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="Status" IsHeader="true">
-            <MudTableSortLabel SortLabel="Status" T="ProviderDTO">Status</MudTableSortLabel>
+        <GridCell TItem="ProviderDTO" Column="IsActive" IsHeader="true">
+            <MudTableSortLabel SortLabel="IsActive" T="ProviderDTO">IsActive</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="FirstName" IsHeader="true">
             <MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">First Name</MudTableSortLabel>
@@ -24,9 +28,14 @@
         <GridCell TItem="ProviderDTO" Column="LastName" IsHeader="true">
             <MudTableSortLabel SortLabel="LastName" T="ProviderDTO">Last Name</MudTableSortLabel>
         </GridCell>
+        <GridCell TItem="ProviderDTO" Column="AssignedCount" IsHeader="true">Students</GridCell>
         <GridCell TItem="ProviderDTO" Column="Email" IsHeader="true">Email</GridCell>
         <GridCell TItem="ProviderDTO" Column="Phone" IsHeader="true">Phone</GridCell>
-        <GridCell TItem="ProviderDTO" Column="Ssn" IsHeader="true">SSN</GridCell>
+        <GridCell TItem="ProviderDTO" Column="Ssn" IsHeader="true">
+            <MudTableSortLabel SortLabel="Ssn" T="ProviderDTO">
+                @_grid?.GetDisplayName("Ssn")  @* EXAMPLE FOR DISPLAY NAME *@
+            </MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="ProviderDTO" Column="TaxId" IsHeader="true">Tax ID</GridCell>
         <GridCell TItem="ProviderDTO" Column="NpiNumber" IsHeader="true">NPI</GridCell>
         <GridCell TItem="ProviderDTO" Column="Birthdate" IsHeader="true">DOB</GridCell>
@@ -38,14 +47,44 @@
     </HeaderContent>
 
     <RowTemplate Context="provider">
+        @* Action Button *@
+        <GridCell TItem="ProviderDTO" Column="Actions">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           OnClick="@(() => OpenEditDialog(provider))" />
+        </GridCell>
+
         <GridCell TItem="ProviderDTO" Column="Id">@provider.Id</GridCell>
-        <GridCell TItem="ProviderDTO" Column="Status">
-            <MudChip T="string" Color="@(provider.Status == "Active" ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Filled">
-                @provider.Status
+
+        <GridCell TItem="ProviderDTO" Column="IsActive">
+            <MudChip T="string"
+                     Color="@(provider.IsActive == true ? Color.Success : Color.Default)"
+                     Size="Size.Small"
+                     Variant="Variant.Filled">
+                @(provider.IsActive == true ? "Yes" : "No")
             </MudChip>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="FirstName"><MudTooltip Text="@provider.FirstName">@provider.FirstName</MudTooltip></GridCell>
-        <GridCell TItem="ProviderDTO" Column="LastName"><MudTooltip Text="@provider.LastName">@provider.LastName</MudTooltip></GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="FirstName">
+            <MudTooltip Text="@provider.FirstName">@provider.FirstName</MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="LastName">
+            @if (provider.IsDuplicateName)
+            {
+                <MudTooltip Text="Possible Duplicate Name Found">
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" Class="mr-1" />
+                </MudTooltip>
+                
+            }
+
+            <MudTooltip Text="@provider.LastName">@provider.LastName</MudTooltip>
+            
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="AssignedCount">
+            <MudChip T="int" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">@provider.AssignedCount</MudChip>
+        </GridCell>
         <GridCell TItem="ProviderDTO" Column="Email">
             <MudTooltip Text="@provider.Email">
                 <MudLink href="@($"mailto:{provider.Email}")" Underline="Underline.Hover">@provider.Email</MudLink>
@@ -69,3 +108,83 @@
     </RowTemplate>
 </GenericGrid>
 
+@code {
+
+    private GenericGrid<ProviderDTO> _grid;
+
+    // Highlight the row in soft amber if it's a duplicate
+    private string RowStyle(ProviderDTO provider, int index)
+    {
+        if (provider.IsDuplicateName)
+            return "background-color: rgba(255, 193, 7, 0.1);"; // Subtle Warning Amber
+        return "";
+    }
+
+    [Inject] IDialogService DialogService { get; set; }
+
+    private ProviderValidator _validator = new();
+
+    private async Task OpenEditDialog(ProviderDTO provider)
+    {
+        var model = await ProviderService.GetByIdAsync(provider.Id);
+
+        if (model == null) return;
+
+        var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, "Edit Provider");
+        parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
+
+        // Explicitly tell Blazor that 'context' is a ProviderDTO
+        RenderFragment<ProviderDTO> form = (context) => @<ProviderForm Model="context" />;
+        parameters.Add(x => x.ChildContent, form);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<EntityDialog<ProviderDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is ProviderDTO updatedDto)
+        {
+            var success = await ProviderService.UpdateAsync(updatedDto);
+            if (success)
+            {
+                Snackbar.Add("Provider updated successfully!", Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            else
+            {
+                Snackbar.Add("Provider not found.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        // Start with a blank DTO
+        var model = new ProviderDTO { IsActive = true };
+
+        var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, "Add New Provider");
+        parameters.Add(x => x.IsNew, true);
+        parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
+
+        RenderFragment<ProviderDTO> form = (context) => @<ProviderForm Model="context" />;
+        parameters.Add(x => x.ChildContent, form);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<ProviderDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is ProviderDTO newDto)
+        {
+            var newId = await ProviderService.AddAsync(newDto);
+            if (newId > 0)
+            {
+                Snackbar.Add("Provider created successfully!", Severity.Success);
+                await _grid.ReloadServerData();
+            }
+        }
+    }
+}

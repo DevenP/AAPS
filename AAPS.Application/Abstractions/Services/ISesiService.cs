@@ -14,4 +14,6 @@ public interface ISesiService
     Task UpdateAsync(int id, SesiDTO dto, CancellationToken ct = default);
 
     Task DeleteAsync(int id, CancellationToken ct = default);
+
+    Task<PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default);
 }
