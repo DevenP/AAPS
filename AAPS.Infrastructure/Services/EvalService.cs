@@ -57,25 +57,9 @@ public class EvalService : IEvalService
                         Status = ev.Status,
                     };
 
-        // 2. Handle Advanced Column Filters (Now works on ProviderName too!)
-        if (request.ColumnFilters?.Any() == true)
-        {
-            foreach (var col in request.ColumnFilters)
-            {
-                if (string.IsNullOrWhiteSpace(col.Value)) continue;
-
-                // Check for the "null/notnull" keywords we discussed
-                if (col.Value == "null") query = query.Where($"{col.Key} == null");
-                else if (col.Value == "notnull") query = query.Where($"{col.Key} != null");
-                else query = query.Where($"{col.Key}.Contains(@0)", col.Value);
-            }
-        }
-
         // 3. Hand off to the Generic Extension
         return await query.ToPagedResultAsync(request, ct);
     }
-
-
 
     public async Task<EvalDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {

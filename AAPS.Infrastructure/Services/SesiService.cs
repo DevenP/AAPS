@@ -148,12 +148,109 @@ public class SesiService : ISesiService
         }
     }
 
+    //public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
+    //{
+    //    // 1. Start with the RAW table
+    //    var baseQuery = _db.Seses.AsNoTracking();
+
+    //    // 2. APPLY SEARCH ON THE RAW TABLE (This is fast and translatable!)
+    //    if (!string.IsNullOrWhiteSpace(request.Search))
+    //    {
+    //        var s = request.Search.Trim();
+    //        baseQuery = baseQuery.Where(x =>
+    //            x.Student_ID.Contains(s) ||
+    //            x.Last_Name.Contains(s) ||
+    //            x.First_Name.Contains(s) ||
+    //            x.Provider_Last_Name.Contains(s));
+
+    //    }
+
+    //    // 3. NOW DO THE JOINS AND PROJECTION (Only on filtered data)
+    //    var topAssignments = _db.VendorPortals.AsNoTracking()
+    //        .GroupBy(v => v.Entry_Id)
+    //        .Select(g => new {
+    //            EntryId = g.Key,
+    //            AssignId = g.OrderBy(x => x.VendorPortal_Id).Select(x => x.Assign_Id).FirstOrDefault()
+    //        });
+
+    //    var finalQuery = from s in baseQuery // This is already filtered by your manual search
+    //                     join m in _db.Mandates.AsNoTracking() on s.Entry_Id equals m.Entry_Id into mGroup
+    //                     from m in mGroup.DefaultIfEmpty()
+    //                     join p in _db.Providers.AsNoTracking() on s.Provider_Id equals p.Provider_Id into pGroup
+    //                     from p in pGroup.DefaultIfEmpty()
+    //                     join v in topAssignments on s.Entry_Id equals v.EntryId into vGroup
+    //                     from v in vGroup.DefaultIfEmpty()
+    //                     select new OperationsDTO
+    //                     {
+    //                         // Core Identifiers
+    //                         Id = s.Sesis_Id,
+    //                         EntryId = s.Entry_Id,
+    //                         StudentId = s.Student_ID,
+    //                         ProviderId = s.Provider_Id,
+
+    //                         // Student Info
+    //                         StudentLastName = s.Last_Name,
+    //                         StudentFirstName = s.First_Name,
+
+    //                         // Service Details
+    //                         DateOfService = s.date_of_Service,
+    //                         StartTime = s.Start_Time,
+    //                         EndTime = s.End_Time,
+    //                         Duration = s.Duration,
+    //                         ServiceType = s.Service_Type,
+
+    //                         // Rates & Billing
+    //                         BilledRate = s.bRate,
+    //                         ProviderRate = s.pRate,
+    //                         BilledDate = s.Billed,
+    //                         BilledPaidDate = s.bPaid,
+
+    //                         // Logic Bits (Keep them nullable/raw for now)
+    //                         IsOverDuration = s.OverDuration ?? false,
+    //                         IsOverlap = s.Overlap ?? false,
+    //                         IsOverMandate = s.OverMandate ?? false,
+    //                         IsUnderGroup = s.UnderGroup ?? false,
+
+    //                         // Joined Info
+    //                         ProviderLastName = s.Provider_Last_Name,
+    //                         ProviderFirstName = s.Provider_First_Name,
+    //                         AssignId = v != null ? v.AssignId : null,
+    //                         MandateStart = m != null ? m.MandateStart : null,
+
+    //                         // Raw SSN for the Post-Process step
+    //                         Ssn = p != null ? p.Ssn : null
+    //                     };
+
+    //    // 2. Call the Paging (Passing 'false' to skip the broken DTO-based ApplySearch)
+    //    var pagedResult = await finalQuery.ToPagedResultAsync(request, ct, performSearch: false);
+
+
+    //    // 5. MAP FOR UI (Masking SSNs and setting Flags)
+    //    return pagedResult.Map(item => item with
+    //    {
+    //        // --- MASKED SSN LOGIC ---
+    //        Ssn = (item.Ssn != null && item.Ssn.Length >= 4)
+    //      ? "***-**-" + item.Ssn.Substring(item.Ssn.Length - 4)
+    //      : (item.Ssn ?? "N/A"),
+
+    //        // --- ALERTS / FLAGS (Icons) ---
+    //        MandateFlag = item.EntryId == null,
+    //        ProviderFlag = item.ProviderId == null,
+    //        BRateFlag = item.BilledRate == null,
+    //        PRateFlag = item.ProviderRate == null,
+    //        AssignFlag = string.IsNullOrEmpty(item.AssignId),
+
+    //    });
+    //}
+
+
     public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         // 1. Get the single 'best' Assignment ID for each EntryId to prevent row doubling
         var topAssignments = _db.VendorPortals.AsNoTracking()
             .GroupBy(v => v.Entry_Id)
-            .Select(g => new {
+            .Select(g => new
+            {
                 EntryId = g.Key,
                 AssignId = g.OrderBy(x => x.VendorPortal_Id).Select(x => x.Assign_Id).FirstOrDefault()
             });
@@ -209,57 +306,11 @@ public class SesiService : ISesiService
                         Ssn = (p != null && p.Ssn != null && p.Ssn.Length >= 4)
                               ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4)
                               : (p.Ssn ?? "N/A"),
-                              
+
                     };
 
         return await query.ToPagedResultAsync(request, ct);
     }
-
-    //public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
-    //{
-    //    var query = from s in _db.Seses.AsNoTracking()
-    //                join m in _db.Mandates.AsNoTracking() on s.Entry_Id equals m.Entry_Id into mJoin
-    //                from m in mJoin.DefaultIfEmpty()
-    //                join p in _db.Providers.AsNoTracking() on s.Provider_Id equals p.Provider_Id into pJoin
-    //                from p in pJoin.DefaultIfEmpty()
-    //                    // Simplified VendorPortal logic
-    //                join v in _db.VendorPortals.AsNoTracking() on s.Entry_Id equals v.Entry_Id into vJoin
-    //                from v in vJoin.DefaultIfEmpty()
-
-    //                select new OperationsDTO
-    //                {
-    //                    // Map Sesis base fields
-    //                    Id = s.Sesis_Id,
-    //                    StudentId = s.Student_ID,
-    //                    DateOfService = s.date_of_Service,
-    //                    StartTime = s.Start_Time,
-    //                    IsOverDuration = s.OverDuration.HasValue ? s.OverDuration.Value : false,
-    //                    IsOverlap = s.Overlap.HasValue ? s.Overlap.Value : false,
-    //                    IsOverMandate = s.OverMandate.HasValue ? s.OverMandate.Value : false,
-    //                    IsUnderGroup = s.UnderGroup.HasValue ? s.UnderGroup.Value : false,
-    //                    StudentFirstName = s.First_Name,
-    //                    StudentLastName = s.Last_Name,
-
-
-    //                    // ... include other SesiDTO fields ...
-
-    //                    // Flags from Stored Proc
-    //                    MandateFlag = s.Entry_Id == null,
-    //                    ProviderFlag = s.Provider_Id == null,
-    //                    BRateFlag = s.bRate == null,
-    //                    PRateFlag = s.pRate == null,
-    //                    AssignFlag = v == null || v.Assign_Id == null,
-
-    //                    // Joined Data
-    //                    AssignId = v != null ? v.Assign_Id : null,
-    //                    MandateStart = m != null ? m.MandateStart : null,
-    //                    FullAddress = p != null ? $"{p.Address}, {p.City}, {p.State} {p.Zipcode}" : null,
-    //                    Ssn = p != null && p.Ssn.Length >= 4 ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4) : ""
-    //                };
-
-    //    return await query.ToPagedResultAsync(request, ct);
-    //}
-
 
     private static readonly Expression<Func<Sesi, SesiDTO>> ToDTO = s => new SesiDTO
     {

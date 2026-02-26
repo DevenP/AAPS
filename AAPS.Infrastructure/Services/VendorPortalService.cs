@@ -14,6 +14,7 @@ namespace AAPS.Infrastructure.Services
     {
 
         private readonly IAppDbContext _db;
+
         public VendorPortalService(IAppDbContext db) 
         {
             _db = db;

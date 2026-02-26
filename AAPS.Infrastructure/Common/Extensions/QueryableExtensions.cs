@@ -1,7 +1,9 @@
 ﻿using AAPS.Application.Common.Paging;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace AAPS.Infrastructure.Common.Extensions
 {
@@ -10,10 +12,11 @@ namespace AAPS.Infrastructure.Common.Extensions
         public static async Task<Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
             this IQueryable<T> query,
             PagedRequest request,
-            CancellationToken ct = default) where T : class
+            CancellationToken ct = default,
+            bool performSearch = true) where T : class
         {
             // 1. Dynamic Search (Global)
-            if (!string.IsNullOrWhiteSpace(request.Search))
+            if (performSearch && !string.IsNullOrWhiteSpace(request.Search))
             {
                 query = ApplySearch(query, request.Search.Trim());
             }
@@ -47,6 +50,7 @@ namespace AAPS.Infrastructure.Common.Extensions
 
             return new Application.Common.Paging.PagedResult<T>(items, page, pageSize, totalCount);
         }
+
         private static IQueryable<T> ApplyColumnFilters<T>(IQueryable<T> query, Dictionary<string, string> filters)
         {
             var properties = typeof(T).GetProperties();
@@ -196,7 +200,9 @@ namespace AAPS.Infrastructure.Common.Extensions
         private static IQueryable<T> ApplySearch<T>(IQueryable<T> query, string term)
         {
             var param = Expression.Parameter(typeof(T), "e");
-            var stringProperties = typeof(T).GetProperties().Where(p => p.PropertyType == typeof(string));
+            var stringProperties = typeof(T).GetProperties()
+             .Where(p => p.PropertyType == typeof(string) &&
+                        (p.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? false == false));
 
             Expression? filterBody = null;
             var pattern = Expression.Constant($"%{term}%");
@@ -204,9 +210,16 @@ namespace AAPS.Infrastructure.Common.Extensions
 
             foreach (var prop in stringProperties)
             {
-                var member = Expression.Property(param, prop);
-                var likeCall = Expression.Call(null, likeMethod!, Expression.Property(null, typeof(EF), nameof(EF.Functions)), member, pattern);
-                filterBody = filterBody == null ? likeCall : Expression.OrElse(filterBody, likeCall);
+                //var member = Expression.Property(param, prop);
+                //var likeCall = Expression.Call(null, likeMethod!, Expression.Property(null, typeof(EF), nameof(EF.Functions)), member, pattern);
+                //filterBody = filterBody == null ? likeCall : Expression.OrElse(filterBody, likeCall);
+                try
+                {
+                    var member = Expression.Property(param, prop);
+                    var likeCall = Expression.Call(null, likeMethod!, Expression.Property(null, typeof(EF), nameof(EF.Functions)), member, pattern);
+                    filterBody = filterBody == null ? likeCall : Expression.OrElse(filterBody, likeCall);
+                }
+                catch { continue; }
             }
 
             if (filterBody == null) return query;
