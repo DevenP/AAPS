@@ -45,7 +45,22 @@ public class ProviderRateService : IProviderRateService
         return await _db.ProviderRates
             .AsNoTracking()
             .Where(r => r.ProviderRate_Id == id)
-            .Select(ToDTO)
+            .Join(_db.Providers.AsNoTracking(),
+                  rate => rate.Provider_Id,
+                  prov => prov.Provider_Id,
+                  (rate, prov) => new ProviderRateDTO
+                  {
+                      Id = rate.ProviderRate_Id,
+                      ProviderId = rate.Provider_Id,
+                      ProviderFirstName = prov != null ? prov.FirstName : "Unknown",
+                      ProviderLastName = prov != null ? prov.LastName : "Unknown",
+                      ServiceType = rate.ServiceType,
+                      District = rate.District,
+                      Rate = rate.Rate,
+                      EffectiveDate = rate.Effective,
+                      IsActive = rate.Active.HasValue ? rate.Active.Value : false,
+                      Language = rate.Lang
+                  })
             .FirstOrDefaultAsync(ct);
     }
 

@@ -1,187 +1,142 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record SesiDTO
 {
-    [Browsable(true)]
-    [Display(Name = "Id")]
+    [DisplayField("Id")]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentId")]
+    [DisplayField("Student ID")]
     public string? StudentId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentLastName")]
+    [DisplayField("Student Last Name")]
     public string? StudentLastName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentFirstName")]
+    [DisplayField("Student First Name")]
     public string? StudentFirstName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Grade")]
+    [DisplayField("Grade")]
     public string? Grade { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "DateOfBirth")]
+    [DisplayField("Date of Birth")]
     public DateTime? DateOfBirth { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "HomeDistrict")]
+    [DisplayField("Home District")]
     public string? HomeDistrict { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Cse")]
+    [DisplayField("CSE")]
     public string? Cse { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "CseDistrict")]
+    [DisplayField("CSE District")]
     public string? CseDistrict { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "AdminDbn")]
+    [DisplayField("Admin DBN")]
     public string? AdminDbn { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "GDistrict")]
+    [DisplayField("G District")]
     public string? GDistrict { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Borough")]
+    [DisplayField("Borough")]
     public string? Borough { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "MandateShort")]
+    [DisplayField("Mandate Short")]
     public string? MandateShort { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "MandateStart")]
+    [DisplayField("Mandate Start")]
     public DateTime? MandateStart { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "MandatedMaxGroup")]
+    [DisplayField("Mandated Max Group")]
     public string? MandatedMaxGroup { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "AssignmentFirstEncounter")]
+    [DisplayField("Assignment First Encounter")]
     public DateTime? AssignmentFirstEncounter { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "AssignmentClaimed")]
+    [DisplayField("Assignment Claimed")]
     public string? AssignmentClaimed { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "DateOfService")]
+    [DisplayField("Date of Service")]
     public DateTime? DateOfService { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ServiceType")]
+    [DisplayField("Service Type")]
     public string? ServiceType { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "LanguageProvided")]
+    [DisplayField("Language Provided")]
     public string? LanguageProvided { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "SessionType")]
+    [DisplayField("Session Type")]
     public string? SessionType { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "SessionNotes")]
+    [DisplayField("Session Notes")]
     public string? SessionNotes { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Grouping")]
+    [DisplayField("Grouping")]
     public string? Grouping { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ActualSize")]
+    [DisplayField("Actual Size")]
     public string? ActualSize { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StartTime")]
+    [DisplayField("Start Time")]
     public string? StartTime { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "EndTime")]
+    [DisplayField("End Time")]
     public string? EndTime { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Duration")]
+    [DisplayField("Duration")]
     public string? Duration { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderLastName")]
+    [DisplayField("Provider Last Name")]
     public string? ProviderLastName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderFirstName")]
+    [DisplayField("Provider First Name")]
     public string? ProviderFirstName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "FileName")]
+    [DisplayField("File Name")]
     public string? FileName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "RowNumber")]
+    [DisplayField("Row Number")]
     public int? RowNumber { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderId")]
+    [DisplayField("Provider ID")]
     public int? ProviderId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "EntryId")]
+    [DisplayField("Entry ID")]
     public int? EntryId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BilledRate")]
+    [DisplayField("Billed Rate")]
     public decimal? BilledRate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BilledAmount")]
+    [DisplayField("Billed Amount")]
     public decimal? BilledAmount { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BilledDate")]
+    [DisplayField("Billed Date")]
     public DateTime? BilledDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BilledPaidDate")]
+    [DisplayField("Billed Paid Date")]
     public DateTime? BilledPaidDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderRate")]
+    [DisplayField("Provider Rate")]
     public decimal? ProviderRate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderAmount")]
+    [DisplayField("Provider Amount")]
     public decimal? ProviderAmount { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderPaidDate")]
+    [DisplayField("Provider Paid Date")]
     public DateTime? ProviderPaidDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "IsOverlap")]
+    [DisplayField("Is Overlap")]
     public bool IsOverlap { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Voucher")]
+    [DisplayField("Voucher")]
     public string? Voucher { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "IsOverMandate")]
+    [DisplayField("Is Over Mandate")]
     public bool IsOverMandate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "IsOverDuration")]
+    [DisplayField("Is Over Duration")]
     public bool IsOverDuration { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "IsUnderGroup")]
+    [DisplayField("Is Under Group")]
     public bool IsUnderGroup { get; set; }
 }

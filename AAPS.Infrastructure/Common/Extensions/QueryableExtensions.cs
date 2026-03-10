@@ -1,9 +1,8 @@
 ﻿using AAPS.Application.Common.Paging;
+using AAPS.Application.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace AAPS.Infrastructure.Common.Extensions
 {
@@ -200,9 +199,10 @@ namespace AAPS.Infrastructure.Common.Extensions
         private static IQueryable<T> ApplySearch<T>(IQueryable<T> query, string term)
         {
             var param = Expression.Parameter(typeof(T), "e");
+
+            // Get string properties that are browsable
             var stringProperties = typeof(T).GetProperties()
-             .Where(p => p.PropertyType == typeof(string) &&
-                        (p.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? false == false));
+                .Where(p => p.PropertyType == typeof(string) && p.IsBrowsable());
 
             Expression? filterBody = null;
             var pattern = Expression.Constant($"%{term}%");
@@ -210,9 +210,6 @@ namespace AAPS.Infrastructure.Common.Extensions
 
             foreach (var prop in stringProperties)
             {
-                //var member = Expression.Property(param, prop);
-                //var likeCall = Expression.Call(null, likeMethod!, Expression.Property(null, typeof(EF), nameof(EF.Functions)), member, pattern);
-                //filterBody = filterBody == null ? likeCall : Expression.OrElse(filterBody, likeCall);
                 try
                 {
                     var member = Expression.Property(param, prop);

@@ -1,0 +1,76 @@
+@using AAPS.Application.Abstractions.Services
+@inject IErrorService ErrorService
+@implements IAsyncDisposable
+
+<div class="error-boundary">
+    @if (_hasError)
+    {
+        <MudAlert Severity="Severity.Error" ShowCloseButton="true" CloseButtonClicked="OnErrorClose" Class="mb-4">
+            <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
+                @_errorMessage
+            </MudText>
+            @if (!string.IsNullOrEmpty(_errorContext))
+            {
+                <MudText Typo="Typo.caption" Class="mt-2">
+                    Context: @_errorContext
+                </MudText>
+            }
+        </MudAlert>
+    }
+
+    <Microsoft.AspNetCore.Components.Web.ErrorBoundary @ref="_errorBoundary">
+        <ChildContent>
+            @ChildContent
+        </ChildContent>
+        <ErrorContent Context="ex">
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
+                    An error occurred rendering this component
+                </MudText>
+                <MudText Typo="Typo.caption" Class="mt-2">
+                    @ex.Message
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small" Class="mt-3"
+                           OnClick="() => _errorBoundary?.Recover()">
+                    Retry
+                </MudButton>
+            </MudAlert>
+        </ErrorContent>
+    </Microsoft.AspNetCore.Components.Web.ErrorBoundary>
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private Microsoft.AspNetCore.Components.Web.ErrorBoundary? _errorBoundary;
+    private bool _hasError;
+    private string? _errorMessage;
+    private string? _errorContext;
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to error service events
+        ErrorService.OnError += HandleError;
+    }
+
+    private void HandleError(ErrorInfo errorInfo)
+    {
+        _hasError = true;
+        _errorMessage = errorInfo.Message;
+        _errorContext = errorInfo.Context;
+        StateHasChanged();
+    }
+
+    private void OnErrorClose()
+    {
+        _hasError = false;
+        ErrorService.ClearError();
+        StateHasChanged();
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        ErrorService.OnError -= HandleError;
+    }
+}

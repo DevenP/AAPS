@@ -1,6 +1,7 @@
 ﻿@typeparam TItem
 @using AAPS.Application.Common.Paging
 @using AAPS.Application.Common.Helpers
+@using AAPS.Application.Common.Extensions
 @using System.Text
 @inject IDialogService DialogService
 @inject IJSRuntime JS
@@ -248,21 +249,20 @@
         }
 
         // 3. BUILD THE VISIBILITY DICTIONARY (The Correct Way)
-        _columnVisibility.Clear(); // Ensure it's empty
-        var allProps = typeof(TItem).GetProperties();
+         _columnVisibility.Clear(); // Ensure it's empty
+         var allProps = typeof(TItem).GetProperties();
 
-        foreach (var prop in allProps)
-        {
-            // Skip properties marked with [Browsable(false)]
-            var browsable = prop.GetCustomAttribute<System.ComponentModel.BrowsableAttribute>();
-            if (browsable != null && !browsable.Browsable) continue;
+         foreach (var prop in allProps)
+         {
+             // Skip properties marked with [DisplayField(..., browsable: false)]
+             if (!prop.IsBrowsable()) continue;
 
-            // Determine if it should be visible:
-            // Either it was passed in the 'Columns' parameter OR it's currently being filtered in the URL
-            bool isVisible = Columns != null && Columns.Contains(prop.Name);
+             // Determine if it should be visible:
+             // Either it was passed in the 'Columns' parameter OR it's currently being filtered in the URL
+             bool isVisible = Columns != null && Columns.Contains(prop.Name);
 
-            _columnVisibility[prop.Name] = isVisible;
-        }
+             _columnVisibility[prop.Name] = isVisible;
+         }
     }
 
     public Task ReloadServerData()

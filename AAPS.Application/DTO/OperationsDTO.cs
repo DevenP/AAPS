@@ -1,42 +1,32 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO
 {
     public record OperationsDTO : SesiDTO
     {
-        [Browsable(true)]
-        [Display(Name = "MandateFlag")]
+        [DisplayField("Mandate Flag")]
         public bool MandateFlag { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "ProviderFlag")]
+        [DisplayField("Provider Flag")]
         public bool ProviderFlag { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "BRateFlag")]
+        [DisplayField("Billed Rate Flag")]
         public bool BRateFlag { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "PRateFlag")]
+        [DisplayField("Provider Rate Flag")]
         public bool PRateFlag { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "AssignFlag")]
+        [DisplayField("Assign Flag")]
         public bool AssignFlag { get; set; }
 
-        //
-
-        [Browsable(true)]
-        [Display(Name = "AssignId")]
+        [DisplayField("Assign ID")]
         public string? AssignId { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "FullAddress")]
+        [DisplayField("Full Address")]
         public string? FullAddress { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Ssn")]
+        [DisplayField("SSN")]
         public string? Ssn { get; set; }
     }
 }

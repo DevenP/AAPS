@@ -3,6 +3,7 @@
 @using System.Reflection
 @using System.ComponentModel
 @using System.ComponentModel.DataAnnotations
+@using AAPS.Application.Common.Extensions
 
 <MudDialog>
     <DialogContent>
@@ -100,9 +101,8 @@
         return typeof(TItem).GetProperties()
             .Where(p =>
             {
-                // Check if Browsable(false) is present
-                var browsable = p.GetCustomAttribute<BrowsableAttribute>();
-                if (browsable != null && !browsable.Browsable) return false;
+                // Check if DisplayField(..., browsable: false) is present
+                if (!p.IsBrowsable()) return false;
 
                 // Otherwise, keep our existing type checks
                 return p.PropertyType == typeof(string) ||
@@ -119,15 +119,11 @@
         var prop = typeof(TItem).GetProperty(propertyName);
         if (prop == null) return propertyName;
 
-        // 2. Check for [Display(Name = "")] (from DataAnnotations)
-        var displayAttr = prop.GetCustomAttribute<DisplayAttribute>();
-        if (displayAttr != null) return displayAttr.Name ?? propertyName;
+        // 2. Check for [DisplayField("")] (new custom attribute)
+        var displayName = prop.GetDisplayName();
+        if (!string.IsNullOrEmpty(displayName)) return displayName;
 
-        // 3. Check for [DisplayName("")] (from ComponentModel)
-        var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
-        if (displayNameAttr != null) return displayNameAttr.DisplayName;
-
-        // 4. Fallback to the C# property name if no attribute exists
+        // 3. Fallback to the C# property name if no attribute exists
         return propertyName;
     }
 

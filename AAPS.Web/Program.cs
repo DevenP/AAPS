@@ -5,6 +5,7 @@ using AAPS.Infrastructure;
 using AAPS.Infrastructure.Data;
 using AAPS.Infrastructure.Data.Scaffolded;
 using AAPS.Web.Components;
+using AAPS.Web.Middleware;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Extensions;
 using MudBlazor.Services;
@@ -26,9 +27,10 @@ namespace AAPS.Web
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
+            app.UseMiddleware<GlobalExceptionHandler>();
+
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Error", createScopeForErrors: true);
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
@@ -59,10 +61,11 @@ namespace AAPS.Web
             builder.Services.AddScoped<IAppDbContext>(p =>
                 p.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
             // Services
             builder.Services.AddInfrastructureServices();
+
+            // Error Handling
+            builder.Services.AddScoped<IErrorService, Infrastructure.Services.ErrorService>();
 
             // Packages
             builder.Services.AddMudServices();

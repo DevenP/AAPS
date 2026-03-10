@@ -163,6 +163,7 @@
         var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
         parameters.Add(x => x.Item, model);
         parameters.Add(x => x.Title, provider == null ? "Add New Provider" : "Edit Provider");
+        parameters.Add(x => x.IsNew, provider == null ? true: false);
         parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
 
         // We use the @ref to grab the contacts list later

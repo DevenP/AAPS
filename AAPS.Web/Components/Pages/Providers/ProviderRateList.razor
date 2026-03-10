@@ -1,17 +1,32 @@
 ﻿@page "/providerrates"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Providers.Forms
 @using AAPS.Web.Components.Shared
 @inject IProviderRateService ProviderRateService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
-<GenericGrid TItem="ProviderRateDTO"
+<GenericGrid @ref="_grid" TItem="ProviderRateDTO"
              Title="Provider Rates"
-             Columns="@(new[] { "FirstName", "FirstLast", "ServiceType", "District", "Language", "Rate", "EffectiveDate", "IsActive" })"
+             Columns="@(new[] { "Actions", "ProviderFirstName", "ProviderLastName", "ServiceType", "District", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="ProviderRateService.GetPagedAsync"
              ExportHeaders="@(new[] { "FirstName", "LastName", "Service", "District", "Language", "Rate", "Effective Date", "Active" })"
              ExportMapper="@(r => new object[] { r.ProviderFirstName, r.ProviderLastName, r.ServiceType, r.District, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
 
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add Rate
+        </MudButton>
+    </CustomActionContent>
+
     <HeaderContent>
+        <GridCell TItem="ProviderRateDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="ProviderRateDTO" Column="ProviderFirstName" IsHeader="true">
             <MudTableSortLabel SortLabel="ProviderFirstName" T="ProviderRateDTO">FirstName</MudTableSortLabel>
         </GridCell>
@@ -37,8 +52,21 @@
     </HeaderContent>
 
     <RowTemplate Context="rate">
-        <GridCell TItem="ProviderRateDTO" Column="First Name">@rate.ProviderFirstName</GridCell>
-        <GridCell TItem="ProviderRateDTO" Column="Last Name">@rate.ProviderLastName</GridCell>
+        @* Action Buttons *@
+        <GridCell TItem="ProviderRateDTO" Column="Actions">
+            <div class="d-flex">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small" Color="Color.Primary"
+                               OnClick="@(() => OpenEditDialog(rate))" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small" Color="Color.Error"
+                               OnClick="@(() => OnDeleteClicked(rate))" />
+            </div>
+        </GridCell>
+
+        <GridCell TItem="ProviderRateDTO" Column="ProviderFirstName">@rate.ProviderFirstName</GridCell>
+        <GridCell TItem="ProviderRateDTO" Column="ProviderLastName">@rate.ProviderLastName</GridCell>
         <GridCell TItem="ProviderRateDTO" Column="ServiceType">@rate.ServiceType</GridCell>
         <GridCell TItem="ProviderRateDTO" Column="District">@rate.District</GridCell>
         <GridCell TItem="ProviderRateDTO" Column="Language">@rate.Language</GridCell>
@@ -60,3 +88,91 @@
         </GridCell>
     </RowTemplate>
 </GenericGrid>
+
+@code {
+    private GenericGrid<ProviderRateDTO> _grid;
+    private ProviderRateValidator _validator = new();
+
+    // If 'rate' is passed, it's an EDIT. If it's null, it's an ADD.
+    private async Task OpenEditDialog(ProviderRateDTO? rate = null)
+    {
+        ProviderRateDTO model;
+
+        if (rate == null)
+        {
+            // 1. ADD SCENARIO: Start with a blank object
+            model = new ProviderRateDTO { IsActive = true };
+        }
+        else
+        {
+            // 2. EDIT SCENARIO: Fetch the fresh data
+            model = await ProviderRateService.GetByIdAsync(rate.Id);
+            if (model == null) return;
+        }
+
+        var isNew = rate == null;
+        var parameters = new DialogParameters<EntityDialog<ProviderRateDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, rate == null ? "Add New Rate" : "Edit Rate");
+        parameters.Add(x => x.IsNew, isNew);
+        parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
+        parameters.Add(x => x.ChildContent, (ProviderRateDTO context) =>
+            @<ProviderRateForm Model="context" IsAdd=isNew />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<ProviderRateDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        // 3. THE SAVE LOGIC: Covers both Add and Edit
+        if (!result.Canceled && result.Data is ProviderRateDTO savedDto)
+        {
+            try
+            {
+                if (rate == null)
+                {
+                    // ADD: Create new rate
+                    await ProviderRateService.CreateAsync(savedDto);
+                    Snackbar.Add("Rate added successfully!", Severity.Success);
+                }
+                else
+                {
+                    // EDIT: Update existing rate
+                    await ProviderRateService.UpdateAsync(savedDto.Id, savedDto);
+                    Snackbar.Add("Rate updated successfully!", Severity.Success);
+                }
+
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving rate: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDeleteClicked(ProviderRateDTO rate)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Warning",
+            $"Are you sure you want to delete this rate for {rate.ProviderFirstName} {rate.ProviderLastName}?",
+            yesText: "Delete!", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await ProviderRateService.DeleteAsync(rate.Id);
+                Snackbar.Add("Rate deleted.", Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (InvalidOperationException ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred during deletion.", Severity.Error);
+            }
+        }
+    }
+}
