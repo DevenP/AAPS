@@ -49,7 +49,7 @@ namespace AAPS.Web
             CreateFileExplorerEndpoints(app);
 
             app.Run();
-        }    
+        }
         private static void RegisterDependencies(WebApplicationBuilder builder)
         {
             // 1. Get Connection String
@@ -64,7 +64,7 @@ namespace AAPS.Web
                 p.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
             // Services
-            builder.Services.AddInfrastructureServices();
+            builder.Services.AddInfrastructureServices(builder.Configuration);
 
             // Error Handling
             builder.Services.AddScoped<IErrorService, Infrastructure.Services.ErrorService>();
@@ -133,7 +133,7 @@ namespace AAPS.Web
                 _ => "application/octet-stream"
             };
         }
-        private static void CreateVendorPortalsDataEndpoints(WebApplication app) 
+        private static void CreateVendorPortalsDataEndpoints(WebApplication app)
         {
             app.MapGet("/vendorportals", async (
                 IVendorPortalService service,

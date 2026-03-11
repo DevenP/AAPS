@@ -1,13 +1,17 @@
 ﻿using AAPS.Application.Abstractions.Services;
+using AAPS.Application.Common.Settings;
 using AAPS.Infrastructure.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AAPS.Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
+        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            services.Configure<ImportSettings>(options =>
+                configuration.GetSection("Import").Bind(options));
             services.AddScoped<IGDistrictService, GDistrictService>();
             services.AddScoped<IBillingRateService, BillingRateService>();
             services.AddScoped<IEvalService, EvalService>();
@@ -23,6 +27,7 @@ namespace AAPS.Infrastructure
             services.AddScoped<IVendorPortalService, VendorPortalService>();
 
             services.AddScoped<IFileExplorerService, FileExplorerService>();
+            services.AddScoped<IImportService, ImportService>();
 
             return services;
         }

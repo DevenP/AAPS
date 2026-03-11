@@ -1,0 +1,317 @@
+@using AAPS.Application.Abstractions.Services
+@using System.Text
+@inject IImportService ImportService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<div style="height:calc(100vh - 200px); display:flex; flex-direction:column; overflow:hidden;">
+
+    @* ── Step indicator ── *@
+    <div class="d-flex align-center gap-4 mb-4">
+        <StepBadge Number="1" Label="Upload" Active="@(_step >= 1)" Done="@(_step > 1)" />
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="mud-text-secondary" />
+        <StepBadge Number="2" Label="Preview" Active="@(_step >= 2)" Done="@(_step > 2)" />
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="mud-text-secondary" />
+        <StepBadge Number="3" Label="Done" Active="@(_step >= 3)" Done="@(_step >= 3)" />
+    </div>
+
+    <MudText Typo="Typo.caption" Class="mud-text-secondary mb-4">@Description</MudText>
+
+    @* ── STEP 1: Upload ── *@
+    @if (_step == 1)
+    {
+        <div class="d-flex align-center gap-4">
+            <MudFileUpload T="IBrowserFile" FilesChanged="OnFileSelected" Accept=".xlsx">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.UploadFile"
+                               Disabled="_loading">
+                        Select Excel File
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+
+            @if (_loading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">Parsing file...</MudText>
+            }
+        </div>
+
+        @if (_parseError != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4" Style="white-space:pre-line">@_parseError</MudAlert>
+        }
+    }
+
+    @* ── STEP 2: Preview ── *@
+    @if (_step == 2 && _preview != null)
+    {
+        <div class="d-flex align-center justify-space-between mb-3" style="flex-shrink:0;">
+            <div class="d-flex align-center gap-3">
+                <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircle">
+                    @_preview.ValidRows.Count valid
+                </MudChip>
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Icon="@Icons.Material.Filled.Warning">
+                    @_preview.SkippedRows.Count skipped
+                </MudChip>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                    @_preview.FileName
+                </MudText>
+            </div>
+            <div class="d-flex gap-2">
+                <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="Reset" Disabled="_loading">
+                    Cancel
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="Confirm"
+                           Disabled="_loading || _preview.ValidRows.Count == 0">
+                    @if (_loading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Importing...</span>
+                    }
+                    else
+                    {
+                        <span>Confirm Import (@_preview.ValidRows.Count rows)</span>
+                    }
+                </MudButton>
+            </div>
+        </div>
+
+        @* Preview tabs: Valid / Skipped *@
+        <MudTabs Elevation="0" Rounded="false" @bind-ActivePanelIndex="_previewTab" Style="flex:1; min-height:0; display:flex; flex-direction:column;">
+            <MudTabPanel Text="@($"Valid Rows ({_preview.ValidRows.Count})")" Style="flex:1; min-height:0;">
+                <div style="flex:1; min-height:0; overflow:auto; height:calc(100vh - 380px);">
+                    <MudTable Items="@_preview.ValidRows"
+                              Dense="true"
+                              Hover="true"
+                              Striped="true"
+                              FixedHeader="true"
+                              Height="100%"
+                              Elevation="1">
+                        <HeaderContent>
+                            @foreach (var col in PreviewColumns)
+                            {
+                                <MudTh>@col</MudTh>
+                            }
+                        </HeaderContent>
+                        <RowTemplate>
+                            @foreach (var col in PreviewColumns)
+                            {
+                                <MudTd>
+                                    <MudText Typo="Typo.body2">
+                                        @(context.PreviewColumns.TryGetValue(col, out var v) ? v : "")
+                                    </MudText>
+                                </MudTd>
+                            }
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudAlert Severity="Severity.Info">No valid rows found.</MudAlert>
+                        </NoRecordsContent>
+                    </MudTable>
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Skipped Rows ({_preview.SkippedRows.Count})")" Style="flex:1; min-height:0;">
+                <div class="d-flex justify-end mb-2">
+                    <MudButton StartIcon="@Icons.Material.Filled.Download"
+                               Variant="Variant.Outlined"
+                               Color="Color.Warning"
+                               Size="Size.Small"
+                               Disabled="@(_preview.SkippedRows.Count == 0)"
+                               OnClick="ExportSkipped">
+                        Export Skipped
+                    </MudButton>
+                </div>
+                <div style="flex:1; min-height:0; overflow:auto; height:calc(100vh - 415px);">
+                    <MudTable Items="@_preview.SkippedRows"
+                              Dense="true"
+                              Hover="true"
+                              Striped="true"
+                              FixedHeader="true"
+                              Height="100%"
+                              Elevation="1">
+                        <HeaderContent>
+                            <MudTh>Skip Reason</MudTh>
+                            @foreach (var col in PreviewColumns)
+                            {
+                                <MudTh>@col</MudTh>
+                            }
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small">@context.SkipReason</MudChip>
+                            </MudTd>
+                            @foreach (var col in PreviewColumns)
+                            {
+                                <MudTd>
+                                    <MudText Typo="Typo.body2">
+                                        @(context.PreviewColumns.TryGetValue(col, out var v) ? v : "")
+                                    </MudText>
+                                </MudTd>
+                            }
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudAlert Severity="Severity.Success">No rows were skipped!</MudAlert>
+                        </NoRecordsContent>
+                    </MudTable>
+                </div>
+            </MudTabPanel>
+        </MudTabs>
+    }
+
+    @* ── STEP 3: Done ── *@
+    @if (_step == 3 && _result != null)
+    {
+        <div class="d-flex flex-column align-center justify-center" style="flex:1;">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size:4rem;" Class="mb-4" />
+            <MudText Typo="Typo.h6" Class="mb-2">Import Complete</MudText>
+
+            @if (ImportType == ImportType.Payments)
+            {
+                <MudText Typo="Typo.body1" Class="mb-1">
+                    <b>@_result.Updated</b> Provider Billing records updated with payment info
+                </MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+                    @_result.Skipped rows had no matching Provider Billing record
+                </MudText>
+                @if (_result.Updated == 0)
+                {
+                    <MudAlert Severity="Severity.Warning" Class="mb-4">
+                        No Provider Billing records were matched. Check that the correct file was uploaded and that sessions have been imported first.
+                    </MudAlert>
+                }
+            }
+            else
+            {
+                <MudText Typo="Typo.body1" Class="mb-1">
+                    <b>@_result.Inserted</b> rows inserted successfully
+                </MudText>
+                @if (_result.Skipped > 0)
+                {
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-1">
+                        @_result.Skipped rows were skipped (duplicates or missing required fields)
+                    </MudText>
+                }
+                <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+                    File archived to server.
+                </MudText>
+            }
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Reset">
+                Import Another File
+            </MudButton>
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter] public ImportType ImportType { get; set; }
+    [Parameter] public string Description { get; set; } = "";
+    [Parameter] public string[] PreviewColumns { get; set; } = [];
+    [Parameter] public EventCallback OnImported { get; set; }
+
+    private int _step = 1;
+    private int _previewTab = 0;
+    private bool _loading = false;
+    private string? _parseError;
+    private ImportPreviewResult? _preview;
+    private ImportCommitResult? _result;
+
+    private async Task OnFileSelected(IBrowserFile file)
+    {
+        _parseError = null;
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            const long maxSize = 50 * 1024 * 1024; // 50MB
+            using var stream = file.OpenReadStream(maxSize);
+            _preview = await ImportService.ParseAsync(ImportType, file.Name, stream);
+            _step = 2;
+
+            // Auto-switch to skipped tab if no valid rows
+            _previewTab = _preview.ValidRows.Count == 0 ? 1 : 0;
+
+            if (_preview.ValidRows.Count == 0 && _preview.SkippedRows.Count == 0)
+            {
+                _parseError = "The file appears to be empty or has no data rows.";
+                _step = 1;
+            }
+        }
+        catch (Exception ex)
+        {
+            _parseError = $"Failed to parse file: {ex.Message}";
+            _step = 1;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Confirm()
+    {
+        if (_preview == null) return;
+
+        _loading = true;
+        StateHasChanged();
+        await Task.Delay(1); // yield to renderer so spinner appears before heavy work
+
+        try
+        {
+            _result = await ImportService.CommitAsync(ImportType, _preview);
+            await ImportService.ArchiveFileAsync(ImportType, _preview.FileName, _preview.FileBytes);
+            _step = 3;
+            await OnImported.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Import failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _step = 1;
+        _previewTab = 0;
+        _preview = null;
+        _result = null;
+        _parseError = null;
+        _loading = false;
+    }
+
+    private async Task ExportSkipped()
+    {
+        if (_preview == null || _preview.SkippedRows.Count == 0) return;
+
+        var sb = new StringBuilder();
+
+        // Header row: Skip Reason + all preview columns
+        var headers = new[] { "Skip Reason" }.Concat(PreviewColumns);
+        sb.AppendLine(string.Join(",", headers.Select(h => $"\"{h}\"")));
+
+        // Data rows
+        foreach (var row in _preview.SkippedRows)
+        {
+            var values = new[] { row.SkipReason ?? "" }
+                .Concat(PreviewColumns.Select(col =>
+                    row.PreviewColumns.TryGetValue(col, out var v) ? (v ?? "") : ""))
+                .Select(v => $"\"{v?.Replace("\"", "\"\"")}\"");
+            sb.AppendLine(string.Join(",", values));
+        }
+
+        var fileName = $"skipped_{Path.GetFileNameWithoutExtension(_preview.FileName)}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", Encoding.UTF8.GetBytes(sb.ToString()));
+    }
+}

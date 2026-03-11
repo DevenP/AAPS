@@ -1,0 +1,35 @@
+@* Small numbered step indicator *@
+
+<div class="d-flex align-center gap-1">
+    <div style="@GetCircleStyle() width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600;">
+        @if (Done)
+        {
+            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Style="color:white;" />
+        }
+        else
+        {
+            @Number
+        }
+    </div>
+    <MudText Typo="Typo.body2" Style="@GetLabelStyle()">@Label</MudText>
+</div>
+
+@code {
+    [Parameter] public int Number { get; set; }
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public bool Done { get; set; }
+
+    private string GetCircleStyle()
+    {
+        if (Done) return "background:var(--mud-palette-success); color:white;";
+        if (Active) return "background:var(--mud-palette-primary); color:white;";
+        return "background:var(--mud-palette-action-disabled-background); color:var(--mud-palette-text-secondary);";
+    }
+
+    private string GetLabelStyle()
+    {
+        if (Active || Done) return "font-weight:600;";
+        return "opacity:0.5;";
+    }
+}

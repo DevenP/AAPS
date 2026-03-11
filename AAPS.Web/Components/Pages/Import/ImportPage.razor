@@ -1,0 +1,65 @@
+@page "/import"
+@using AAPS.Application.Abstractions.Services
+@inject IImportService ImportService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-4 d-flex flex-column" Elevation="0" Style="height:calc(100vh - 80px); overflow:hidden;">
+
+    <div class="d-flex align-center mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Upload" Color="Color.Primary" Size="Size.Large" Class="mr-2" />
+        <MudText Typo="Typo.h5">Import Files</MudText>
+    </div>
+
+    <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-4" @bind-ActivePanelIndex="_activeTab">
+
+        @* ── MANDATES TAB ── *@
+        <MudTabPanel Text="Approvals" Icon="@Icons.Material.Filled.Assignment">
+            <ImportTabPanel ImportType="ImportType.Mandates"
+                            Description="Mandate Detail export (.xlsx). Data starts at row 4."
+                            PreviewColumns="@_mandatePreviewCols"
+                            OnImported="OnImported" />
+        </MudTabPanel>
+
+        @* ── SESIS TAB ── *@
+        <MudTabPanel Text="Provider Billing" Icon="@Icons.Material.Filled.EventNote">
+            <ImportTabPanel ImportType="ImportType.Sesis"
+                            Description="Sesis sessions export (.xlsx). Data starts at row 2. Only 'Service Provided' sessions are imported."
+                            PreviewColumns="@_sesisPreviewCols"
+                            OnImported="OnImported" />
+        </MudTabPanel>
+
+        @* ── VENDOR PORTAL TAB ── *@
+        <MudTabPanel Text="Vendor Portal" Icon="@Icons.Material.Filled.Business">
+            <ImportTabPanel ImportType="ImportType.VendorPortal"
+                            Description="Vendor Portal CAFS report (.xlsx). One row per unique Assignment ID is imported."
+                            PreviewColumns="@_vendorPreviewCols"
+                            OnImported="OnImported" />
+        </MudTabPanel>
+
+        @* ── PAYMENTS TAB ── *@
+        <MudTabPanel Text="Voucher Payments" Icon="@Icons.Material.Filled.Payment">
+            <ImportTabPanel ImportType="ImportType.Payments"
+                            Description="Payment Detail Report (.xlsx). Updates existing Provider Billing records with voucher and payment date."
+                            PreviewColumns="@_paymentsPreviewCols"
+                            OnImported="OnImported" />
+        </MudTabPanel>
+
+    </MudTabs>
+
+</MudPaper>
+
+@code {
+    private int _activeTab = 0;
+
+    // Preview column keys to display in the preview table for each import type
+    private static readonly string[] _mandatePreviewCols = ["Row #", "Student ID", "Last Name", "First Name", "DOB", "Service Type", "Language", "Grp Size", "Duration", "Remaining Freq", "Provider", "First Attend Date", "Mandate ID"];
+    private static readonly string[] _sesisPreviewCols = ["Row #", "Student ID", "Last Name", "First Name", "DOB", "Admin DBN", "Service Type", "Language", "Session Type", "Date of Service", "Duration", "Provider Last", "Provider First"];
+    private static readonly string[] _vendorPreviewCols = ["Row #", "Assign ID", "Student ID", "Boro", "District", "Duration", "Freq", "Grp Size", "Start Date", "SSN (col11)"];
+    private static readonly string[] _paymentsPreviewCols = ["Row #", "Voucher", "Student ID", "SSN", "Provider", "Date of Service", "Start Time"];
+
+    private void OnImported()
+    {
+        // Could reload logs or notify parent — for now just a hook
+    }
+}
