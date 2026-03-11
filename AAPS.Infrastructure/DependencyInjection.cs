@@ -22,6 +22,8 @@ namespace AAPS.Infrastructure
 
             services.AddScoped<IVendorPortalService, VendorPortalService>();
 
+            services.AddScoped<IFileExplorerService, FileExplorerService>();
+
             return services;
         }
     }

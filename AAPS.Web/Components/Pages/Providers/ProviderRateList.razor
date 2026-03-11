@@ -115,7 +115,13 @@
         parameters.Add(x => x.Item, model);
         parameters.Add(x => x.Title, rate == null ? "Add New Rate" : "Edit Rate");
         parameters.Add(x => x.IsNew, isNew);
-        parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (ProviderRateDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
+        // Keep passing ValidateValue for per-field display:
+        parameters.Add(x => x.Validator, _validator.ValidateValue); parameters.Add(x => x.Validator, _validator.ValidateValue);
         parameters.Add(x => x.ChildContent, (ProviderRateDTO context) =>
             @<ProviderRateForm Model="context" IsAdd=isNew />);
 

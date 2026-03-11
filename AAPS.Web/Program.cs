@@ -46,6 +46,8 @@ namespace AAPS.Web
 
             CreateVendorPortalsDataEndpoints(app);
 
+            CreateFileExplorerEndpoints(app);
+
             app.Run();
         }    
         private static void RegisterDependencies(WebApplicationBuilder builder)
@@ -72,6 +74,65 @@ namespace AAPS.Web
 
         }
 
+        private static void CreateFileExplorerEndpoints(WebApplication app)
+        {
+            // Download endpoint — streams the file as an attachment
+            app.MapGet("/files/download", (string path, IFileExplorerService fileService) =>
+            {
+                if (!fileService.IsPathSafe(path))
+                    return Results.Forbid();
+
+                var absolute = fileService.GetAbsolutePath(path);
+                if (!File.Exists(absolute))
+                    return Results.NotFound();
+
+                var fileName = System.IO.Path.GetFileName(absolute);
+                var contentType = GetContentType(fileName);
+                var stream = File.OpenRead(absolute);
+
+                return Results.File(stream, contentType, fileName);
+            });
+
+            // Preview endpoint — serves the file inline (for iframe/img tags)
+            app.MapGet("/files/preview", (string path, IFileExplorerService fileService) =>
+            {
+                if (!fileService.IsPathSafe(path))
+                    return Results.Forbid();
+
+                var absolute = fileService.GetAbsolutePath(path);
+                if (!File.Exists(absolute))
+                    return Results.NotFound();
+
+                var fileName = System.IO.Path.GetFileName(absolute);
+                var contentType = GetContentType(fileName);
+                var stream = File.OpenRead(absolute);
+
+                // Return inline so browser renders it instead of downloading
+                return Results.File(stream, contentType, enableRangeProcessing: true);
+            });
+        }
+
+        private static string GetContentType(string fileName)
+        {
+            return System.IO.Path.GetExtension(fileName).ToLower() switch
+            {
+                ".pdf" => "application/pdf",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".bmp" => "image/bmp",
+                ".webp" => "image/webp",
+                ".txt" => "text/plain",
+                ".md" => "text/plain",
+                ".csv" => "text/csv",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".xls" => "application/vnd.ms-excel",
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".zip" => "application/zip",
+                _ => "application/octet-stream"
+            };
+        }
         private static void CreateVendorPortalsDataEndpoints(WebApplication app) 
         {
             app.MapGet("/vendorportals", async (

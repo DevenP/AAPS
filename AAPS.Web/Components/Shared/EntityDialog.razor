@@ -11,7 +11,7 @@
     <DialogContent>
         @* Ensure we pass the Validator down so the Form can see it *@
         <CascadingValue Value="Validator">
-            <MudForm @ref="_form" Validation="@Validator">
+            <MudForm @ref="_form">
                 @* This is the line that actually renders the ProviderForm! *@
                 @if (Item != null)
                 {
@@ -26,7 +26,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -35,7 +35,8 @@
     [Parameter] public TItem Item { get; set; }
     [Parameter] public string Title { get; set; }
     [Parameter] public bool IsNew { get; set; }
-    [Parameter] public object Validator { get; set; } // The FluentValidator
+    [Parameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; }
+    [Parameter] public Func<TItem, Task<IList<string>>> ValidateModel { get; set; }
     [Parameter] public RenderFragment<TItem> ChildContent { get; set; }
 
     private MudForm _form;
@@ -43,8 +44,23 @@
     private async Task Submit()
     {
         await _form.Validate();
-        if (_form.IsValid) MudDialog.Close(DialogResult.Ok(Item));
-        else Snackbar.Add("Please fix validation errors", Severity.Error);
+        StateHasChanged();
+
+        var errors = ValidateModel != null
+            ? await ValidateModel(Item)
+            : new List<string>();
+
+        if (errors.Count == 0)
+        {
+            MudDialog.Close(DialogResult.Ok(Item));
+        }
+        else
+        {
+            foreach (var error in errors)
+                Snackbar.Add(error, Severity.Warning);
+
+            Snackbar.Add("Please fix the errors above before saving.", Severity.Error);
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();

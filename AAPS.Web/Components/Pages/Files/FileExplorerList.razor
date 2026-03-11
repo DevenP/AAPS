@@ -1,0 +1,443 @@
+@page "/fileexplorer"
+
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+
+@inject IFileExplorerService FileExplorerService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-4 d-flex flex-column" Elevation="0" Style="height:calc(100vh - 80px)">
+
+    @* ── Header ── *@
+    <div class="d-flex align-center justify-space-between mb-4">
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h5">File Explorer</MudText>
+        </div>
+
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFilesUploaded" Multiple="true">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Upload"
+                           Size="Size.Small">
+                    Upload Files
+                </MudButton>
+            </ActivatorContent>
+        </MudFileUpload>
+    </div>
+
+    @* ── Breadcrumbs ── *@
+    <div class="d-flex align-center gap-1 mb-4 flex-wrap">
+        @for (int i = 0; i < _breadcrumbs.Count; i++)
+        {
+            var crumb = _breadcrumbs[i];
+            var isLast = i == _breadcrumbs.Count - 1;
+            var capturedPath = crumb.RelativePath;
+
+            @if (i > 0)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Class="mud-text-secondary" />
+            }
+
+            @if (isLast)
+            {
+                <MudText Typo="Typo.body2"><b>@crumb.Label</b></MudText>
+            }
+            else
+            {
+                <MudLink Typo="Typo.body2" OnClick="@(() => Navigate(capturedPath))" Style="cursor:pointer">
+                    @if (i == 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Home"
+                                 Size="Size.Small"
+                                 Style="vertical-align:middle; margin-right:2px" />
+                    }
+                    @crumb.Label
+                </MudLink>
+            }
+        }
+    </div>
+
+    @* ── Error ── *@
+    @if (_error != null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+    }
+
+    @* ── Table / Content Area ── *@
+    <div style="position:relative; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
+
+        @* Loading overlay *@
+        @if (_loading)
+        {
+            <div style="position:absolute;
+                            inset:0;
+                            z-index:20;
+                            background:rgba(var(--mud-palette-background-rgb),0.7);
+                            display:flex;
+                            flex-direction:column;
+                            align-items:center;
+                            justify-content:center;
+                            gap:12px;
+                            border-radius:4px;">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">Loading...</MudText>
+            </div>
+        }
+
+        @* Table container *@
+        <div style="flex:1; min-height:0; overflow:hidden; background:var(--mud-palette-surface);">
+            <MudTable Items="@PagedItems"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="1"
+                      FixedHeader="true"
+                      Height="100%"
+                      T="FileExplorerItem"
+                      Style="@($"height:100%; background:var(--mud-palette-surface); {(_loading ? "pointer-events:none; opacity:0.4;" : "")}")">
+
+                <ToolBarContent>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        @_items.Count(i => i.IsFolder) folder(s) &nbsp;·&nbsp; @_items.Count(i => !i.IsFolder) file(s)
+                    </MudText>
+
+                    <MudSpacer />
+
+                    <MudTextField Value="_search"
+                                  ValueChanged="@((string s) => { _search = s; _page = 0; })"
+                                  Placeholder="Filter by name..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Small"
+                                  Clearable="true"
+                                  Immediate="true"
+                                  Margin="Margin.Dense"
+                                  Class="mt-0" />
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh Style="width:100px"></MudTh>
+                    <MudTh Style="width:36px"></MudTh>
+
+                    <MudTh Style="cursor:pointer; user-select:none;" @onclick="@(() => SetSort("Name"))">
+                        <div class="d-flex align-center gap-1">
+                            Name
+                            @if (_sortField == "Name")
+                            {
+                                <MudIcon Icon="@(_sortAscending? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward)"
+                                         Size="Size.Small" />
+                            }
+                        </div>
+                    </MudTh>
+
+                    <MudTh Style="width:170px; cursor:pointer; user-select:none;" @onclick="@(() => SetSort("Modified"))">
+                        <div class="d-flex align-center gap-1">
+                            Modified
+                            @if (_sortField == "Modified")
+                            {
+                                <MudIcon Icon="@(_sortAscending? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward)"
+                                         Size="Size.Small" />
+                            }
+                        </div>
+                    </MudTh>
+
+                    <MudTh Style="width:100px">Size</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd>
+                        <div class="d-flex gap-1">
+                            @if (!context.IsFolder && context.IsPreviewable)
+                            {
+                                <MudTooltip Text="Preview">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                   Size="Size.Small"
+                                                   Color="Color.Info"
+                                                   OnClick="@(() => OpenPreview(context))" />
+                                </MudTooltip>
+                            }
+
+                            @if (!context.IsFolder)
+                            {
+                                <MudTooltip Text="Download">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Download"
+                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
+                                                   OnClick="@(() => DownloadFile(context))" />
+                                </MudTooltip>
+
+                                <MudTooltip Text="Delete File">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Size="Size.Small"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => ConfirmDelete(context))" />
+                                </MudTooltip>
+                            }
+                        </div>
+                    </MudTd>
+
+                    <MudTd>
+                        <MudIcon Icon="@context.Icon"
+                                 Color="@(context.IsFolder ? Color.Warning : Color.Default)"
+                                 Size="Size.Small" />
+                    </MudTd>
+
+                    <MudTd>
+                        @if (context.IsFolder)
+                        {
+                            <MudLink OnClick="@(() => Navigate(context.RelativePath))"
+                                     Underline="Underline.Hover"
+                                     Style="cursor:pointer; font-weight:500">
+                                @context.Name
+                            </MudLink>
+                        }
+                        else
+                        {
+                            <span>@context.Name</span>
+                        }
+                    </MudTd>
+
+                    <MudTd>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                            @context.LastModified.ToString("MM/dd/yyyy hh:mm tt")
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                            @context.SizeDisplay
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <MudText Class="pa-6 mud-text-secondary d-flex justify-center">
+                        @(string.IsNullOrWhiteSpace(_search) ? "This folder is empty." : "No files match your filter.")
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </div>
+
+        @* ── Pagination ── *@
+        @if (TotalPages > 1)
+        {
+            <div class="d-flex align-center justify-space-between px-3"
+                 style="padding:10px 12px;
+                            border-top:1px solid var(--mud-palette-divider);
+                            background:var(--mud-palette-surface);
+                            position:relative;
+                            z-index:5;
+                            flex-shrink:0;">
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                    Showing @((_page * _pageSize) + 1)–@(Math.Min((_page + 1) * _pageSize, SortedFilteredItems.Count()))
+                    of @SortedFilteredItems.Count()
+                </MudText>
+
+                <div class="d-flex align-center gap-2">
+                    <MudSelect T="int"
+                               Value="_pageSize"
+                               ValueChanged="OnPageSizeChanged"
+                               Dense="true"
+                               Margin="Margin.Dense"
+                               Style="width:80px; background:var(--mud-palette-surface);">
+                        <MudSelectItem Value="25">25</MudSelectItem>
+                        <MudSelectItem Value="50">50</MudSelectItem>
+                        <MudSelectItem Value="100">100</MudSelectItem>
+                    </MudSelect>
+
+                    <MudPagination Count="TotalPages"
+                                   Selected="@(_page + 1)"
+                                   SelectedChanged="@(p => _page = p - 1)"
+                                   BoundaryCount="1"
+                                   MiddleCount="3"
+                                   ShowFirstButton="true"
+                                   ShowLastButton="true"
+                                   Size="Size.Small" />
+                </div>
+            </div>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private string _currentPath = "";
+    private List<FileExplorerItem> _items = new();
+    private List<Application.DTO.BreadcrumbItem> _breadcrumbs = new();
+    private bool _loading = true;
+    private string? _error;
+    private string _search = "";
+
+    // Sorting
+    private string _sortField = "Name";
+    private bool _sortAscending = true;
+
+    // Paging
+    private int _page = 0;
+    private int _pageSize = 25;
+
+    private IEnumerable<FileExplorerItem> SortedFilteredItems
+    {
+        get
+        {
+            var query = string.IsNullOrWhiteSpace(_search)
+                ? _items.AsEnumerable()
+                : _items.Where(i => i.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+            // Folders always first, then sort within each group
+            query = _sortField switch
+            {
+                "Modified" => _sortAscending
+                    ? query.OrderBy(i => !i.IsFolder).ThenBy(i => i.LastModified)
+                    : query.OrderBy(i => !i.IsFolder).ThenByDescending(i => i.LastModified),
+
+                _ => _sortAscending
+                    ? query.OrderBy(i => !i.IsFolder).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+                    : query.OrderBy(i => !i.IsFolder).ThenByDescending(i => i.Name, StringComparer.OrdinalIgnoreCase)
+            };
+
+            return query;
+        }
+    }
+
+    private IEnumerable<FileExplorerItem> PagedItems =>
+        SortedFilteredItems.Skip(_page * _pageSize).Take(_pageSize);
+
+    private int TotalPages =>
+        (int)Math.Ceiling(SortedFilteredItems.Count() / (double)_pageSize);
+
+    protected override async Task OnInitializedAsync() => await LoadFolder("");
+
+    private async Task LoadFolder(string relativePath)
+    {
+        _loading = true;
+        _error = null;
+        _search = "";
+        _page = 0;
+
+        StateHasChanged();
+
+        // Small yield so Blazor renders the overlay before the sync disk scan blocks
+        await Task.Delay(1);
+
+        try
+        {
+            var result = await Task.Run(() => FileExplorerService.GetContents(relativePath));
+            _currentPath = relativePath;
+            _items = result.Items;
+            _breadcrumbs = result.Breadcrumbs;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SetSort(string field)
+    {
+        if (_sortField == field)
+            _sortAscending = !_sortAscending;
+        else
+        {
+            _sortField = field;
+            _sortAscending = true;
+        }
+
+        _page = 0;
+        _loading = true;
+
+        StateHasChanged();
+        await Task.Delay(1);
+
+        _loading = false;
+    }
+
+    private void OnPageSizeChanged(int size)
+    {
+        _pageSize = size;
+        _page = 0;
+    }
+
+    private async Task Navigate(string relativePath) => await LoadFolder(relativePath);
+
+    private async Task OnFilesUploaded(IReadOnlyList<IBrowserFile> files)
+    {
+        if (files == null || files.Count == 0)
+            return;
+
+        const long maxFileSizeBytes = 100 * 1024 * 1024;
+        var uploaded = 0;
+
+        foreach (var file in files)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream(maxFileSizeBytes);
+                await FileExplorerService.SaveUploadedFileAsync(_currentPath, file.Name, stream);
+                uploaded++;
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed: {file.Name} — {ex.Message}", Severity.Error);
+            }
+        }
+
+        if (uploaded > 0)
+            Snackbar.Add($"{uploaded} file(s) uploaded.", Severity.Success);
+
+        await LoadFolder(_currentPath);
+    }
+
+    private async Task DownloadFile(FileExplorerItem item)
+    {
+        var url = $"/files/download?path={Uri.EscapeDataString(item.RelativePath)}";
+        await JS.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private async Task OpenPreview(FileExplorerItem item)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Item", item },
+            { "FileExplorerService", (IFileExplorerService)FileExplorerService }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        await DialogService.ShowAsync<FilePreviewDialog>(item.Name, parameters, options);
+    }
+
+    private async Task ConfirmDelete(FileExplorerItem item)
+    {
+        bool? confirm = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Delete \"{item.Name}\"?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm != true)
+            return;
+
+        try
+        {
+            FileExplorerService.DeleteFile(item.RelativePath);
+            Snackbar.Add($"Deleted \"{item.Name}\".", Severity.Success);
+            await LoadFolder(_currentPath);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Delete failed: {ex.Message}", Severity.Error);
+        }
+    }
+}

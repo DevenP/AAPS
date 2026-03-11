@@ -29,7 +29,17 @@
                 </MudAutocomplete>
             </MudItem>
         }
-
+        @* Add this right after the MudAutocomplete MudItem, always visible *@
+        @if (IsAdd)
+        {
+            <MudItem xs="12">
+                <MudTextField T="int?" Value="Model.ProviderId"
+                              Label="Provider (hidden validation)"
+                              Validation="@Validator"
+                              For="@(() => Model.ProviderId)"
+                              Style="display:none" />
+            </MudItem>
+        }
 
         <MudItem xs="12" sm="6">
             <MudTextField @bind-Value="Model.ProviderId"
@@ -42,21 +52,24 @@
             <MudTextField @bind-Value="Model.ProviderFirstName"
                           Label="Provider First Name"
                           ReadOnly="true"
-                          Disabled="true" />
+                          Disabled="true" 
+                          Required/>
         </MudItem>
 
         <MudItem xs="12" sm="6">
             <MudTextField @bind-Value="Model.ProviderLastName"
                           Label="Provider Last Name"
                           ReadOnly="true"
-                          Disabled="true" />
+                          Disabled="true" 
+                          Required />
         </MudItem>
 
         <MudItem xs="12" sm="6">
             <MudTextField @bind-Value="Model.ServiceType"
                           Label="Service Type"
                           Validation="@Validator"
-                          For="@(() => Model.ServiceType)" />
+                          For="@(() => Model.ServiceType)" 
+                          Required />
         </MudItem>
 
         <MudItem xs="12" sm="6">
@@ -84,7 +97,8 @@
         </MudItem>
 
         <MudItem xs="12" sm="6">
-            <MudDatePicker @bind-Date="_effectiveDate"
+            <MudDatePicker Date="_effectiveDate"
+                           DateChanged="@(d => { _effectiveDate = d; Model.EffectiveDate = d; })"
                            Label="Effective Date"
                            Validation="@Validator"
                            For="@(() => Model.EffectiveDate)" />
@@ -106,7 +120,7 @@
     public bool IsAdd { get; set; }
 
     [CascadingParameter]
-    public object Validator { get; set; }
+    public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; }
 
     private DateTime? _effectiveDate;
     private ProviderDTO _selectedProvider;
@@ -163,14 +177,6 @@
             Model.ProviderFirstName = provider.FirstName;
             Model.ProviderLastName = provider.LastName;
             _selectedProvider = provider;
-        }
-    }
-
-    protected override void OnParametersSet()
-    {
-        if (Model != null && Model.EffectiveDate != _effectiveDate)
-        {
-            Model.EffectiveDate = _effectiveDate;
         }
     }
 }

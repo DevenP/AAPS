@@ -164,7 +164,12 @@
         parameters.Add(x => x.Item, model);
         parameters.Add(x => x.Title, provider == null ? "Add New Provider" : "Edit Provider");
         parameters.Add(x => x.IsNew, provider == null ? true: false);
-        parameters.Add(x => x.Validator, (object)_validator.ValidateValue);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (ProviderDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
 
         // We use the @ref to grab the contacts list later
         parameters.Add(x => x.ChildContent, (ProviderDTO context) =>

@@ -25,13 +25,18 @@
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="Model.FirstName"
                                   Label="First Name"
+                                  Required
                                   ReadOnly="@IsLocked(nameof(Model.FirstName))" />
                 </MudItem>
             }
 
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="Model.LastName" Label="Last Name"
-                              Validation="@(Validator)" For="@(() => Model.LastName)" Immediate="true" />
+                <MudTextField @bind-Value="Model.LastName"
+                              Label="Last Name"
+                              Validation="@(Validator)" 
+                              For="@(() => Model.LastName)"
+                             
+                              Required />
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.Ssn"
@@ -42,7 +47,8 @@
                               For="@(() => Model.Ssn)"
                               Immediate="true"
                               Clearable="true"
-                              Margin="Margin.None" />
+                              Margin="Margin.None" 
+                              Required/>
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.TaxId" Label="Tax ID"
@@ -145,7 +151,7 @@
 
     public List<ProviderContactDTO> contacts = new();
 
-    [CascadingParameter] public object Validator { get; set; }
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

@@ -29,26 +29,32 @@ public class GlobalExceptionHandler
         }
     }
 
-    private Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         _logger.LogError(exception, "An unhandled exception occurred");
 
-        // Resolve scoped service from the request's service provider
-        var errorService = context.RequestServices.GetRequiredService<IErrorService>();
-        errorService.LogError(exception, "An error occurred processing your request", "Request Processing");
+        var isApiRequest = context.Request.Path.StartsWithSegments("/vendorportals")
+            || context.Request.Path.StartsWithSegments("/files/download")
+            || context.Request.Path.StartsWithSegments("/files/preview")
+            || context.Request.Headers["Accept"].Any(h => h!.Contains("application/json"));
+
+        if (!isApiRequest)
+        {
+            // Re-execute through Blazor's error page instead
+            context.Response.Redirect("/error");
+            return;
+        }
 
         context.Response.ContentType = "application/json";
         var (statusCode, message) = GetResponseDetails(exception);
         context.Response.StatusCode = statusCode;
 
-        var response = new
+        await context.Response.WriteAsJsonAsync(new
         {
             success = false,
-            message = message,
+            message,
             timestamp = DateTime.UtcNow
-        };
-
-        return context.Response.WriteAsJsonAsync(response);
+        });
     }
 
     private static (int statusCode, string message) GetResponseDetails(Exception exception)
