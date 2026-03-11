@@ -166,7 +166,7 @@ public class ProviderService : IProviderService
         return await _db.SaveChangesAsync(ct) > 0;
     }
 
-    public async Task<bool> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts)
+    public async Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts)
     {
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -216,12 +216,12 @@ public class ProviderService : IProviderService
 
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
-            return true;
+            return providerId;
         }
         catch
         {
             await transaction.RollbackAsync();
-            return false;
+            return 0;
         }
     }
 

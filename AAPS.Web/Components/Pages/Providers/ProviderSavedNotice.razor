@@ -1,0 +1,23 @@
+@* Custom snackbar shown after a new provider is created.
+   Gives the user a one-click path to reopen the profile and upload files. *@
+
+<div class="d-flex flex-column gap-1">
+    <MudText Typo="Typo.body2"><b>@ProviderName</b> was added successfully.</MudText>
+    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+        Open their profile to upload documents and files.
+    </MudText>
+    <MudButton Size="Size.Small"
+               Variant="Variant.Text"
+               Color="Color.Surface"
+               StartIcon="@Icons.Material.Filled.FolderOpen"
+               OnClick="OnOpenFiles"
+               Class="mt-1 pa-0"
+               Style="justify-content:flex-start; min-width:0;">
+        Open Profile &amp; Upload Files
+    </MudButton>
+</div>
+
+@code {
+    [Parameter] public string ProviderName { get; set; } = "";
+    [Parameter] public EventCallback OnOpenFiles { get; set; }
+}

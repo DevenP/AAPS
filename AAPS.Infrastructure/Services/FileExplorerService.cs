@@ -8,11 +8,19 @@ namespace AAPS.Infrastructure.Services
     {
         private readonly string _rootPath;
 
-        public FileExplorerService(IConfiguration config)
+        // Used by DI when registering with a specific root path (e.g. provider files)
+        public FileExplorerService(string rootPath)
         {
-            // Set your root folder path in appsettings.json: "FileExplorer:RootPath": "C:\\YourFolder"
-            _rootPath = config["FileExplorer:RootPath"]
-                ?? throw new InvalidOperationException("FileExplorer:RootPath is not configured in appsettings.json");
+            if (string.IsNullOrWhiteSpace(rootPath))
+                throw new InvalidOperationException("FileExplorerService root path cannot be empty.");
+            _rootPath = rootPath;
+        }
+
+        // Used by DI when reading from appsettings (general file explorer)
+        public FileExplorerService(IConfiguration config)
+            : this(config["FileExplorer:RootPath"]
+                   ?? throw new InvalidOperationException("FileExplorer:RootPath is not configured in appsettings.json"))
+        {
         }
 
         public bool IsPathSafe(string relativePath)
@@ -95,7 +103,7 @@ namespace AAPS.Infrastructure.Services
                 counter++;
             }
 
-            using var fs = new FileStream(destPath, FileMode.Create);
+            using var fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await content.CopyToAsync(fs);
 
             return Path.GetFileName(destPath);

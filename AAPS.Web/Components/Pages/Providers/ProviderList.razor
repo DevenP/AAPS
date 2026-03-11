@@ -13,7 +13,7 @@
              GetData="ProviderService.GetPagedAsync"
              ExportHeaders="@(new[] { "Id", "IsActive", "FirstName", "LastName", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
              ExportMapper="@(p => new object[] { p.Id, p.IsActive, p.FirstName, p.LastName, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
-    
+
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -92,11 +92,11 @@
                 <MudTooltip Text="Possible Duplicate Name Found">
                     <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" Class="mr-1" />
                 </MudTooltip>
-                
+
             }
 
             <MudTooltip Text="@provider.LastName">@provider.LastName</MudTooltip>
-            
+
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="AssignedCount">
             <MudChip T="int" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">@provider.AssignedCount</MudChip>
@@ -163,7 +163,7 @@
         var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
         parameters.Add(x => x.Item, model);
         parameters.Add(x => x.Title, provider == null ? "Add New Provider" : "Edit Provider");
-        parameters.Add(x => x.IsNew, provider == null ? true: false);
+        parameters.Add(x => x.IsNew, provider == null ? true : false);
         parameters.Add(x => x.Validator, _validator.ValidateValue);
         parameters.Add(x => x.ValidateModel, async (ProviderDTO dto) =>
         {
@@ -182,18 +182,38 @@
         // 3. THE SAVE LOGIC: Covers both Add and Edit
         if (!result.Canceled && result.Data is ProviderDTO savedDto)
         {
-            // Capture the list immediately.
-            // If _providerForm is null here, it means the ref didn't bind.
             var contacts = _providerForm?.contacts ?? new List<ProviderContactDTO>();
+            var isNew = provider == null;
 
-            // DEBUG HINT: If you put a breakpoint here, check if 'contacts' has any items
-            var success = await ProviderService.UpdateWithContactsAsync(savedDto, contacts);
+            // Returns the provider ID (new or existing), or 0 on failure
+            var savedId = await ProviderService.UpdateWithContactsAsync(savedDto, contacts);
 
-            if (success)
+            if (savedId > 0)
             {
-                Snackbar.Add("Saved successfully!", Severity.Success);
                 await _grid.ReloadServerData();
-                _providerForm = null; // Reset the ref for the next use
+                _providerForm = null;
+
+                if (isNew)
+                {
+                    // Prompt user to reopen and upload files — stays visible 8 seconds
+                    Snackbar.Add<ProviderSavedNotice>(
+                        new Dictionary<string, object>
+                        {
+                            { "ProviderName", $"{savedDto.FirstName} {savedDto.LastName}" },
+                            { "OnOpenFiles", EventCallback.Factory.Create(this, async () =>
+                                await OpenEditDialog(await ProviderService.GetByIdAsync(savedId))) }
+                        },
+                        Severity.Success,
+                        config =>
+                        {
+                            config.VisibleStateDuration = 8000;
+                            config.HideTransitionDuration = 500;
+                        });
+                }
+                else
+                {
+                    Snackbar.Add("Saved successfully!", Severity.Success);
+                }
             }
         }
     }

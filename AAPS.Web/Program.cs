@@ -6,6 +6,7 @@ using AAPS.Infrastructure.Data;
 using AAPS.Infrastructure.Data.Scaffolded;
 using AAPS.Web.Components;
 using AAPS.Web.Middleware;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Extensions;
 using MudBlazor.Services;
@@ -43,8 +44,6 @@ namespace AAPS.Web
             app.MapStaticAssets();
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
-
-            CreateVendorPortalsDataEndpoints(app);
 
             CreateFileExplorerEndpoints(app);
 
@@ -88,7 +87,7 @@ namespace AAPS.Web
 
                 var fileName = System.IO.Path.GetFileName(absolute);
                 var contentType = GetContentType(fileName);
-                var stream = File.OpenRead(absolute);
+                var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 return Results.File(stream, contentType, fileName);
             });
@@ -105,9 +104,43 @@ namespace AAPS.Web
 
                 var fileName = System.IO.Path.GetFileName(absolute);
                 var contentType = GetContentType(fileName);
-                var stream = File.OpenRead(absolute);
+                var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 // Return inline so browser renders it instead of downloading
+                return Results.File(stream, contentType, enableRangeProcessing: true);
+            });
+
+            // Provider files download — uses the ProviderFiles keyed service (C:\AAPS\Provider Profiles)
+            app.MapGet("/provider-files/download", (string path, [FromKeyedServices("ProviderFiles")] IFileExplorerService fileService) =>
+            {
+                if (!fileService.IsPathSafe(path))
+                    return Results.Forbid();
+
+                var absolute = fileService.GetAbsolutePath(path);
+                if (!File.Exists(absolute))
+                    return Results.NotFound();
+
+                var fileName = System.IO.Path.GetFileName(absolute);
+                var contentType = GetContentType(fileName);
+                var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                return Results.File(stream, contentType, fileName);
+            });
+
+            // Provider files preview — serves inline for iframe/img/new window
+            app.MapGet("/provider-files/preview", (string path, [FromKeyedServices("ProviderFiles")] IFileExplorerService fileService) =>
+            {
+                if (!fileService.IsPathSafe(path))
+                    return Results.Forbid();
+
+                var absolute = fileService.GetAbsolutePath(path);
+                if (!File.Exists(absolute))
+                    return Results.NotFound();
+
+                var fileName = System.IO.Path.GetFileName(absolute);
+                var contentType = GetContentType(fileName);
+                var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
                 return Results.File(stream, contentType, enableRangeProcessing: true);
             });
         }
@@ -133,101 +166,5 @@ namespace AAPS.Web
                 _ => "application/octet-stream"
             };
         }
-        private static void CreateVendorPortalsDataEndpoints(WebApplication app)
-        {
-            app.MapGet("/vendorportals", async (
-                IVendorPortalService service,
-                int page = 1,
-                int pageSize = 25,
-                string? sortBy = null,
-                string sortDir = "asc",
-                string? search = null,
-                CancellationToken ct = default) =>
-            {
-                // Explicitly map the values to the record properties by name
-                var request = new PagedRequest(
-                    Search: search,
-                    SortBy: sortBy,
-                    SortDir: sortDir,
-                    Page: page,
-                    PageSize: pageSize
-                );
-
-                var result = await service.GetPagedAsync(request, ct);
-
-                return Results.Ok(result);
-            });
-
-            //app.MapGet("/vendorportals", async (
-            //    IVendorPortalQueryService service,
-            //    int page = 1,
-            //    int pageSize = 25,
-            //    string? sortBy = null,
-            //    string sortDir = "asc",
-            //    string? search = null,
-            //    CancellationToken ct = default) =>
-            //{
-            //    var result = await service.GetAsync(
-            //        new GetVendorPortalsRequest(page, pageSize, sortBy, sortDir, search),
-            //        ct);
-
-            //    return Results.Ok(result);
-            //});
-
-            //app.MapGet("/vendorportals/{id:int}", async (int id, IVendorPortalCrudService svc, CancellationToken ct) =>
-            //{
-            //    var result = await svc.GetByIdAsync(id, ct);
-            //    return result.Status switch
-            //    {
-            //        Application.Common.Crud.CrudStatus.Success => Results.Ok(result.Data),
-            //        Application.Common.Crud.CrudStatus.NotFound => Results.NotFound(result.Message),
-            //        _ => Results.Problem(result.Message)
-            //    };
-            //});
-
-            //app.MapPost("/vendorportals", async (Dictionary<string, object?> body, IVendorPortalCrudService svc, CancellationToken ct) =>
-            //{
-            //    var result = await svc.CreateAsync(body, ct);
-            //    return result.Status switch
-            //    {
-            //        Application.Common.Crud.CrudStatus.Success => Results.Ok(new { id = result.Data }),
-            //        _ => Results.Problem(result.Message)
-            //    };
-            //});
-
-            //app.MapPut("/vendorportals/{id:int}", async (
-            //    int id,
-            //    Dictionary<string, object?> body,
-            //    string? rowVersion, // pass as querystring: ?rowVersion=BASE64
-            //    IVendorPortalCrudService svc,
-            //    CancellationToken ct) =>
-            //{
-            //    var result = await svc.UpdateAsync(id, body, rowVersion, ct);
-            //    return result.Status switch
-            //    {
-            //        Application.Common.Crud.CrudStatus.Success => Results.NoContent(),
-            //        Application.Common.Crud.CrudStatus.NotFound => Results.NotFound(result.Message),
-            //        Application.Common.Crud.CrudStatus.Conflict => Results.Conflict(new { message = result.Message }),
-            //        _ => Results.Problem(result.Message)
-            //    };
-            //});
-
-            //app.MapDelete("/vendorportals/{id:int}", async (
-            //    int id,
-            //    string? rowVersion,
-            //    IVendorPortalCrudService svc,
-            //    CancellationToken ct) =>
-            //{
-            //    var result = await svc.DeleteAsync(id, rowVersion, ct);
-            //    return result.Status switch
-            //    {
-            //        Application.Common.Crud.CrudStatus.Success => Results.NoContent(),
-            //        Application.Common.Crud.CrudStatus.NotFound => Results.NotFound(result.Message),
-            //        Application.Common.Crud.CrudStatus.Conflict => Results.Conflict(new { message = result.Message }),
-            //        _ => Results.Problem(result.Message)
-            //    };
-            //});
-        }
-
     }
 }

@@ -27,6 +27,14 @@ namespace AAPS.Infrastructure
             services.AddScoped<IVendorPortalService, VendorPortalService>();
 
             services.AddScoped<IFileExplorerService, FileExplorerService>();
+
+            // Provider files — separate root path, keyed so ProviderForm injects it independently
+            services.AddKeyedScoped<IFileExplorerService, FileExplorerService>(
+                "ProviderFiles",
+                (sp, _) => new FileExplorerService(
+                    configuration["ProviderFiles:RootPath"]
+                    ?? throw new InvalidOperationException("ProviderFiles:RootPath is not configured in appsettings.json")));
+
             services.AddScoped<IImportService, ImportService>();
 
             return services;
