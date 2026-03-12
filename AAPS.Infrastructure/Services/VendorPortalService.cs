@@ -5,73 +5,79 @@ using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services
 {
+    // Raw result type matching the stored proc SELECT columns
+    internal sealed class VendorPortalRaw
+    {
+        public int VendorPortal_Id { get; set; }
+        public string? pSsn { get; set; }
+        public string? pBoro { get; set; }
+        public string? pDist { get; set; }
+        public string? pSchool { get; set; }
+        public string? pFund { get; set; }
+        public string? Student_ID { get; set; }
+        public string? pDur { get; set; }
+        public string? pFreq { get; set; }
+        public string? pGrpSize { get; set; }
+        public DateTime? pStartDate { get; set; }
+        public string? Assign_Id { get; set; }
+        public string? VPFile { get; set; }
+        public int? Entry_Id { get; set; }
+        // Joined columns
+        public string? Last_Name { get; set; }   // Students.Last_Name
+        public string? First_Name { get; set; }  // Students.First_Name
+        public string? LastName { get; set; }    // Providers.LastName
+        public string? FirstName { get; set; }   // Providers.FirstName
+        public string? Mismatch { get; set; }
+    }
+
     public class VendorPortalService : IVendorPortalService
     {
-
         private readonly IAppDbContext _db;
 
-        public VendorPortalService(IAppDbContext db) 
+        public VendorPortalService(IAppDbContext db)
         {
             _db = db;
         }
 
         public async Task<Application.Common.Paging.PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
         {
-            var query = from vp in _db.VendorPortals.AsNoTracking()
+            // Use the stored proc directly — the multi-join LINQ translation is
+            // unreliable with nullable datetime keys and produces wrong counts.
+            var raw = await _db.Database
+                .SqlQueryRaw<VendorPortalRaw>(
+                    "EXEC [dbo].[VendorPortal_Select] @searchBy=0, @searchByValue=NULL, @dateSearch=0, @from=NULL, @to=NULL, @unbound=0")
+                .ToListAsync(ct);
 
-                            // 1. Get the Provider Name via SSN (Simple Lookup)
-                        join p in _db.Providers.AsNoTracking()
-                          on vp.pSsn.Replace("-", "") equals p.Ssn.Replace("-", "") into pGroup
-                        from p in pGroup.DefaultIfEmpty()
-
-                            // 2. The "Intelligent" Match: 
-                            // We look for a Mandate that matches the Student, Duration, and StartDate.
-                            // We use .FirstOrDefault() so we don't multiply rows!
-                        let mandateMatch = _db.Mandates.AsNoTracking()
-                            .Where(m => m.Student_ID.Trim() == vp.Student_ID.Trim())
-                            .Where(m => m.Dur.StartsWith(vp.pDur))
-                            .Where(m => m.MandateStart == vp.pStartDate)
-                            .FirstOrDefault()
-
-
-                        select new VendorPortalDTO
-                        {
-                            Id = vp.VendorPortal_Id,
-                            ProviderSSN = vp.pSsn,
-                            Boro = vp.pBoro,
-                            District = vp.pDist,
-                            School = vp.pSchool,
-                            Fund = vp.pFund,
-                            StudentId = vp.Student_ID,
-                            Duration = vp.pDur,
-                            Frequency = vp.pFreq,
-                            GroupSize = vp.pGrpSize,
-                            ApprovalStartDate = vp.pStartDate,
-                            AssignmentId = vp.Assign_Id,
-                            VenderPortalFile = vp.VPFile,
-                            EntryId = vp.Entry_Id,
-
-                           
-                            // Provider Names
-                            ProviderFirstName = p != null ? p.FirstName : "Unknown",
-                            ProviderLastName = p != null ? p.LastName : "Unknown",
-
-                            // Student Names (Only if the fuzzy match is successful)
-                            StudentFirstName = mandateMatch != null ? mandateMatch.First_Name : "Unlinked",
-                            StudentLastName = mandateMatch != null ? mandateMatch.Last_Name : "Unlinked",
-
-                            // Mismatch Logic
-                            Mismatch = mandateMatch == null ? "Approval" : (p == null ? "Provider" : null)
-                        };
+            var query = raw.Select(r => new VendorPortalDTO
+            {
+                Id = r.VendorPortal_Id,
+                ProviderSSN = r.pSsn,
+                Boro = r.pBoro,
+                District = r.pDist,
+                School = r.pSchool,
+                Fund = r.pFund,
+                StudentId = r.Student_ID,
+                Duration = r.pDur,
+                Frequency = r.pFreq,
+                GroupSize = r.pGrpSize,
+                ApprovalStartDate = r.pStartDate,
+                AssignmentId = r.Assign_Id,
+                VenderPortalFile = r.VPFile,
+                EntryId = r.Entry_Id,
+                StudentFirstName = r.First_Name,
+                StudentLastName = r.Last_Name,
+                ProviderFirstName = r.FirstName,
+                ProviderLastName = r.LastName,
+                Mismatch = r.Mismatch,
+                MismatchVP = r.Entry_Id == null
+            });
 
             return await query.ToPagedResultAsync(request, ct);
         }
-
 
         public async Task<VendorPortalDTO?> GetByIdAsync(int id, CancellationToken ct = default)
         {
@@ -110,11 +116,19 @@ namespace AAPS.Infrastructure.Services
             var entity = await _db.VendorPortals.FindAsync(new object[] { id }, ct)
                 ?? throw new KeyNotFoundException();
 
-            entity.pSsn = dto.ProviderSSN; entity.pBoro = dto.Boro; entity.pDist = dto.District;
-            entity.pSchool = dto.School; entity.pFund = dto.Fund; entity.Student_ID = dto.StudentId;
-            entity.pDur = dto.Duration; entity.pFreq = dto.Frequency; entity.pGrpSize = dto.GroupSize;
-            entity.pStartDate = dto.ApprovalStartDate; entity.Assign_Id = dto.AssignmentId;
-            entity.VPFile = dto.VenderPortalFile; entity.Entry_Id = dto.EntryId;
+            entity.pSsn = dto.ProviderSSN;
+            entity.pBoro = dto.Boro;
+            entity.pDist = dto.District;
+            entity.pSchool = dto.School;
+            entity.pFund = dto.Fund;
+            entity.Student_ID = dto.StudentId;
+            entity.pDur = dto.Duration;
+            entity.pFreq = dto.Frequency;
+            entity.pGrpSize = dto.GroupSize;
+            entity.pStartDate = dto.ApprovalStartDate;
+            entity.Assign_Id = dto.AssignmentId;
+            entity.VPFile = dto.VenderPortalFile;
+            entity.Entry_Id = dto.EntryId;
 
             await _db.SaveChangesAsync(ct);
         }

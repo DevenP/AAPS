@@ -78,10 +78,13 @@ namespace AAPS.Application.DTO
 
         [Browsable(true)]
         [Display(Name = "ProviderLastName")]
-        public string? ProviderLastName{ get; set; }
+        public string? ProviderLastName { get; set; }
 
         [Browsable(true)]
         [Display(Name = "Mismatch")]
         public string? Mismatch { get; set; } // 'Approval' or 'Provider'
+
+        [Browsable(false)]
+        public bool MismatchVP { get; set; } // true when Entry_Id IS NULL (unlinked VP record)
     }
 }

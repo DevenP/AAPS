@@ -11,20 +11,20 @@
 @using System.ComponentModel
 @inject NavigationManager Nav
 
-<MudTable ServerData="ReloadData" 
-    Dense="true" 
-    Hover="true" 
-    Striped="true"
-    @ref="_table"
-    @bind-CurrentPage="_currentPage"
-    FixedHeader="true" 
-    FixedFooter="true" 
-    Height="75vh" 
-    RowsPerPage="25"
-    HorizontalScrollbar="true"
-    SortLabel="Id" InitialDirection="SortDirection.Ascending"
-    RowStyleFunc="@RowStyleFunc"
-    Class="sticky-table mud-width-full">
+<MudTable ServerData="ReloadData"
+          Dense="true"
+          Hover="true"
+          Striped="true"
+          @ref="_table"
+          @bind-CurrentPage="_currentPage"
+          FixedHeader="true"
+          FixedFooter="true"
+          Height="75vh"
+          RowsPerPage="25"
+          HorizontalScrollbar="true"
+          SortLabel="Id" InitialDirection="SortDirection.Ascending"
+          RowStyleFunc="@RowStyleFunc"
+          Class="sticky-table mud-width-full">
     <ToolBarContent>
 
         <MudText Typo="Typo.h6" Color="Color.Primary">@Title</MudText>
@@ -36,7 +36,7 @@
         <MudSpacer />
 
 
-@*         @if (ColumnFilters.Any())
+        @*         @if (ColumnFilters.Any())
         {
             <MudHidden Breakpoint="Breakpoint.MdAndDown">
                 <MudChipSet T="string" AllClosable="true" OnClose="RemoveFilter" Class="mr-4">
@@ -70,7 +70,7 @@
         {
             @CustomActionContent
         }
-@* 
+        @* 
         <MudTextField T="string" ValueChanged="OnSearch" Placeholder="Global Search..."
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                       IconSize="Size.Medium" Class="mt-0 mr-4" Immediate="false" /> *@
@@ -120,7 +120,7 @@
     <PagerContent>
         <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
     </PagerContent>
-@* 
+    @* 
     <PagerContent>
         <div class="d-flex align-center pa-1" style="background-color: var(--mud-palette-surface);">
          
@@ -218,6 +218,10 @@
     [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; }
     [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; }
 
+    // Called when a filter chip is removed, with the filter key that was removed.
+    // Parent pages can use this to sync their own toggle state.
+    [Parameter] public EventCallback<string> OnFilterRemoved { get; set; }
+
     private MudTable<TItem> _table;
     private string _search = "";
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
@@ -249,20 +253,20 @@
         }
 
         // 3. BUILD THE VISIBILITY DICTIONARY (The Correct Way)
-         _columnVisibility.Clear(); // Ensure it's empty
-         var allProps = typeof(TItem).GetProperties();
+        _columnVisibility.Clear(); // Ensure it's empty
+        var allProps = typeof(TItem).GetProperties();
 
-         foreach (var prop in allProps)
-         {
-             // Skip properties marked with [DisplayField(..., browsable: false)]
-             if (!prop.IsBrowsable()) continue;
+        foreach (var prop in allProps)
+        {
+            // Skip properties marked with [DisplayField(..., browsable: false)]
+            if (!prop.IsBrowsable()) continue;
 
-             // Determine if it should be visible:
-             // Either it was passed in the 'Columns' parameter OR it's currently being filtered in the URL
-             bool isVisible = Columns != null && Columns.Contains(prop.Name);
+            // Determine if it should be visible:
+            // Either it was passed in the 'Columns' parameter OR it's currently being filtered in the URL
+            bool isVisible = Columns != null && Columns.Contains(prop.Name);
 
-             _columnVisibility[prop.Name] = isVisible;
-         }
+            _columnVisibility[prop.Name] = isVisible;
+        }
     }
 
     public Task ReloadServerData()
@@ -364,8 +368,11 @@
 
         if (key == "Global")
         {
-            _search = string.Empty; // Clear the actual search box too
+            _search = string.Empty;
         }
+
+        if (OnFilterRemoved.HasDelegate)
+            await OnFilterRemoved.InvokeAsync(key);
 
         await _table.ReloadServerData();
     }

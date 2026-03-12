@@ -5,9 +5,22 @@
 @inject IVendorPortalService VendorPortalService
 
 <GenericGrid TItem="VendorPortalDTO"
+             @ref="_grid"
              Title="Vendor Portal"
              Columns="@(new[] { "Id", "Mismatch", "AssignmentId", "StudentId", "StudentLastName", "ProviderLastName", "ApprovalStartDate", "VenderPortalFile" })"
-             GetData="VendorPortalService.GetPagedAsync">
+             GetData="VendorPortalService.GetPagedAsync"
+             OnFilterRemoved="OnFilterRemoved">
+
+    <CustomActionContent>
+        <MudButton Variant="@(_showMismatchOnly? Variant.Filled: Variant.Outlined)"
+                   Color="Color.Warning"
+                   StartIcon="@Icons.Material.Filled.LinkOff"
+                   Size="Size.Small"
+                   Class="mr-2"
+                   OnClick="ToggleMismatchFilter">
+            Mismatched VP
+        </MudButton>
+    </CustomActionContent>
 
     <HeaderContent>
         <GridCell TItem="VendorPortalDTO" Column="Id" IsHeader="true">
@@ -81,3 +94,29 @@
         </GridCell>
     </RowTemplate>
 </GenericGrid>
+
+@code {
+    private GenericGrid<VendorPortalDTO> _grid = default!;
+    private bool _showMismatchOnly = false;
+
+    private async Task ToggleMismatchFilter()
+    {
+        _showMismatchOnly = !_showMismatchOnly;
+
+        if (_showMismatchOnly)
+            _grid.ColumnFilters["MismatchVP"] = "true";
+        else
+            _grid.ColumnFilters.Remove("MismatchVP");
+
+        await _grid.ReloadServerData();
+    }
+
+    private Task OnFilterRemoved(string key)
+    {
+        // Sync toggle state if the MismatchVP chip was removed manually
+        if (key == "MismatchVP")
+            _showMismatchOnly = false;
+
+        return Task.CompletedTask;
+    }
+}
