@@ -3,15 +3,19 @@
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
 @inject IEvalService EvalService
+@inject IJSRuntime JS
 
 <GenericGrid TItem="EvalDTO"
              Title="Evaluations"
-             Columns="@(new[] { "Id", "Status", "StudentLastName", "StudentFirstName", "ProviderLastName", "ServiceType", "EvalDate", "BillingAmount", "BilledDate", "BillPaidDate", "ProviderPaidAmount", "ProviderPaidDate", "District", "Language" })"
+             Columns="@(new[] { "Print", "Id", "Status", "StudentLastName", "StudentFirstName", "ProviderLastName", "ServiceType", "EvalDate", "BillingAmount", "BilledDate", "BillPaidDate", "ProviderPaidAmount", "ProviderPaidDate", "District", "Language" })"
              GetData="EvalService.GetPagedAsync"
              ExportHeaders="@(new[] { "ID", "Status", "Student Last", "Student First", "Provider", "Service", "Eval Date", "Bill Amt", "Billed Date", "Paid Date", "Memo" })"
              ExportMapper="@(e => new object[] { e.Id, e.Status, e.StudentLastName, e.StudentFirstName, $"{e.ProviderFirstName} {e.ProviderLastName}", e.ServiceType, e.EvalDate?.ToShortDateString(), e.BillingAmount, e.BilledDate?.ToShortDateString(), e.BillPaidDate?.ToShortDateString(), e.Memo })">
 
     <HeaderContent>
+        <GridCell TItem="EvalDTO" Column="Print" IsHeader="true">
+            <span style="width:36px;display:inline-block;"></span>
+        </GridCell>
         <GridCell TItem="EvalDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="EvalDTO">ID</MudTableSortLabel>
         </GridCell>
@@ -39,6 +43,15 @@
     </HeaderContent>
 
     <RowTemplate Context="eval">
+        <GridCell TItem="EvalDTO" Column="Print">
+            <MudTooltip Text="Print Consent Letter">
+                <MudIconButton Icon="@Icons.Material.Filled.Print"
+                               Size="Size.Small"
+                               Color="Color.Primary"
+                               OnClick="@(() => PrintConsent(eval.Id))"
+                               aria-label="Print consent letter" />
+            </MudTooltip>
+        </GridCell>
         <GridCell TItem="EvalDTO" Column="Id">@eval.Id</GridCell>
         <GridCell TItem="EvalDTO" Column="Status">
             <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
@@ -84,3 +97,10 @@
         <GridCell TItem="EvalDTO" Column="Language">@eval.Language</GridCell>
     </RowTemplate>
 </GenericGrid>
+
+@code {
+    private async Task PrintConsent(int evalId)
+    {
+        await JS.InvokeVoidAsync("open", $"/reports/consent/{evalId}", "_blank");
+    }
+}

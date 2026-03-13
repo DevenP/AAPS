@@ -42,6 +42,7 @@ namespace AAPS.Web
                 .AddInteractiveServerRenderMode();
 
             CreateFileExplorerEndpoints(app);
+            CreateReportEndpoints(app);       // ← NEW
 
             app.Run();
         }
@@ -138,6 +139,33 @@ namespace AAPS.Web
                 var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 return Results.File(stream, contentType, enableRangeProcessing: true);
+            });
+        }
+
+        // ── NEW: Consent report endpoint ──────────────────────────────────────────
+        private static void CreateReportEndpoints(WebApplication app)
+        {
+            // GET /reports/consent/{id}
+            // Returns the consent letter PDF inline so the browser opens it in a new tab.
+            app.MapGet("/reports/consent/{id:int}", async (
+                int id,
+                IEvalService evalService,
+                IConsentReportService reportService,
+                IWebHostEnvironment env,
+                CancellationToken ct) =>
+            {
+                var eval = await evalService.GetByIdAsync(id, ct);
+                if (eval is null)
+                    return Results.NotFound($"Evaluation {id} not found.");
+
+                // Supply logo — wwwroot/images/doe-logo.png (replace with your real file)
+                var logoPath = Path.Combine(env.WebRootPath, "images", "nyc-doe-logo.png");
+                reportService.SetLogoPath(logoPath);
+
+                var pdfBytes = reportService.GenerateConsentPdf(eval);
+
+                // Inline (not attachment) so browser renders it in a new tab
+                return Results.File(pdfBytes, "application/pdf");
             });
         }
 

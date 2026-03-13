@@ -37,6 +37,9 @@ namespace AAPS.Infrastructure
 
             services.AddScoped<IImportService, ImportService>();
 
+            // Reports — logo path resolved at registration time via IWebHostEnvironment
+            services.AddScoped<IConsentReportService, ConsentReportService>();
+
             return services;
         }
     }
