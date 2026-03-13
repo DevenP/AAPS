@@ -23,6 +23,11 @@ public class GlobalExceptionHandler
         {
             await _next(httpContext);
         }
+        catch (OperationCanceledException)
+        {
+            // Request was cancelled (e.g. MudTable debounce cancelling in-flight queries).
+            // This is normal — do not treat as an error.
+        }
         catch (Exception exception)
         {
             await HandleExceptionAsync(httpContext, exception);
@@ -69,4 +74,3 @@ public class GlobalExceptionHandler
         };
     }
 }
-

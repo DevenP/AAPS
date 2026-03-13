@@ -21,8 +21,31 @@ public class EvalService : IEvalService
 
     public async Task<Application.Common.Paging.PagedResult<EvalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        // 1. Start the Manual Left Join
-        var query = from ev in _db.Evals.AsNoTracking()
+        // Apply global search on the raw entity before projection so EF can
+        // translate it against real indexed columns instead of DTO properties.
+        var baseQuery = _db.Evals.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            baseQuery = baseQuery.Where(ev =>
+                (ev.StudentLast != null && ev.StudentLast.Contains(term)) ||
+                (ev.StudentFirst != null && ev.StudentFirst.Contains(term)) ||
+                (ev.Student_ID != null && ev.Student_ID.Contains(term)) ||
+                (ev.Phone != null && ev.Phone.Contains(term)) ||
+                (ev.Email != null && ev.Email.Contains(term)) ||
+                (ev.ParentLast != null && ev.ParentLast.Contains(term)) ||
+                (ev.ParentFirst != null && ev.ParentFirst.Contains(term)) ||
+                (ev.District != null && ev.District.Contains(term)) ||
+                (ev.Language != null && ev.Language.Contains(term)) ||
+                (ev.ServiceType != null && ev.ServiceType.Contains(term)) ||
+                (ev.Contact != null && ev.Contact.Contains(term)) ||
+                (ev.Memo != null && ev.Memo.Contains(term)) ||
+                (ev.Status != null && ev.Status.Contains(term)));
+        }
+
+        // Left-join to Providers to surface provider name in the DTO
+        var query = from ev in baseQuery
                     join prov in _db.Providers.AsNoTracking() on ev.Provider_Id equals prov.Provider_Id into grouping
                     from prov in grouping.DefaultIfEmpty() // This makes it a LEFT JOIN
                     select new EvalDTO
@@ -57,8 +80,8 @@ public class EvalService : IEvalService
                         Status = ev.Status,
                     };
 
-        // 3. Hand off to the Generic Extension
-        return await query.ToPagedResultAsync(request, ct);
+        // performSearch: false — search was already applied above on the raw entity
+        return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
     public async Task<EvalDTO?> GetByIdAsync(int id, CancellationToken ct = default)

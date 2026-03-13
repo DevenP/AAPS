@@ -23,7 +23,37 @@ public class MandateService : IMandateService
             .Select(s => s.Entry_Id)
             .Distinct();
 
-        var query = from m in _db.Mandates.AsNoTracking()
+        // Apply global search on the raw entity before projection so EF can
+        // translate it against real indexed columns instead of DTO properties.
+        var baseQuery = _db.Mandates.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            baseQuery = baseQuery.Where(m =>
+                (m.Student_ID != null && m.Student_ID.Contains(term)) ||
+                (m.Last_Name != null && m.Last_Name.Contains(term)) ||
+                (m.First_Name != null && m.First_Name.Contains(term)) ||
+                (m.Home_District != null && m.Home_District.Contains(term)) ||
+                (m.CSE != null && m.CSE.Contains(term)) ||
+                (m.CSE_District != null && m.CSE_District.Contains(term)) ||
+                (m.Grade != null && m.Grade.Contains(term)) ||
+                (m.Admin_DBN != null && m.Admin_DBN.Contains(term)) ||
+                (m.D75 != null && m.D75.Contains(term)) ||
+                (m.Service_Type != null && m.Service_Type.Contains(term)) ||
+                (m.Lang != null && m.Lang.Contains(term)) ||
+                (m.Grp_Size != null && m.Grp_Size.Contains(term)) ||
+                (m.Dur != null && m.Dur.Contains(term)) ||
+                (m.Service_Location != null && m.Service_Location.Contains(term)) ||
+                (m.Remaining_Freq != null && m.Remaining_Freq.Contains(term)) ||
+                (m.Provider != null && m.Provider.Contains(term)) ||
+                (m.Mandate_ID != null && m.Mandate_ID.Contains(term)) ||
+                (m.Primary_Contact_Phone_1 != null && m.Primary_Contact_Phone_1.Contains(term)) ||
+                (m.Primary_Contact_Phone_2 != null && m.Primary_Contact_Phone_2.Contains(term)) ||
+                (m.FileName != null && m.FileName.Contains(term)));
+        }
+
+        var query = from m in baseQuery
                     select new MandateDTO
                     {
                         Id = m.Entry_Id,
@@ -58,7 +88,8 @@ public class MandateService : IMandateService
                     };
 
 
-        return await query.ToPagedResultAsync(request, ct);
+        // performSearch: false — search was already applied above on the raw entity
+        return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
     public async Task<MandateDTO?> GetByIdAsync(int id, CancellationToken ct = default)

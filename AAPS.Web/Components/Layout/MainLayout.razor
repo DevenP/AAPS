@@ -1,32 +1,32 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<ErrorBoundary>
-    <MudLayout>
-        <MudAppBar Elevation="1" Dense="true" Fixed="true">
-            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-            <MudText Typo="Typo.h6" Class="ml-3">AAPS Portal</MudText>
-            <MudSpacer />
-            @* AppBar Toggle is GONE from here *@
-        </MudAppBar>
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="true" Fixed="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h6" Class="ml-3">AAPS Portal</MudText>
+        <MudSpacer />
+    </MudAppBar>
 
-        <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Variant="DrawerVariant.Responsive">
-            <CascadingValue Name="ParentLayout" Value="this">
-                <NavMenu />
-            </CascadingValue>
-        </MudDrawer>
+    <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Variant="DrawerVariant.Responsive">
+        <CascadingValue Name="ParentLayout" Value="this">
+            <NavMenu />
+        </CascadingValue>
+    </MudDrawer>
 
-        <MudMainContent Class="pa-4">
+    <MudMainContent Class="pa-4">
+        <ErrorBoundary @key="Nav.Uri">
             @Body
-        </MudMainContent>
-    </MudLayout>
-</ErrorBoundary>
+        </ErrorBoundary>
+    </MudMainContent>
+</MudLayout>
 
 <style>
     .mud-main-content {

@@ -18,9 +18,46 @@ public class SesiService : ISesiService
 
     public async Task<Application.Common.Paging.PagedResult<SesiDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var query = _db.Seses.AsNoTracking().Select(ToDTO);
+        // Apply global search on the raw entity before projection so EF can
+        // translate it against real indexed columns instead of DTO properties.
+        var baseQuery = _db.Seses.AsNoTracking();
 
-        return await query.ToPagedResultAsync(request, ct);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            baseQuery = baseQuery.Where(s =>
+                (s.Student_ID != null && s.Student_ID.Contains(term)) ||
+                (s.Last_Name != null && s.Last_Name.Contains(term)) ||
+                (s.First_Name != null && s.First_Name.Contains(term)) ||
+                (s.Grade != null && s.Grade.Contains(term)) ||
+                (s.Home_District != null && s.Home_District.Contains(term)) ||
+                (s.CSE != null && s.CSE.Contains(term)) ||
+                (s.CSE_District != null && s.CSE_District.Contains(term)) ||
+                (s.Admin_DBN != null && s.Admin_DBN.Contains(term)) ||
+                (s.GDistrict != null && s.GDistrict.Contains(term)) ||
+                (s.Borough != null && s.Borough.Contains(term)) ||
+                (s.Mandate_Short != null && s.Mandate_Short.Contains(term)) ||
+                (s.Mandated_Max_Group != null && s.Mandated_Max_Group.Contains(term)) ||
+                (s.Assignment_Claimed != null && s.Assignment_Claimed.Contains(term)) ||
+                (s.Service_Type != null && s.Service_Type.Contains(term)) ||
+                (s.Language_Provided != null && s.Language_Provided.Contains(term)) ||
+                (s.Session_Type != null && s.Session_Type.Contains(term)) ||
+                (s.Session_Notes != null && s.Session_Notes.Contains(term)) ||
+                (s.Groupin != null && s.Groupin.Contains(term)) ||
+                (s.Actual_Size != null && s.Actual_Size.Contains(term)) ||
+                (s.Start_Time != null && s.Start_Time.Contains(term)) ||
+                (s.End_Time != null && s.End_Time.Contains(term)) ||
+                (s.Duration != null && s.Duration.Contains(term)) ||
+                (s.Provider_Last_Name != null && s.Provider_Last_Name.Contains(term)) ||
+                (s.Provider_First_Name != null && s.Provider_First_Name.Contains(term)) ||
+                (s.FileName != null && s.FileName.Contains(term)) ||
+                (s.Voucher != null && s.Voucher.Contains(term)));
+        }
+
+        var query = baseQuery.Select(ToDTO);
+
+        // performSearch: false — search was already applied above on the raw entity
+        return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
     public async Task<SesiDTO?> GetByIdAsync(int id, CancellationToken ct = default)
@@ -147,102 +184,6 @@ public class SesiService : ISesiService
             await _db.SaveChangesAsync(ct);
         }
     }
-
-    //public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
-    //{
-    //    // 1. Start with the RAW table
-    //    var baseQuery = _db.Seses.AsNoTracking();
-
-    //    // 2. APPLY SEARCH ON THE RAW TABLE (This is fast and translatable!)
-    //    if (!string.IsNullOrWhiteSpace(request.Search))
-    //    {
-    //        var s = request.Search.Trim();
-    //        baseQuery = baseQuery.Where(x =>
-    //            x.Student_ID.Contains(s) ||
-    //            x.Last_Name.Contains(s) ||
-    //            x.First_Name.Contains(s) ||
-    //            x.Provider_Last_Name.Contains(s));
-
-    //    }
-
-    //    // 3. NOW DO THE JOINS AND PROJECTION (Only on filtered data)
-    //    var topAssignments = _db.VendorPortals.AsNoTracking()
-    //        .GroupBy(v => v.Entry_Id)
-    //        .Select(g => new {
-    //            EntryId = g.Key,
-    //            AssignId = g.OrderBy(x => x.VendorPortal_Id).Select(x => x.Assign_Id).FirstOrDefault()
-    //        });
-
-    //    var finalQuery = from s in baseQuery // This is already filtered by your manual search
-    //                     join m in _db.Mandates.AsNoTracking() on s.Entry_Id equals m.Entry_Id into mGroup
-    //                     from m in mGroup.DefaultIfEmpty()
-    //                     join p in _db.Providers.AsNoTracking() on s.Provider_Id equals p.Provider_Id into pGroup
-    //                     from p in pGroup.DefaultIfEmpty()
-    //                     join v in topAssignments on s.Entry_Id equals v.EntryId into vGroup
-    //                     from v in vGroup.DefaultIfEmpty()
-    //                     select new OperationsDTO
-    //                     {
-    //                         // Core Identifiers
-    //                         Id = s.Sesis_Id,
-    //                         EntryId = s.Entry_Id,
-    //                         StudentId = s.Student_ID,
-    //                         ProviderId = s.Provider_Id,
-
-    //                         // Student Info
-    //                         StudentLastName = s.Last_Name,
-    //                         StudentFirstName = s.First_Name,
-
-    //                         // Service Details
-    //                         DateOfService = s.date_of_Service,
-    //                         StartTime = s.Start_Time,
-    //                         EndTime = s.End_Time,
-    //                         Duration = s.Duration,
-    //                         ServiceType = s.Service_Type,
-
-    //                         // Rates & Billing
-    //                         BilledRate = s.bRate,
-    //                         ProviderRate = s.pRate,
-    //                         BilledDate = s.Billed,
-    //                         BilledPaidDate = s.bPaid,
-
-    //                         // Logic Bits (Keep them nullable/raw for now)
-    //                         IsOverDuration = s.OverDuration ?? false,
-    //                         IsOverlap = s.Overlap ?? false,
-    //                         IsOverMandate = s.OverMandate ?? false,
-    //                         IsUnderGroup = s.UnderGroup ?? false,
-
-    //                         // Joined Info
-    //                         ProviderLastName = s.Provider_Last_Name,
-    //                         ProviderFirstName = s.Provider_First_Name,
-    //                         AssignId = v != null ? v.AssignId : null,
-    //                         MandateStart = m != null ? m.MandateStart : null,
-
-    //                         // Raw SSN for the Post-Process step
-    //                         Ssn = p != null ? p.Ssn : null
-    //                     };
-
-    //    // 2. Call the Paging (Passing 'false' to skip the broken DTO-based ApplySearch)
-    //    var pagedResult = await finalQuery.ToPagedResultAsync(request, ct, performSearch: false);
-
-
-    //    // 5. MAP FOR UI (Masking SSNs and setting Flags)
-    //    return pagedResult.Map(item => item with
-    //    {
-    //        // --- MASKED SSN LOGIC ---
-    //        Ssn = (item.Ssn != null && item.Ssn.Length >= 4)
-    //      ? "***-**-" + item.Ssn.Substring(item.Ssn.Length - 4)
-    //      : (item.Ssn ?? "N/A"),
-
-    //        // --- ALERTS / FLAGS (Icons) ---
-    //        MandateFlag = item.EntryId == null,
-    //        ProviderFlag = item.ProviderId == null,
-    //        BRateFlag = item.BilledRate == null,
-    //        PRateFlag = item.ProviderRate == null,
-    //        AssignFlag = string.IsNullOrEmpty(item.AssignId),
-
-    //    });
-    //}
-
 
     public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
     {

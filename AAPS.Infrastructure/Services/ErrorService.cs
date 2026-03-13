@@ -10,6 +10,7 @@ public class ErrorService : IErrorService
 {
     private readonly ILogger<ErrorService> _logger;
     private ErrorInfo? _lastError;
+    private Exception? _unhandledException;
 
     public event Action<ErrorInfo>? OnError;
 
@@ -29,14 +30,24 @@ public class ErrorService : IErrorService
 
         _lastError = errorInfo;
 
-        // Log to application logger
         _logger.LogError(exception, "Error in {Context}: {Message}", context, message);
 
-        // Notify subscribers (UI components can subscribe to show notifications)
         OnError?.Invoke(errorInfo);
     }
 
+    public void StoreUnhandledException(Exception exception)
+    {
+        _unhandledException = exception;
+        _logger.LogError(exception, "Unhandled exception caught by ErrorBoundary");
+    }
+
+    public Exception? GetUnhandledException() => _unhandledException;
+
     public string? GetLastErrorMessage() => _lastError?.Message;
 
-    public void ClearError() => _lastError = null;
+    public void ClearError()
+    {
+        _lastError = null;
+        _unhandledException = null;
+    }
 }

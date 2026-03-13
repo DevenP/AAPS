@@ -21,9 +21,23 @@ public class BillingRateService : IBillingRateService
 
     public async Task<Application.Common.Paging.PagedResult<BillingRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var query = _db.BillingRates.AsNoTracking().Select(ToDTO);
+        // Apply global search on the raw entity before projection so EF can
+        // translate it against real indexed columns instead of DTO properties.
+        var baseQuery = _db.BillingRates.AsNoTracking();
 
-        return await query.ToPagedResultAsync(request, ct);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            baseQuery = baseQuery.Where(b =>
+                (b.District != null && b.District.Contains(term)) ||
+                (b.ServiceType != null && b.ServiceType.Contains(term)) ||
+                (b.Lang != null && b.Lang.Contains(term)));
+        }
+
+        var query = baseQuery.Select(ToDTO);
+
+        // performSearch: false — search was already applied above on the raw entity
+        return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
 

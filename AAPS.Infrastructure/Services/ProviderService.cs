@@ -18,7 +18,48 @@ public class ProviderService : IProviderService
 
     public async Task<Application.Common.Paging.PagedResult<ProviderDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        // 1. Subquery for Assigned Student Counts from Sesis
+        // 1. Apply global search on the raw entity BEFORE any joins/projections
+        //    so EF translates it against real indexed columns.
+        var baseQuery = _db.Providers.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            baseQuery = baseQuery.Where(p =>
+                (p.LastName != null && p.LastName.Contains(term)) ||
+                (p.FirstName != null && p.FirstName.Contains(term)) ||
+                (p.Email != null && p.Email.Contains(term)) ||
+                (p.Phone != null && p.Phone.Contains(term)) ||
+                (p.TaxId != null && p.TaxId.Contains(term)) ||
+                (p.NpiNumber != null && p.NpiNumber.Contains(term)) ||
+                (p.License1 != null && p.License1.Contains(term)) ||
+                (p.License2 != null && p.License2.Contains(term)) ||
+                (p.CorpName != null && p.CorpName.Contains(term)) ||
+                (p.ServiceType != null && p.ServiceType.Contains(term)) ||
+                (p.Address != null && p.Address.Contains(term)) ||
+                (p.City != null && p.City.Contains(term)) ||
+                (p.State != null && p.State.Contains(term)) ||
+                (p.Zipcode != null && p.Zipcode.Contains(term)) ||
+                (p.Langs != null && p.Langs.Contains(term)) ||
+                (p.DDInfo != null && p.DDInfo.Contains(term)));
+            // Note: Ssn intentionally excluded — it is masked in the DTO and
+            // has its own dedicated column-filter path that searches the real column.
+        }
+
+        // 2. Pre-compute duplicate names as a set to avoid N+1 per-row subquery.
+        //    Pull just Id+name, group in memory — EF can't translate GroupBy+SelectMany together.
+        var allProviderNames = await _db.Providers
+            .AsNoTracking()
+            .Select(p => new { p.Provider_Id, p.LastName, p.FirstName })
+            .ToListAsync(ct);
+
+        var duplicateIds = allProviderNames
+            .GroupBy(p => new { p.LastName, p.FirstName })
+            .Where(g => g.Count() > 1)
+            .SelectMany(g => g.Select(p => p.Provider_Id))
+            .ToHashSet();
+
+        // 3. Subquery for Assigned Student Counts from Sesis
         var assignedCounts = _db.Seses
             .Where(s => s.Provider_Id != null && s.Entry_Id != null)
             .GroupBy(s => s.Provider_Id)
@@ -28,8 +69,8 @@ public class ProviderService : IProviderService
             })
             .AsNoTracking();
 
-        // 2. Main Query with Left Join for Assigned Counts
-        var query = from p in _db.Providers.AsNoTracking()
+        // 4. Main Query with Left Join for Assigned Counts
+        var query = from p in baseQuery
                     join a in assignedCounts on p.Provider_Id equals a.ProviderId into aGroup
                     from a in aGroup.DefaultIfEmpty()
                     select new ProviderDTO
@@ -74,30 +115,34 @@ public class ProviderService : IProviderService
                         Languages = p.Langs,
                         DirectDepositInfo = p.DDInfo,
 
-                        // Duplicate Check: Check if any OTHER provider has the same name
-                        IsDuplicateName = _db.Providers.Any(other =>
-                            other.Provider_Id != p.Provider_Id &&
-                            other.LastName == p.LastName &&
-                            other.FirstName == p.FirstName),
+                        // IsDuplicateName is populated in-memory below after paging
+                        IsDuplicateName = false,
 
                         // Null-safe Assigned Count
                         AssignedCount = (int?)(a.Count) ?? 0
                     };
 
-        // 3. Special Case: If searching by SSN, search the REAL column before paging
+        // 5. Special Case: If searching by SSN, search the REAL column before paging
         if (request.ColumnFilters?.ContainsKey("Ssn") == true)
         {
             var ssnValue = request.ColumnFilters["Ssn"];
             if (!string.IsNullOrWhiteSpace(ssnValue))
             {
-                // We filter the DTO query by looking back at the original Ssn column
                 query = query.Where(dto => _db.Providers
                     .Any(original => original.Provider_Id == dto.Id && original.Ssn.EndsWith(ssnValue)));
             }
         }
 
-        // 4. Return with Global Search, Sorting, and Paging
-        return await query.ToPagedResultAsync(request, ct);
+        // 6. Page the query (search already applied above, so performSearch: false)
+        var paged = await query.ToPagedResultAsync(request, ct, performSearch: false);
+
+        // 7. Post-process: stamp IsDuplicateName from the pre-computed set (no extra DB round-trips)
+        var stamped = paged.Items.Select(dto => dto with
+        {
+            IsDuplicateName = duplicateIds.Contains(dto.Id)
+        }).ToList();
+
+        return new Application.Common.Paging.PagedResult<ProviderDTO>(stamped, paged.Page, paged.PageSize, paged.TotalCount);
     }
 
 

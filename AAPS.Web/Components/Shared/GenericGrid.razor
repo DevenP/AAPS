@@ -70,7 +70,7 @@
         {
             @CustomActionContent
         }
-        @* 
+        @*
         <MudTextField T="string" ValueChanged="OnSearch" Placeholder="Global Search..."
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                       IconSize="Size.Medium" Class="mt-0 mr-4" Immediate="false" /> *@
@@ -120,7 +120,7 @@
     <PagerContent>
         <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
     </PagerContent>
-    @* 
+    @*
     <PagerContent>
         <div class="d-flex align-center pa-1" style="background-color: var(--mud-palette-surface);">
          
@@ -410,13 +410,19 @@
         // 3. Sync to URL
         UpdateUrl(request);
 
-        var result = await GetData(request, ct);
-
-        _pageSize = state.PageSize;
-
-        _totalItems = result.TotalCount;
-
-        return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
+        try
+        {
+            var result = await GetData(request, ct);
+            _pageSize = state.PageSize;
+            _totalItems = result.TotalCount;
+            return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
+        }
+        catch (OperationCanceledException)
+        {
+            // Request was cancelled by MudTable (e.g. user typed again before previous search finished)
+            // Return current data unchanged rather than crashing the ErrorBoundary
+            return new TableData<TItem> { TotalItems = _totalItems, Items = [] };
+        }
     }
 
     private void UpdateUrl(PagedRequest req)
