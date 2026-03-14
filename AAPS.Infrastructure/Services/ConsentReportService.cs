@@ -15,7 +15,7 @@ public class ConsentReportService : IConsentReportService
 {
     private string? _logoPath;
 
-    private const string HeaderBg = "#4d4d4d";
+    private const string HeaderBg = "#4d4d4d"; // dark grey used for all header bars
 
     public ConsentReportService()
     {
@@ -28,6 +28,7 @@ public class ConsentReportService : IConsentReportService
     {
         return Document.Create(container =>
         {
+            // Page 1 — data
             container.Page(page =>
             {
                 page.Size(PageSizes.Letter);
@@ -37,6 +38,7 @@ public class ConsentReportService : IConsentReportService
                 page.Content().Element(c => ComposePage1(c, eval));
             });
 
+            // Page 2 — static signatures
             container.Page(page =>
             {
                 page.Size(PageSizes.Letter);
@@ -57,8 +59,10 @@ public class ConsentReportService : IConsentReportService
         {
             col.Spacing(0);
 
-            col.Item().PaddingBottom(6).Element(c => RenderLogo(c));
+            // Logo
+            col.Item().Element(c => RenderLogo(c));
 
+            // Title bar
             col.Item()
                .Background(HeaderBg)
                .PaddingVertical(5).PaddingHorizontal(4)
@@ -66,15 +70,15 @@ public class ConsentReportService : IConsentReportService
                .Text("STUDENT, PARENT/GUARDIAN AND INDEPENDENT EVALUATOR INFORMATION")
                .Bold().FontColor(Colors.White).FontSize(7.5f);
 
-            col.Item().PaddingBottom(6);
-
+            // Intro box — plain black thin border
             col.Item().Border(0.75f).BorderColor(Colors.Black).Padding(6).Column(inner =>
             {
-                inner.Spacing(4);
+                inner.Spacing(5);
                 inner.Item().Text(text =>
                 {
                     text.Span("Please complete and sign this form, attach a copy of the ");
-                    text.Span("Evaluator's New York State Education Department (\"NYSED\") certificate/license and current registration").Bold();
+                    text.Span("Evaluator's New York State Education Department (\"NYSED\") certificate/license and current registration")
+                        .Bold();
                     text.Span(", and submit it to the ");
                     text.Span("\"Contact Person\" (Section I)").Bold();
                     text.Span(" for the New York City Department of Education (\"DOE\") for approval. Providers of bilingual assessments must also attach one of the following:");
@@ -83,29 +87,41 @@ public class ConsentReportService : IConsentReportService
                 inner.Item().PaddingLeft(20).Text("b.  an appropriate NYSED Bilingual Education Extension credential.");
             });
 
-            col.Item().PaddingBottom(6);
+            col.Item().PaddingBottom(10);
 
+            // Section I
             col.Item().Element(c => RenderSectionI(c, eval));
-            col.Item().PaddingBottom(6);
 
+            col.Item().PaddingBottom(10);
+
+            // Section II
             col.Item().Element(c => RenderSectionII(c, eval));
-            col.Item().PaddingBottom(6);
 
+            col.Item().PaddingBottom(10);
+
+            // Section III
             col.Item().Element(c => RenderSectionIII(c));
+
             col.Item().PaddingTop(20);
 
+            // Rate line — text left, short line far right
             col.Item().Row(row =>
             {
                 row.RelativeItem().AlignBottom()
-                   .Text("Rate (cannot exceed the maximum allowed by the DOE)").FontSize(7.5f);
+                   .Text("Rate (cannot exceed the maximum allowed by the DOE)")
+                   .FontSize(7.5f);
                 row.ConstantItem(14).AlignBottom()
                    .LineHorizontal(0.75f).LineColor(Colors.Black);
             });
 
             col.Item().PaddingBottom(6);
+
+            // Full-width line
             col.Item().LineHorizontal(0.75f).LineColor(Colors.Black);
+
             col.Item().PaddingBottom(3);
 
+            // Footer note — bold italic indented
             col.Item()
                .PaddingLeft(16)
                .Text("If the agency tax identification number is included, the payment will be made to the agency.")
@@ -140,26 +156,20 @@ public class ConsentReportService : IConsentReportService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Section I — uses Table so header row is always bound to content
+    //  Section I
     // ─────────────────────────────────────────────────────────────────────────
     private void RenderSectionI(IContainer container, EvalDTO eval)
     {
         var studentName = $"{eval.StudentFirstName} {eval.StudentLastName}".Trim();
 
-        container.Border(0.5f).BorderColor(Colors.Grey.Medium).Table(table =>
+        container.ShowEntire().Border(0.5f).BorderColor(Colors.Grey.Medium).Column(col =>
         {
-            table.ColumnsDefinition(c => c.RelativeColumn());
+            SectionHeader(col, "SECTION I.  TO BE COMPLETED BY NEW YORK CITY DEPARTMENT OF EDUCATION STAFF");
 
-            table.Header(h =>
-            {
-                h.Cell().Background(HeaderBg).PaddingVertical(5).PaddingHorizontal(4)
-                 .Text("SECTION I.  TO BE COMPLETED BY NEW YORK CITY DEPARTMENT OF EDUCATION STAFF")
-                 .Bold().FontColor(Colors.White).FontSize(7.5f);
-            });
-
-            table.Cell().Padding(5).Column(inner =>
+            col.Item().Padding(5).Column(inner =>
             {
                 inner.Spacing(5);
+
                 inner.Item().Row(row =>
                 {
                     row.RelativeItem(10).Element(c => Field(c, "Name of Student:", studentName));
@@ -193,20 +203,14 @@ public class ConsentReportService : IConsentReportService
     {
         var parentName = $"{eval.ParentFirstName} {eval.ParentLastName}".Trim();
 
-        container.Border(0.5f).BorderColor(Colors.Grey.Medium).Table(table =>
+        container.ShowEntire().Border(0.5f).BorderColor(Colors.Grey.Medium).Column(col =>
         {
-            table.ColumnsDefinition(c => c.RelativeColumn());
+            SectionHeader(col, "SECTION II.  TO BE COMPLETED BY PARENT/GUARDIAN");
 
-            table.Header(h =>
-            {
-                h.Cell().Background(HeaderBg).PaddingVertical(5).PaddingHorizontal(4)
-                 .Text("SECTION II.  TO BE COMPLETED BY PARENT/GUARDIAN")
-                 .Bold().FontColor(Colors.White).FontSize(7.5f);
-            });
-
-            table.Cell().Padding(5).Column(inner =>
+            col.Item().Padding(5).Column(inner =>
             {
                 inner.Spacing(5);
+
                 inner.Item().Element(c => Field(c, "Name of Parent/Guardian:", parentName));
                 inner.Item().Element(c => Field(c, "Address:", ""));
                 inner.Item().Row(row =>
@@ -229,20 +233,14 @@ public class ConsentReportService : IConsentReportService
     // ─────────────────────────────────────────────────────────────────────────
     private void RenderSectionIII(IContainer container)
     {
-        container.Border(0.5f).BorderColor(Colors.Grey.Medium).Table(table =>
+        container.ShowEntire().Border(0.5f).BorderColor(Colors.Grey.Medium).Column(col =>
         {
-            table.ColumnsDefinition(c => c.RelativeColumn());
+            SectionHeader(col, "SECTION III.  TO BE COMPLETED BY INDIVIDUAL EVALUATOR AND AGENCY (IF APPLICABLE):");
 
-            table.Header(h =>
-            {
-                h.Cell().Background(HeaderBg).PaddingVertical(5).PaddingHorizontal(4)
-                 .Text("SECTION III.  TO BE COMPLETED BY INDIVIDUAL EVALUATOR AND AGENCY (IF APPLICABLE):")
-                 .Bold().FontColor(Colors.White).FontSize(7.5f);
-            });
-
-            table.Cell().Padding(5).Column(inner =>
+            col.Item().Padding(5).Column(inner =>
             {
                 inner.Spacing(5);
+
                 inner.Item().Element(c => Field(c, "Individual Evaluator name:", ""));
 
                 inner.Item().Row(row =>
@@ -261,8 +259,10 @@ public class ConsentReportService : IConsentReportService
                     });
                 });
 
+                // Original has the typo "Ttitle" — preserved intentionally
                 inner.Item().Element(c => Field(c, "Ttitle/Discipline:", ""));
 
+                // Dashed line separator
                 inner.Item().Text("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
                      .FontSize(6.5f).FontColor(Colors.Grey.Darken1);
 
@@ -286,8 +286,10 @@ public class ConsentReportService : IConsentReportService
         {
             col.Spacing(0);
 
+            // Top spacing
             col.Item().PaddingTop(55);
 
+            // Agency signature block
             col.Item().Row(row =>
             {
                 row.RelativeItem(5).Column(c =>
@@ -310,8 +312,10 @@ public class ConsentReportService : IConsentReportService
                 });
             });
 
+            // Large gap
             col.Item().PaddingTop(70);
 
+            // Parent consent paragraph
             col.Item().Text(
                 "I, the Student's parent/guardian, have read the above terms of provision of services. " +
                 "I have chosen the Individual Evaluator/Agency identified in Section II and grant permission " +
@@ -319,8 +323,10 @@ public class ConsentReportService : IConsentReportService
                 "necessary to conduct the evaluation."
             ).FontSize(7.5f);
 
+            // Large gap
             col.Item().PaddingTop(70);
 
+            // Parent/Guardian signature block — single line spanning all three
             col.Item().LineHorizontal(0.75f).LineColor(Colors.Grey.Darken2);
             col.Item().PaddingTop(2).Row(row =>
             {
@@ -334,6 +340,15 @@ public class ConsentReportService : IConsentReportService
     // ─────────────────────────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────────────────────────
+    private static void SectionHeader(ColumnDescriptor col, string text)
+    {
+        col.Item()
+           .Background(HeaderBg)
+           .PaddingVertical(5).PaddingHorizontal(4)
+           .Text(text)
+           .Bold().FontColor(Colors.White).FontSize(7.5f);
+    }
+
     private static void Field(IContainer container, string label, string value)
     {
         container.Text(text =>
