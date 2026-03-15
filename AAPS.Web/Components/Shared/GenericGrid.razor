@@ -22,7 +22,7 @@
           Height="75vh"
           RowsPerPage="25"
           HorizontalScrollbar="true"
-          SortLabel="Id"
+          SortLabel="Id" InitialDirection="SortDirection.Ascending"
           RowStyleFunc="@RowStyleFunc"
           Class="sticky-table mud-width-full">
     <ToolBarContent>
@@ -245,7 +245,6 @@
             _currentPage = _initialPage;
         }
         if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb;
-        if (query.TryGetValue("sortDir", out var sd) && sd == "desc") _initialSortDir = SortDirection.Descending;
 
         // 2. Load Column Filters (Data search)
         foreach (var key in query.Keys.Where(k => k.StartsWith("col_")))
@@ -402,7 +401,6 @@
         {
             state.Page = _initialPage;
             state.SortLabel = _initialSortBy;
-            state.SortDirection = _initialSortDir;
             _isFirstLoad = false;
         }
 
@@ -412,19 +410,13 @@
         // 3. Sync to URL
         UpdateUrl(request);
 
-        try
-        {
-            var result = await GetData(request, ct);
-            _pageSize = state.PageSize;
-            _totalItems = result.TotalCount;
-            return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
-        }
-        catch (OperationCanceledException)
-        {
-            // Request was cancelled by MudTable (e.g. user typed again before previous search finished)
-            // Return current data unchanged rather than crashing the ErrorBoundary
-            return new TableData<TItem> { TotalItems = _totalItems, Items = [] };
-        }
+        var result = await GetData(request, ct);
+
+        _pageSize = state.PageSize;
+
+        _totalItems = result.TotalCount;
+
+        return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
     }
 
     private void UpdateUrl(PagedRequest req)
@@ -460,5 +452,4 @@
 
     private int _initialPage = 0;
     private string? _initialSortBy;
-    private SortDirection _initialSortDir = SortDirection.Ascending;
 }
