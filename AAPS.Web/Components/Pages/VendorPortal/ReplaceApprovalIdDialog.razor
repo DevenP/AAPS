@@ -1,0 +1,57 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Class="mr-2" />
+            Replace Approval ID
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-3">
+            Enter the new Approval ID to apply to <strong>@SelectedCount</strong> selected record@(SelectedCount == 1 ? "" : "s").
+        </MudText>
+
+        <MudNumericField T="int?"
+                         @bind-Value="_newEntryId"
+                         Label="New Approval ID (Entry ID)"
+                         Variant="Variant.Outlined"
+                         Min="1"
+                         Immediate="true"
+                         AutoFocus="true"
+                         Error="@_showError"
+                         ErrorText="Please enter a valid positive number." />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Apply"
+                   Disabled="@(_newEntryId is null or <= 0)">
+            Apply
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public int SelectedCount { get; set; }
+
+    private int? _newEntryId;
+    private bool _showError = false;
+
+    private void Apply()
+    {
+        if (_newEntryId is null or <= 0)
+        {
+            _showError = true;
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(_newEntryId.Value));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

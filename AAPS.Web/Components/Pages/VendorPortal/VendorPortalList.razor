@@ -3,26 +3,59 @@
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
 @inject IVendorPortalService VendorPortalService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <GenericGrid TItem="VendorPortalDTO"
              @ref="_grid"
              Title="Vendor Portal"
-             Columns="@(new[] { "Id", "Mismatch", "AssignmentId", "StudentId", "StudentLastName", "ProviderLastName", "ApprovalStartDate", "VenderPortalFile" })"
+             Columns="@(new[] { "Id", "Mismatch", "AssignmentId", "StudentId", "StudentLastName", "ProviderLastName", "ApprovalStartDate", "VenderPortalFile", "EntryId" })"
              GetData="VendorPortalService.GetPagedAsync"
              OnFilterRemoved="OnFilterRemoved">
 
     <CustomActionContent>
-        <MudButton Variant="@(_showMismatchOnly? Variant.Filled: Variant.Outlined)"
-                   Color="Color.Warning"
-                   StartIcon="@Icons.Material.Filled.LinkOff"
-                   Size="Size.Small"
-                   Class="mr-2"
-                   OnClick="ToggleMismatchFilter">
-            Mismatched VP
-        </MudButton>
+
+        @if (_selectedIds.Count > 0)
+        {
+            <MudText Typo="Typo.caption" Class="mr-2 align-self-center">
+                @_selectedIds.Count selected
+            </MudText>
+
+            <MudMenu Label="Actions"
+                     Variant="Variant.Filled"
+                     Color="Color.Primary"
+                     EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                     Size="Size.Small"
+                     Class="mr-2">
+                <MudMenuItem Icon="@Icons.Material.Filled.SwapHoriz"
+                             OnClick="OpenReplaceApprovalId">
+                    Replace Approval ID
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.DeleteForever"
+                             IconColor="Color.Error"
+                             OnClick="ConfirmRemoveSelected">
+                    <MudText Color="Color.Error">Remove Discrepancy Record</MudText>
+                </MudMenuItem>
+            </MudMenu>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Deselect"
+                           Title="Clear selection"
+                           Size="Size.Small"
+                           OnClick="ClearSelection" />
+        }
+
     </CustomActionContent>
 
     <HeaderContent>
+        <MudTh Style="width:40px; padding: 0 8px;">
+            <MudCheckBox T="bool"
+                         Value="_allSelected"
+                         ValueChanged="ToggleSelectAll"
+                         Color="Color.Primary"
+                         Size="Size.Small" />
+        </MudTh>
+
         <GridCell TItem="VendorPortalDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="VendorPortalDTO">ID</MudTableSortLabel>
         </GridCell>
@@ -39,9 +72,20 @@
             <MudTableSortLabel SortLabel="ApprovalStartDate" T="VendorPortalDTO">Start Date</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile" IsHeader="true">File Source</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="EntryId" IsHeader="true">
+            <MudTableSortLabel SortLabel="EntryId" T="VendorPortalDTO">Approval ID</MudTableSortLabel>
+        </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="item">
+        <MudTd Style="width:40px; padding: 0 8px;">
+            <MudCheckBox T="bool"
+                         Value="_selectedIds.Contains(item.Id)"
+                         ValueChanged="@(v => ToggleRow(item.Id, v))"
+                         Color="Color.Primary"
+                         Size="Size.Small" />
+        </MudTd>
+
         <GridCell TItem="VendorPortalDTO" Column="Id">@item.Id</GridCell>
 
         <GridCell TItem="VendorPortalDTO" Column="Mismatch">
@@ -92,31 +136,117 @@
                 </span>
             </MudTooltip>
         </GridCell>
+
+        <GridCell TItem="VendorPortalDTO" Column="EntryId">
+            @if (item.EntryId.HasValue)
+            {
+                <span style="font-family: monospace;">@item.EntryId</span>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Style="opacity:0.4;">—</MudText>
+            }
+        </GridCell>
     </RowTemplate>
+
 </GenericGrid>
 
 @code {
     private GenericGrid<VendorPortalDTO> _grid = default!;
-    private bool _showMismatchOnly = false;
 
-    private async Task ToggleMismatchFilter()
+    // ── Selection state ──────────────────────────────────────────────────────
+    private HashSet<int> _selectedIds = new();
+    private bool _allSelected = false;
+
+    private void ToggleRow(int id, bool selected)
     {
-        _showMismatchOnly = !_showMismatchOnly;
+        if (selected) _selectedIds.Add(id);
+        else _selectedIds.Remove(id);
+        _allSelected = false;
+    }
 
-        if (_showMismatchOnly)
-            _grid.ColumnFilters["MismatchVP"] = "true";
-        else
-            _grid.ColumnFilters.Remove("MismatchVP");
+    private async Task ToggleSelectAll(bool selected)
+    {
+        _allSelected = selected;
+        if (!selected)
+        {
+            _selectedIds.Clear();
+            return;
+        }
 
+        var request = new AAPS.Application.Common.Paging.PagedRequest(
+            _grid.ColumnFilters.TryGetValue("Global", out var s) ? s : "",
+            _grid.ColumnFilters,
+            PageSize: -1);
+        var result = await VendorPortalService.GetPagedAsync(request);
+        _selectedIds = result.Items.Select(i => i.Id).ToHashSet();
+    }
+
+    private void ClearSelection()
+    {
+        _selectedIds.Clear();
+        _allSelected = false;
+    }
+
+    // ── Remove Discrepancy Record ────────────────────────────────────────────
+    private async Task ConfirmRemoveSelected()
+    {
+        var idsToDelete = _selectedIds.ToList();
+        var count = idsToDelete.Count;
+
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "CONFIRMATION DIALOG.",
+            $"PLEASE CONFIRM TO PROCEED — this will permanently delete {count} record{(count == 1 ? "" : "s")}.",
+            yesText: "Yes, Delete",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        await VendorPortalService.DeleteManyAsync(idsToDelete);
+        ClearSelection();
+        Snackbar.Add($"{count} discrepancy record{(count == 1 ? "" : "s")} removed.", Severity.Success);
+        await _grid.ReloadServerData();
+    }
+
+    // ── Replace Approval ID ──────────────────────────────────────────────────
+    private async Task OpenReplaceApprovalId()
+    {
+        var idsToUpdate = _selectedIds.ToList();
+        var count = idsToUpdate.Count;
+
+        var parameters = new DialogParameters { ["SelectedCount"] = count };
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ReplaceApprovalIdDialog>(
+            "Replace Approval ID", parameters, options);
+        var result = await dialog.Result;
+
+        if (result.Canceled) return;
+
+        int newEntryId = (int)result.Data!;
+
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "CONFIRMATION DIALOG.",
+            $"PLEASE CONFIRM TO PROCEED — this will replace the Approval ID on {count} record{(count == 1 ? "" : "s")} with {newEntryId}.",
+            yesText: "Yes, Replace",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        await VendorPortalService.ReplaceEntryIdAsync(idsToUpdate, newEntryId);
+        ClearSelection();
+        Snackbar.Add($"Approval ID updated to {newEntryId} on {count} record(s).", Severity.Success);
         await _grid.ReloadServerData();
     }
 
     private Task OnFilterRemoved(string key)
     {
-        // Sync toggle state if the MismatchVP chip was removed manually
-        if (key == "MismatchVP")
-            _showMismatchOnly = false;
-
+        ClearSelection();
         return Task.CompletedTask;
     }
 }

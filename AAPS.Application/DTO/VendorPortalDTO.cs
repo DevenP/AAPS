@@ -61,8 +61,6 @@ namespace AAPS.Application.DTO
         [Display(Name = "EntryId")]
         public int? EntryId { get; set; }
 
-        //
-
         [Browsable(true)]
         [Display(Name = "StudentFirstName")]
         public string? StudentFirstName { get; set; }
@@ -84,6 +82,7 @@ namespace AAPS.Application.DTO
         public string? Mismatch { get; set; } // 'Approval' or 'Provider'
 
         [Browsable(false)]
-        public bool MismatchVP { get; set; } // true when Entry_Id IS NULL (unlinked VP record)
+        [Display(Name = "Mismatched Vendor Portal")]
+        public bool MismatchedVendorPortal { get; set; } // true when Entry_Id IS NULL (unlinked VP record)
     }
 }

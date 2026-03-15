@@ -45,12 +45,27 @@ namespace AAPS.Infrastructure.Services
 
         public async Task<Application.Common.Paging.PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
         {
-            // Use the stored proc directly — the multi-join LINQ translation is
-            // unreliable with nullable datetime keys and produces wrong counts.
-            var raw = await _db.Database
-                .SqlQueryRaw<VendorPortalRaw>(
-                    "EXEC [dbo].[VendorPortal_Select] @searchBy=0, @searchByValue=NULL, @dateSearch=0, @from=NULL, @to=NULL, @unbound=0")
-                .ToListAsync(ct);
+            List<VendorPortalRaw> raw;
+            try
+            {
+                // Use the stored proc directly — the multi-join LINQ translation is
+                // unreliable with nullable datetime keys and produces wrong counts.
+                raw = await _db.Database
+                    .SqlQueryRaw<VendorPortalRaw>(
+                        "EXEC [dbo].[VendorPortal_Select] @searchBy=0, @searchByValue=NULL, @dateSearch=0, @from=NULL, @to=NULL, @unbound=0")
+                    .ToListAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return new Application.Common.Paging.PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
+            }
+            catch (Microsoft.Data.SqlClient.SqlException ex)
+                when (ct.IsCancellationRequested || ex.Message.Contains("Operation cancelled"))
+            {
+                // SQL Server surfaces cancellation as a SqlException with
+                // "severe error / Operation cancelled by user" — treat it the same way
+                return new Application.Common.Paging.PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
+            }
 
             var query = raw.Select(r => new VendorPortalDTO
             {
@@ -73,7 +88,7 @@ namespace AAPS.Infrastructure.Services
                 ProviderFirstName = r.FirstName,
                 ProviderLastName = r.LastName,
                 Mismatch = r.Mismatch,
-                MismatchVP = r.Entry_Id == null
+                MismatchedVendorPortal = r.Entry_Id == null
             });
 
             return await query.ToPagedResultAsync(request, ct);
@@ -141,6 +156,27 @@ namespace AAPS.Infrastructure.Services
                 _db.VendorPortals.Remove(entity);
                 await _db.SaveChangesAsync(ct);
             }
+        }
+
+        public async Task DeleteManyAsync(IEnumerable<int> ids, CancellationToken ct = default)
+        {
+            var idList = ids.ToList();
+            var entities = await _db.VendorPortals
+                .Where(v => idList.Contains(v.VendorPortal_Id))
+                .ToListAsync(ct);
+            _db.VendorPortals.RemoveRange(entities);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task ReplaceEntryIdAsync(IEnumerable<int> ids, int newEntryId, CancellationToken ct = default)
+        {
+            var idList = ids.ToList();
+            var entities = await _db.VendorPortals
+                .Where(v => idList.Contains(v.VendorPortal_Id))
+                .ToListAsync(ct);
+            foreach (var entity in entities)
+                entity.Entry_Id = newEntryId;
+            await _db.SaveChangesAsync(ct);
         }
 
         private static readonly Expression<Func<VendorPortal, VendorPortalDTO>> ToDTO = v => new VendorPortalDTO

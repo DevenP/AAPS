@@ -53,7 +53,11 @@ namespace AAPS.Web
 
             // 2. Register DbContextFactory (Crucial for Blazor)
             builder.Services.AddDbContextFactory<AppDbContext>(options =>
-                options.UseSqlServer(connectionString));
+                options.UseSqlServer(connectionString, sql =>
+                    sql.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorNumbersToAdd: null)));
 
             // 3. Register the Interface to map to the Factory-created context
             builder.Services.AddScoped<IAppDbContext>(p =>
@@ -159,7 +163,7 @@ namespace AAPS.Web
                     return Results.NotFound($"Evaluation {id} not found.");
 
                 // Supply logo — wwwroot/images/doe-logo.png (replace with your real file)
-                var logoPath = Path.Combine(env.WebRootPath, "images", "nyc-doe-logo.png");
+                var logoPath = Path.Combine(env.WebRootPath, "images", "nyc-doe-logo.jpg");
                 reportService.SetLogoPath(logoPath);
 
                 var pdfBytes = reportService.GenerateConsentPdf(eval);

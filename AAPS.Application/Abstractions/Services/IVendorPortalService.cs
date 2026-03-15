@@ -14,4 +14,8 @@ public interface IVendorPortalService
     Task UpdateAsync(int id, VendorPortalDTO dto, CancellationToken ct = default);
 
     Task DeleteAsync(int id, CancellationToken ct = default);
+
+    Task DeleteManyAsync(IEnumerable<int> ids, CancellationToken ct = default);
+
+    Task ReplaceEntryIdAsync(IEnumerable<int> ids, int newEntryId, CancellationToken ct = default);
 }

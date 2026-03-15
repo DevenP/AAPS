@@ -161,8 +161,7 @@ public class ProviderService : IProviderService
         {
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            // Clean masks before saving to DB
-            Ssn = dto.Ssn?.Replace("-", ""),
+            Ssn = StripSsn(dto.Ssn),
             Phone = dto.Phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", ""),
             Email = dto.Email,
             Status = ProviderStatus.Active,
@@ -195,7 +194,7 @@ public class ProviderService : IProviderService
         // (In a bigger app, use AutoMapper, but manual is safer for now)
         provider.FirstName = dto.FirstName;
         provider.LastName = dto.LastName;
-        provider.Ssn = dto.Ssn?.Replace("-", ""); // Strip mask before saving
+        provider.Ssn = StripSsn(dto.Ssn);
         provider.Email = dto.Email;
         provider.Phone = dto.Phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", "");
         provider.Status = dto.IsActive.Value ? ProviderStatus.Active : ProviderStatus.Inactive;
@@ -297,13 +296,17 @@ public class ProviderService : IProviderService
         return await _db.SaveChangesAsync(ct) > 0;
     }
 
+    /// <summary>
+    /// Strips formatting added by the UI PatternMask("000-00-0000") before persisting.
+    /// DB stores SSN as 9 raw digits with no dashes.
+    /// </summary>
+    private static string? StripSsn(string? ssn) => ssn?.Replace("-", "");
+
     private static readonly Expression<Func<Provider, ProviderDTO>> ToDTO = p => new ProviderDTO
     {
         Id = p.Provider_Id,
+        // Raw SSN — only used by GetByIdAsync for the edit form. Grid uses masked version from GetPagedAsync.
         Ssn = p.Ssn,
-        //Ssn = p.Ssn != null && p.Ssn.Length >= 4
-        //  ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4)
-        //  : "N/A",
         LastName = p.LastName,
         FirstName = p.FirstName,
         Phone = p.Phone,
