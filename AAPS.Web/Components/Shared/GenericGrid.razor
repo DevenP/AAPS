@@ -22,7 +22,7 @@
           Height="75vh"
           RowsPerPage="25"
           HorizontalScrollbar="true"
-          SortLabel="Id" InitialDirection="SortDirection.Ascending"
+          SortLabel="Id"
           RowStyleFunc="@RowStyleFunc"
           Class="sticky-table mud-width-full">
     <ToolBarContent>
@@ -245,6 +245,7 @@
             _currentPage = _initialPage;
         }
         if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb;
+        if (query.TryGetValue("sortDir", out var sd) && sd == "desc") _initialSortDir = SortDirection.Descending;
 
         // 2. Load Column Filters (Data search)
         foreach (var key in query.Keys.Where(k => k.StartsWith("col_")))
@@ -401,6 +402,7 @@
         {
             state.Page = _initialPage;
             state.SortLabel = _initialSortBy;
+            state.SortDirection = _initialSortDir;
             _isFirstLoad = false;
         }
 
@@ -458,4 +460,5 @@
 
     private int _initialPage = 0;
     private string? _initialSortBy;
+    private SortDirection _initialSortDir = SortDirection.Ascending;
 }
