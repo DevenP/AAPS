@@ -420,7 +420,7 @@
 
     private async Task ConfirmDelete(FileExplorerItem item)
     {
-        bool? confirm = await DialogService.ShowMessageBox(
+        bool? confirm = await DialogService.ShowMessageBoxAsync(
             "Confirm Delete",
             $"Delete \"{item.Name}\"?",
             yesText: "Delete",

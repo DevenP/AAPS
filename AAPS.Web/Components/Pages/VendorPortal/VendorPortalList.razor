@@ -194,7 +194,7 @@
         var idsToDelete = _selectedIds.ToList();
         var count = idsToDelete.Count;
 
-        bool? confirmed = await DialogService.ShowMessageBox(
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
             "CONFIRMATION DIALOG.",
             $"PLEASE CONFIRM TO PROCEED — this will permanently delete {count} record{(count == 1 ? "" : "s")}.",
             yesText: "Yes, Delete",
@@ -230,7 +230,7 @@
 
         int newEntryId = (int)result.Data!;
 
-        bool? confirmed = await DialogService.ShowMessageBox(
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
             "CONFIRMATION DIALOG.",
             $"PLEASE CONFIRM TO PROCEED — this will replace the Approval ID on {count} record{(count == 1 ? "" : "s")} with {newEntryId}.",
             yesText: "Yes, Replace",
