@@ -118,7 +118,7 @@
     </NoRecordsContent>
 
     <PagerContent>
-        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+        <MudTablePager PageSizeOptions="new int[] { 50, 100, 200, 500 }" />
     </PagerContent>
     @*
     <PagerContent>
@@ -230,7 +230,7 @@
     private int _currentPage;
 
     private int _totalItems;
-    private int _pageSize = 25;
+    private int _pageSize = 50;
 
     protected override void OnInitialized()
     {
@@ -432,7 +432,7 @@
         // 1. Standard Paging/Search Params
         if (!string.IsNullOrWhiteSpace(req.Search)) queryParams["search"] = req.Search;
         if (req.Page > 1) queryParams["page"] = req.Page.ToString();
-        if (req.PageSize != 25) queryParams["pageSize"] = req.PageSize.ToString();
+        if (req.PageSize != 50) queryParams["pageSize"] = req.PageSize.ToString();
         if (!string.IsNullOrWhiteSpace(req.SortBy)) queryParams["sortBy"] = req.SortBy;
         if (req.SortDir == "desc") queryParams["sortDir"] = "desc";
 
