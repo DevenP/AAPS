@@ -198,11 +198,11 @@
                     // Prompt user to reopen and upload files — stays visible 8 seconds
                     Snackbar.Add<ProviderSavedNotice>(
                         new Dictionary<string, object>
-                        {
+                            {
                             { "ProviderName", $"{savedDto.FirstName} {savedDto.LastName}" },
                             { "OnOpenFiles", EventCallback.Factory.Create(this, async () =>
                                 await OpenEditDialog(await ProviderService.GetByIdAsync(savedId))) }
-                        },
+                            },
                         Severity.Success,
                         config =>
                         {
@@ -214,6 +214,11 @@
                 {
                     Snackbar.Add("Saved successfully!", Severity.Success);
                 }
+            }
+            else
+            {
+                Snackbar.Add("Error occured while saving!", Severity.Error);
+            
             }
         }
     }

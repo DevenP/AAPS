@@ -12,13 +12,17 @@ public class ProviderValidator : AbstractValidator<ProviderDTO>
         RuleFor(x => x.LastName)
             .NotEmpty().WithMessage("Last Name is required")
             .MaximumLength(50).WithMessage("Last Name cannot exceed 50 characters");
+
         RuleFor(x => x.Email)
             .EmailAddress().When(x => !string.IsNullOrEmpty(x.Email))
             .WithMessage("Please enter a valid work email.");
 
         RuleFor(x => x.Ssn)
-            .Matches(@"^\d{9}$").WithMessage("SSN must be exactly 9 digits (no dashes).")
-            .When(x => !string.IsNullOrEmpty(x.Ssn));
+            .NotEmpty().WithMessage("Ssn is required");
+
+        //RuleFor(x => x.Ssn)
+        //    .Matches(@"^\d{9}$").WithMessage("SSN must be exactly 9 digits (no dashes).")
+        //    .When(x => !string.IsNullOrEmpty(x.Ssn));
 
         // Logic Validation
         RuleFor(x => x.License1Expiration)

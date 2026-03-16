@@ -212,61 +212,68 @@ public class ProviderService : IProviderService
 
     public async Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts)
     {
-        using var transaction = await _db.Database.BeginTransactionAsync();
-        try
+        // EnableRetryOnFailure requires all transactions to go through CreateExecutionStrategy
+        // so EF can retry the entire unit if a transient failure occurs.
+        var strategy = _db.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
         {
-            // 1. Update/Add the Provider
-            int providerId = dto.Id == 0 ? await AddAsync(dto) : dto.Id;
-            if (dto.Id > 0) await UpdateAsync(dto);
-
-            // 2. Fetch the current state from DB
-            var dbContacts = await _db.Provider_Contacts
-                .Where(c => c.Provider_Id == providerId)
-                .ToListAsync();
-
-            // --- THE DELTA LOGIC ---
-
-            // A. DELETE: Find IDs in DB that are NOT in the incoming list
-            var incomingIds = contacts.Select(c => c.Id).ToList();
-            var toDelete = dbContacts.Where(c => !incomingIds.Contains(c.Contact_Id));
-            _db.Provider_Contacts.RemoveRange(toDelete);
-
-            // B. ADD / UPDATE: Loop through incoming
-            foreach (var c in contacts)
+            using var transaction = await _db.Database.BeginTransactionAsync();
+            try
             {
-                if (string.IsNullOrWhiteSpace(c.Notes)) continue;
+                // 1. Update/Add the Provider
+                int providerId = dto.Id == 0 ? await AddAsync(dto) : dto.Id;
+                if (dto.Id > 0) await UpdateAsync(dto);
 
-                if (c.Id == 0)
+                // 2. Fetch the current state from DB
+                var dbContacts = await _db.Provider_Contacts
+                    .Where(c => c.Provider_Id == providerId)
+                    .ToListAsync();
+
+                // --- THE DELTA LOGIC ---
+
+                // A. DELETE: Find IDs in DB that are NOT in the incoming list
+                var incomingIds = contacts.Select(c => c.Id).ToList();
+                var toDelete = dbContacts.Where(c => !incomingIds.Contains(c.Contact_Id));
+                _db.Provider_Contacts.RemoveRange(toDelete);
+
+                // B. ADD / UPDATE: Loop through incoming
+                foreach (var c in contacts)
                 {
-                    // It's a brand NEW row from the UI
-                    _db.Provider_Contacts.Add(new Provider_Contact
+                    if (string.IsNullOrWhiteSpace(c.Notes)) continue;
+
+                    if (c.Id == 0)
                     {
-                        Provider_Id = providerId,
-                        ContactNote = c.Notes,
-                        ContactDate = DateTime.Now
-                    });
-                }
-                else
-                {
-                    // It's an EXISTING row - find it and update it
-                    var existing = dbContacts.FirstOrDefault(x => x.Contact_Id == c.Id);
-                    if (existing != null)
+                        // It's a brand NEW row from the UI
+                        _db.Provider_Contacts.Add(new Provider_Contact
+                        {
+                            Provider_Id = providerId,
+                            ContactNote = c.Notes,
+                            ContactDate = DateTime.Now
+                        });
+                    }
+                    else
                     {
-                        existing.ContactNote = c.Notes;
-                        // We DON'T change the date, keeping the original timestamp!
+                        // It's an EXISTING row - find it and update it
+                        var existing = dbContacts.FirstOrDefault(x => x.Contact_Id == c.Id);
+                        if (existing != null)
+                        {
+                            existing.ContactNote = c.Notes;
+                            // We DON'T change the date, keeping the original timestamp!
+                        }
                     }
                 }
-            }
 
-            await _db.SaveChangesAsync();
-            await transaction.CommitAsync();
-            return providerId;
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            return 0;
-        }
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return providerId;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return 0;
+            }
+        });
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
