@@ -20,7 +20,7 @@
           FixedHeader="true"
           FixedFooter="true"
           Height="75vh"
-          RowsPerPage="25"
+          RowsPerPage="@_pageSize"
           HorizontalScrollbar="true"
           SortLabel="Id" InitialDirection="SortDirection.Ascending"
           RowStyleFunc="@RowStyleFunc"
@@ -230,7 +230,7 @@
     private int _currentPage;
 
     private int _totalItems;
-    private int _pageSize;
+    private int _pageSize = 25;
 
     protected override void OnInitialized()
     {
@@ -243,6 +243,10 @@
         {
             _initialPage = page - 1;
             _currentPage = _initialPage;
+        }
+        if (query.TryGetValue("pageSize", out var ps) && int.TryParse(ps, out var pageSize) && pageSize > 0)
+        {
+            _pageSize = pageSize;
         }
         if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb;
 
@@ -401,6 +405,7 @@
         {
             state.Page = _initialPage;
             state.SortLabel = _initialSortBy;
+            state.PageSize = _pageSize;
             _isFirstLoad = false;
         }
 
@@ -427,6 +432,7 @@
         // 1. Standard Paging/Search Params
         if (!string.IsNullOrWhiteSpace(req.Search)) queryParams["search"] = req.Search;
         if (req.Page > 1) queryParams["page"] = req.Page.ToString();
+        if (req.PageSize != 25) queryParams["pageSize"] = req.PageSize.ToString();
         if (!string.IsNullOrWhiteSpace(req.SortBy)) queryParams["sortBy"] = req.SortBy;
         if (req.SortDir == "desc") queryParams["sortDir"] = "desc";
 
