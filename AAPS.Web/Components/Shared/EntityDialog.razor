@@ -43,7 +43,7 @@
 
     private async Task Submit()
     {
-        await _form.Validate();
+        await _form.ValidateAsync();
         StateHasChanged();
 
         var errors = ValidateModel != null

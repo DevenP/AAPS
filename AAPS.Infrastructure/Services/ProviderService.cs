@@ -6,7 +6,6 @@ using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services;
@@ -22,7 +21,7 @@ public class ProviderService : IProviderService
         _logger = logger;
     }
 
-    public async Task<Application.Common.Paging.PagedResult<ProviderDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
+    public async Task<PagedResult<ProviderDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
         // 1. Apply global search on the raw entity BEFORE any joins/projections
@@ -149,7 +148,7 @@ public class ProviderService : IProviderService
             IsDuplicateName = duplicateIds.Contains(dto.Id)
         }).ToList();
 
-        return new Application.Common.Paging.PagedResult<ProviderDTO>(stamped, paged.Page, paged.PageSize, paged.TotalCount);
+        return new PagedResult<ProviderDTO>(stamped, paged.Page, paged.PageSize, paged.TotalCount);
     }
 
 

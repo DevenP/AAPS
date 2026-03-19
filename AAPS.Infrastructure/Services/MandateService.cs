@@ -5,7 +5,6 @@ using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services;
@@ -16,7 +15,7 @@ public class MandateService : IMandateService
 
     public MandateService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
 
-    public async Task<Application.Common.Paging.PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
+    public async Task<PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
         var assignedIds = db.Seses

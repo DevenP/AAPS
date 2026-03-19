@@ -1,0 +1,106 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Paging
+@using AAPS.Application.DTO
+@inject IGDistrictService GDistrictService
+@inject IServiceTypeService ServiceTypeService
+@inject ILanguageService LanguageService
+
+<MudGrid>
+
+    @* District — dropdown on Add, read-only on Edit *@
+    <MudItem xs="12" sm="6">
+        @if (_isNew)
+        {
+            <MudSelect @bind-Value="Model.District" T="string" Label="District" Required
+                       Validation="@Validator" For="@(() => Model.District)"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var d in _districts)
+                {
+                    <MudSelectItem T="string" Value="@d.DistrictCode">@d.DistrictCode</MudSelectItem>
+                }
+            </MudSelect>
+        }
+        else
+        {
+            <MudTextField Value="@Model.District" Label="District"
+                          ReadOnly="true" Variant="Variant.Filled" />
+        }
+    </MudItem>
+
+    @* Service Type — dropdown on Add, read-only on Edit *@
+    <MudItem xs="12" sm="6">
+        @if (_isNew)
+        {
+            <MudSelect @bind-Value="Model.ServiceType" T="string" Label="Service Type" Required
+                       Validation="@Validator" For="@(() => Model.ServiceType)"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var s in _serviceTypes)
+                {
+                    <MudSelectItem T="string" Value="@s.Name">@s.Name</MudSelectItem>
+                }
+            </MudSelect>
+        }
+        else
+        {
+            <MudTextField Value="@Model.ServiceType" Label="Service Type"
+                          ReadOnly="true" Variant="Variant.Filled" />
+        }
+    </MudItem>
+
+    @* Language — dropdown on Add, read-only on Edit *@
+    <MudItem xs="12" sm="6">
+        @if (_isNew)
+        {
+            <MudSelect @bind-Value="Model.Language" T="string" Label="Language" Required
+                       Validation="@Validator" For="@(() => Model.Language)"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var l in _languages)
+                {
+                    <MudSelectItem T="string" Value="@l.Name">@l.Name</MudSelectItem>
+                }
+            </MudSelect>
+        }
+        else
+        {
+            <MudTextField Value="@Model.Language" Label="Language"
+                          ReadOnly="true" Variant="Variant.Filled" />
+        }
+    </MudItem>
+
+    @* Rate — always editable *@
+    <MudItem xs="12" sm="6">
+        <MudNumericField @bind-Value="Model.Rate" T="decimal?" Label="Rate" Required
+                         Format="F2" Min="1m"
+                         Adornment="Adornment.Start" AdornmentText="$"
+                         Validation="@Validator" For="@(() => Model.Rate)" />
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter] public BillingRateDTO Model { get; set; } = default!;
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>>? Validator { get; set; }
+
+    private bool _isNew => Model.Id == 0;
+
+    private List<GDistrictDTO>    _districts    = new();
+    private List<ServiceTypeDTO>  _serviceTypes = new();
+    private List<LanguageDTO>     _languages    = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_isNew) return;
+
+        var allRequest = new PagedRequest("", new Dictionary<string, string>(), PageSize: -1);
+
+        var districtsTask     = GDistrictService.GetPagedAsync(allRequest);
+        var serviceTypesTask  = ServiceTypeService.GetPagedAsync(allRequest);
+        var languagesTask     = LanguageService.GetPagedAsync(allRequest);
+
+        await Task.WhenAll(districtsTask, serviceTypesTask, languagesTask);
+
+        _districts    = (await districtsTask).Items.ToList();
+        _serviceTypes = (await serviceTypesTask).Items.ToList();
+        _languages    = (await languagesTask).Items.ToList();
+    }
+}

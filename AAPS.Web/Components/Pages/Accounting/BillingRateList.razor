@@ -1,17 +1,32 @@
-﻿@page "/billingrates"
+@page "/billingrates"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Accounting.Forms
 @using AAPS.Web.Components.Shared
 @inject IBillingRateService BillingRateService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
-<GenericGrid TItem="BillingRateDTO"
+<GenericGrid @ref="_grid" TItem="BillingRateDTO"
              Title="Billing Rates"
-             Columns="@(new[] { "Id", "District", "ServiceType", "Language", "Rate", "EffectiveDate", "IsActive" })"
+             Columns="@(new[] { "Actions", "Id", "District", "ServiceType", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="BillingRateService.GetPagedAsync"
              ExportHeaders="@(new[] { "ID", "District", "Service", "Language", "Rate", "Effective Date", "Active" })"
              ExportMapper="@(r => new object[] { r.Id, r.District, r.ServiceType, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
 
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add Rate
+        </MudButton>
+    </CustomActionContent>
+
     <HeaderContent>
+        <GridCell TItem="BillingRateDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="BillingRateDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="BillingRateDTO">ID</MudTableSortLabel>
         </GridCell>
@@ -36,6 +51,18 @@
     </HeaderContent>
 
     <RowTemplate Context="rate">
+        <GridCell TItem="BillingRateDTO" Column="Actions">
+            <div class="d-flex">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small" Color="Color.Primary"
+                               Title="Edit Rate"
+                               OnClick="@(() => OpenEditDialog(rate))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small" Color="Color.Error"
+                               Title="Deactivate Rate"
+                               OnClick="@(() => OnDeleteClicked(rate))" />
+            </div>
+        </GridCell>
         <GridCell TItem="BillingRateDTO" Column="Id">@rate.Id</GridCell>
         <GridCell TItem="BillingRateDTO" Column="District">@rate.District</GridCell>
         <GridCell TItem="BillingRateDTO" Column="ServiceType">@rate.ServiceType</GridCell>
@@ -57,4 +84,100 @@
             </MudChip>
         </GridCell>
     </RowTemplate>
+
 </GenericGrid>
+
+@code {
+    private GenericGrid<BillingRateDTO>? _grid;
+    private BillingRateValidator _validator = new();
+
+    private async Task OpenEditDialog(BillingRateDTO? rate = null)
+    {
+        BillingRateDTO model;
+
+        if (rate == null)
+        {
+            model = new BillingRateDTO();
+        }
+        else
+        {
+            var fresh = await BillingRateService.GetByIdAsync(rate.Id);
+            if (fresh == null) return;
+            model = fresh;
+        }
+
+        var parameters = new DialogParameters<EntityDialog<BillingRateDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, rate == null ? "Add Billing Rate" : "Edit Billing Rate");
+        parameters.Add(x => x.IsNew, rate == null);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (BillingRateDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
+        parameters.Add(x => x.ChildContent, (BillingRateDTO context) =>
+            @<BillingRateForm Model="context" />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<BillingRateDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is BillingRateDTO saved)
+        {
+            try
+            {
+                if (rate == null)
+                {
+                    await BillingRateService.CreateAsync(saved);
+                    Snackbar.Add("Billing rate added successfully.", Severity.Success);
+                }
+                else
+                {
+                    await BillingRateService.UpdateAsync(rate.Id, saved);
+                    Snackbar.Add("Billing rate updated successfully.", Severity.Success);
+                }
+
+                await _grid!.ReloadServerData();
+            }
+            catch (InvalidOperationException ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Warning);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred while saving.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDeleteClicked(BillingRateDTO rate)
+    {
+        // Fetch usage counts so the confirm dialog is informative
+        var usage = await BillingRateService.GetUsageCountAsync(rate.Id);
+
+        var message = $"Permanently delete the rate for {rate.District} / {rate.ServiceType} / {rate.Language} ({rate.Rate:C2})?";
+
+        if (usage.SesiCount > 0 || usage.EvalCount > 0)
+            message += $"\n\nThis rate is currently referenced by {usage.SesiCount} session record(s) and {usage.EvalCount} evaluation record(s). Those records will retain their existing rate values.";
+
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Billing Rate",
+            message,
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed == true)
+        {
+            try
+            {
+                await BillingRateService.DeleteAsync(rate.Id);
+                Snackbar.Add("Billing rate deleted.", Severity.Success);
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred during deletion.", Severity.Error);
+            }
+        }
+    }
+}

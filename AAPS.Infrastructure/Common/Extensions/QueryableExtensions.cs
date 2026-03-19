@@ -1,4 +1,4 @@
-﻿using AAPS.Application.Common.Paging;
+using AAPS.Application.Common.Paging;
 using AAPS.Application.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
@@ -8,10 +8,10 @@ namespace AAPS.Infrastructure.Common.Extensions
 {
     public static class QueryableExtensions
     {
-        // ── In-memory overload (for raw SQL / stored proc results) ───────────────
+        // -- In-memory overload (for raw SQL / stored proc results) ---------------
         // Use this when the source is already materialized (e.g. from SqlQueryRaw).
         // Applies search, column filters, sorting, and paging entirely in memory.
-        public static Task<Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
+        public static Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
             this IEnumerable<T> source,
             PagedRequest request,
             CancellationToken ct = default) where T : class
@@ -35,7 +35,7 @@ namespace AAPS.Infrastructure.Common.Extensions
 
             // Export
             if (request.PageSize == -1)
-                return Task.FromResult(new Application.Common.Paging.PagedResult<T>(list, 1, totalCount, totalCount));
+                return Task.FromResult(new AAPS.Application.Common.Paging.PagedResult<T>(list, 1, totalCount, totalCount));
 
             var page = request.Page < 1 ? 1 : request.Page;
             var pageSize = request.PageSize <= 0 ? 25 : request.PageSize;
@@ -45,7 +45,7 @@ namespace AAPS.Infrastructure.Common.Extensions
                 .Take(pageSize)
                 .ToList();
 
-            return Task.FromResult(new Application.Common.Paging.PagedResult<T>(items, page, pageSize, totalCount));
+            return Task.FromResult(new AAPS.Application.Common.Paging.PagedResult<T>(items, page, pageSize, totalCount));
         }
 
         private static IEnumerable<T> ApplySearchInMemory<T>(IEnumerable<T> source, string term) where T : class
@@ -120,8 +120,8 @@ namespace AAPS.Infrastructure.Common.Extensions
                 : source.OrderBy(x => prop.GetValue(x));
         }
 
-        // ── EF Core / IQueryable overload ────────────────────────────────────────
-        public static async Task<Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
+        // -- EF Core / IQueryable overload ----------------------------------------
+        public static async Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
             this IQueryable<T> query,
             PagedRequest request,
             CancellationToken ct = default,
@@ -135,14 +135,14 @@ namespace AAPS.Infrastructure.Common.Extensions
             if (request.ColumnFilters != null && request.ColumnFilters.Any())
                 query = ApplyColumnFilters(query, request.ColumnFilters);
 
-            // Sorting — always apply to guarantee stable pagination (falls back to "Id" if no column specified)
+            // Sorting � always apply to guarantee stable pagination (falls back to "Id" if no column specified)
             query = ApplySort(query, request.SortBy, request.SortDir);
 
-            // Export — return everything without a separate COUNT query
+            // Export � return everything without a separate COUNT query
             if (request.PageSize == -1)
             {
                 var allItems = await query.ToListAsync(ct);
-                return new Application.Common.Paging.PagedResult<T>(allItems, 1, allItems.Count, allItems.Count);
+                return new AAPS.Application.Common.Paging.PagedResult<T>(allItems, 1, allItems.Count, allItems.Count);
             }
 
             var totalCount = await query.CountAsync(ct);
@@ -155,7 +155,7 @@ namespace AAPS.Infrastructure.Common.Extensions
                 .Take(pageSize)
                 .ToListAsync(ct);
 
-            return new Application.Common.Paging.PagedResult<T>(items, page, pageSize, totalCount);
+            return new AAPS.Application.Common.Paging.PagedResult<T>(items, page, pageSize, totalCount);
         }
 
         private static IQueryable<T> ApplyColumnFilters<T>(IQueryable<T> query, Dictionary<string, string> filters)
@@ -192,7 +192,7 @@ namespace AAPS.Infrastructure.Common.Extensions
                         query = query.Where($"{prop.Name} != null && {prop.Name} <= @0", endOfDay);
                     }
                 }
-                // Handle STRINGS — "null", "notnull", or plain contains
+                // Handle STRINGS � "null", "notnull", or plain contains
                 else if (type == typeof(string))
                 {
                     var val = filter.Value.ToLower();

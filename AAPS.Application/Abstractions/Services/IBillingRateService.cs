@@ -1,7 +1,9 @@
-﻿using AAPS.Application.Common.Paging;
+using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 
 namespace AAPS.Application.Abstractions.Services;
+
+public record BillingRateUsage(int SesiCount, int EvalCount);
 
 public interface IBillingRateService
 {
@@ -14,4 +16,6 @@ public interface IBillingRateService
     Task UpdateAsync(int id, BillingRateDTO dto, CancellationToken ct = default);
 
     Task DeleteAsync(int id, CancellationToken ct = default);
+
+    Task<BillingRateUsage> GetUsageCountAsync(int id, CancellationToken ct = default);
 }

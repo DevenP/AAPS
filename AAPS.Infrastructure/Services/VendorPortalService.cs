@@ -43,7 +43,7 @@ namespace AAPS.Infrastructure.Services
             _factory = factory;
         }
 
-        public async Task<Application.Common.Paging.PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
+        public async Task<PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
         {
             await using var db = _factory.CreateDbContext();
             List<VendorPortalRaw> raw;
@@ -58,14 +58,14 @@ namespace AAPS.Infrastructure.Services
             }
             catch (OperationCanceledException)
             {
-                return new Application.Common.Paging.PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
+                return new PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
             }
             catch (Microsoft.Data.SqlClient.SqlException ex)
                 when (ct.IsCancellationRequested || ex.Message.Contains("Operation cancelled"))
             {
                 // SQL Server surfaces cancellation as a SqlException with
                 // "severe error / Operation cancelled by user" — treat it the same way
-                return new Application.Common.Paging.PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
+                return new PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
             }
 
             var query = raw.Select(r => new VendorPortalDTO
