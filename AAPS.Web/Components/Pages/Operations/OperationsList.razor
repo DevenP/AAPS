@@ -4,8 +4,6 @@
 @using AAPS.Web.Components.Shared
 @inject ISesiService SesiService
 
-<MudText Typo="Typo.h4" Class="mb-4">Operations Dashboard</MudText>
-
 <GenericGrid TItem="OperationsDTO"
              Title="Operations Registry"
              Columns="@(new[] { "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
