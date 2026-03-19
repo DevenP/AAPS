@@ -6,6 +6,7 @@ using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services;
@@ -13,10 +14,12 @@ namespace AAPS.Infrastructure.Services;
 public class BillingRateService : IBillingRateService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
+    private readonly ILogger<BillingRateService> _logger;
 
-    public BillingRateService(IDbContextFactory<AppDbContext> factory)
+    public BillingRateService(IDbContextFactory<AppDbContext> factory, ILogger<BillingRateService> logger)
     {
         _factory = factory;
+        _logger = logger;
     }
 
     public async Task<PagedResult<BillingRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
@@ -51,6 +54,9 @@ public class BillingRateService : IBillingRateService
     {
         await using var db = _factory.CreateDbContext();
 
+        _logger.LogInformation("Creating billing rate {District}/{ServiceType}/{Language} at {Rate:C2}",
+            dto.District, dto.ServiceType, dto.Language, dto.Rate);
+
         // Guard: duplicate combo (any record — active or historical — for this combo blocks insert)
         var exists = await db.BillingRates.AnyAsync(b =>
             b.District == dto.District &&
@@ -58,9 +64,13 @@ public class BillingRateService : IBillingRateService
             b.Lang == dto.Language, ct);
 
         if (exists)
+        {
+            _logger.LogWarning("Billing rate already exists for {District}/{ServiceType}/{Language}",
+                dto.District, dto.ServiceType, dto.Language);
             throw new InvalidOperationException(
                 "A rate for this District / Service Type / Language combination already exists. " +
                 "Use Edit to update the rate.");
+        }
 
         // Insert new active rate
         var entity = new BillingRate
@@ -75,9 +85,12 @@ public class BillingRateService : IBillingRateService
         db.BillingRates.Add(entity);
         await db.SaveChangesAsync(ct);
 
+        _logger.LogInformation("Billing rate {Id} created for {District}/{ServiceType}/{Language} at {Rate:C2}",
+            entity.BillingRate_Id, dto.District, dto.ServiceType, dto.Language, dto.Rate);
+
         // Cascade bRate + bAmount to matching Sesis rows
         // Duration and Actual_Size are varchar — must use raw SQL for the CONVERT
-        await db.Database.ExecuteSqlRawAsync(
+        var sesisCount = await db.Database.ExecuteSqlRawAsync(
             @"UPDATE Sesis
               SET bRate   = @rate,
                   bAmount = @rate * CONVERT(int, Duration) / 60.0 / CONVERT(int, Actual_Size)
@@ -89,8 +102,10 @@ public class BillingRateService : IBillingRateService
             new SqlParameter("@district",    dto.District    ?? ""),
             new SqlParameter("@lang",        dto.Language    ?? ""));
 
+        _logger.LogInformation("Cascaded rate to {Count} Sesis records", sesisCount);
+
         // Cascade bAmount to matching Evals rows (RTRIM matches proc behaviour)
-        await db.Database.ExecuteSqlRawAsync(
+        var evalsCount = await db.Database.ExecuteSqlRawAsync(
             @"UPDATE Evals
               SET bAmount = @rate
               WHERE RTRIM(ServiceType) = RTRIM(@serviceType)
@@ -100,6 +115,8 @@ public class BillingRateService : IBillingRateService
             new SqlParameter("@serviceType", dto.ServiceType ?? ""),
             new SqlParameter("@district",    dto.District    ?? ""),
             new SqlParameter("@lang",        dto.Language    ?? ""));
+
+        _logger.LogInformation("Cascaded rate to {Count} Evals records", evalsCount);
 
         return entity.BillingRate_Id;
     }
@@ -111,9 +128,15 @@ public class BillingRateService : IBillingRateService
         var existing = await db.BillingRates.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException("Billing rate not found.");
 
+        _logger.LogInformation("Updating billing rate {Id}: rate change from {OldRate:C2} to {NewRate:C2} for {District}/{ServiceType}/{Language}",
+            id, existing.Rate, dto.Rate, existing.District, existing.ServiceType, existing.Lang);
+
         // Guard: rate unchanged
         if (existing.Rate == dto.Rate)
+        {
+            _logger.LogWarning("Billing rate {Id} update skipped — rate unchanged at {Rate:C2}", id, existing.Rate);
             throw new InvalidOperationException("The new rate is the same as the current rate. No changes were made.");
+        }
 
         // Deactivate the old row (audit trail — matches proc behaviour)
         existing.Active = null;
@@ -130,6 +153,8 @@ public class BillingRateService : IBillingRateService
         };
         db.BillingRates.Add(newEntity);
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Billing rate {Id} deactivated, new rate record {NewId} created", id, newEntity.BillingRate_Id);
         // Note: the original stored proc does not cascade rate changes to Sesis/Evals on update
     }
 
@@ -139,8 +164,11 @@ public class BillingRateService : IBillingRateService
         var entity = await db.BillingRates.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
+            _logger.LogInformation("Deleting billing rate {Id} ({District}/{ServiceType}/{Language} at {Rate:C2})",
+                id, entity.District, entity.ServiceType, entity.Lang, entity.Rate);
             db.BillingRates.Remove(entity);
             await db.SaveChangesAsync(ct);
+            _logger.LogInformation("Billing rate {Id} deleted", id);
         }
     }
 

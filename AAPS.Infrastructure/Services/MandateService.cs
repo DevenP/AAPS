@@ -5,6 +5,7 @@ using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services;
@@ -12,8 +13,13 @@ namespace AAPS.Infrastructure.Services;
 public class MandateService : IMandateService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
+    private readonly ILogger<MandateService> _logger;
 
-    public MandateService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
+    public MandateService(IDbContextFactory<AppDbContext> factory, ILogger<MandateService> logger)
+    {
+        _factory = factory;
+        _logger = logger;
+    }
 
     public async Task<PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
@@ -135,8 +141,14 @@ public class MandateService : IMandateService
             RowNumber = dto.RowNumber,
             Service_Start_Date = dto.ServiceStartDate
         };
+        _logger.LogInformation("Creating mandate for student {StudentId} ({LastName}, {FirstName})",
+            dto.StudentId, dto.LastName, dto.FirstName);
+
         db.Mandates.Add(entity);
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Mandate {Id} created for student {StudentId}", entity.Entry_Id, dto.StudentId);
+
         return entity.Entry_Id;
     }
 
@@ -144,6 +156,8 @@ public class MandateService : IMandateService
     {
         await using var db = _factory.CreateDbContext();
         var entity = await db.Mandates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+
+        _logger.LogInformation("Updating mandate {Id} for student {StudentId}", id, entity.Student_ID);
         entity.Conf_Date = dto.ConferenceDate;
         entity.Student_ID = dto.StudentId;
         entity.Last_Name = dto.LastName;
@@ -172,6 +186,8 @@ public class MandateService : IMandateService
         entity.RowNumber = dto.RowNumber;
         entity.Service_Start_Date = dto.ServiceStartDate;
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Mandate {Id} updated", id);
     }
 
 
@@ -181,8 +197,10 @@ public class MandateService : IMandateService
         var entity = await db.Mandates.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
+            _logger.LogInformation("Deleting mandate {Id} for student {StudentId}", id, entity.Student_ID);
             db.Mandates.Remove(entity);
             await db.SaveChangesAsync(ct);
+            _logger.LogInformation("Mandate {Id} deleted", id);
         }
     }
 

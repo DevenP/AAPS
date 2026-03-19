@@ -137,7 +137,9 @@ public class ImportService : IImportService
                     $"Header mismatch(es):\n{string.Join("\n", mismatches)}");
             }
 
-            return type switch
+            _logger.LogInformation("Parsing {Type} file: {FileName} ({Bytes} bytes)", type, fileName, fileBytes.Length);
+
+            var parseResult = type switch
             {
                 ImportType.Mandates => ParseMandates(ws, fileName, fileBytes),
                 ImportType.Sesis => ParseSesis(ws, fileName, fileBytes),
@@ -145,6 +147,11 @@ public class ImportService : IImportService
                 ImportType.Payments => ParsePayments(ws, fileName, fileBytes),
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
+
+            _logger.LogInformation("Parse complete for {FileName}: {Valid} valid row(s), {Skipped} skipped",
+                fileName, parseResult.ValidRows.Count, parseResult.SkippedRows.Count);
+
+            return parseResult;
         }
     }
 
@@ -493,6 +500,9 @@ public class ImportService : IImportService
 
     public async Task<ImportCommitResult> CommitAsync(ImportType type, ImportPreviewResult preview, CancellationToken ct = default)
     {
+        _logger.LogInformation("Committing {Type} import: {FileName} ({ValidRows} rows to process)",
+            type, preview.FileName, preview.ValidRows.Count);
+
         var result = type switch
         {
             ImportType.Mandates => await CommitMandatesAsync(preview, ct),
@@ -525,6 +535,13 @@ public class ImportService : IImportService
         {
             importRecord = "Complete Import.";
         }
+
+        if (type == ImportType.Payments)
+            _logger.LogInformation("Commit complete for {FileName}: {Updated} row(s) updated, {Skipped} no match",
+                preview.FileName, result.Updated, result.Skipped);
+        else
+            _logger.LogInformation("Commit complete for {FileName}: {Inserted} inserted, {Skipped} skipped",
+                preview.FileName, result.Inserted, result.Skipped);
 
         await _importLogService.CreateAsync(new ImportLogDTO
         {
@@ -634,6 +651,9 @@ public class ImportService : IImportService
 
                 int newEntryId = entity.Entry_Id;
 
+                _logger.LogInformation("Mandate {EntryId} created for student {StudentId} from row {Row}",
+                    newEntryId, studentId, i - 3);
+
                 // Backfill unlinked Sesis rows that match this mandate
                 if (int.TryParse(dur.Split(' ')[0], out int durInt))
                 {
@@ -647,6 +667,7 @@ public class ImportService : IImportService
                                     s.date_of_Service <= mandateEnd)
                         .ToListAsync(ct);
 
+                    int backfillCount = 0;
                     foreach (var sesi in matchingSesis)
                     {
                         if (!int.TryParse(sesi.Duration, out int sesiDur)) continue;
@@ -658,9 +679,13 @@ public class ImportService : IImportService
                         if (!groupMatch) continue;
 
                         sesi.Entry_Id = newEntryId;
+                        backfillCount++;
                     }
 
                     await db.SaveChangesAsync(ct);
+
+                    if (backfillCount > 0)
+                        _logger.LogInformation("Backfilled Entry_Id {EntryId} onto {Count} sesi record(s)", newEntryId, backfillCount);
                 }
 
                 inserted++;
@@ -1102,7 +1127,11 @@ public class ImportService : IImportService
                 vp.Entry_Id = matchedMandate.Entry_Id;
         }
 
+        int vpBackfillCount = newRows.Count(v => v.Entry_Id != null);
         await db.SaveChangesAsync(ct);
+
+        if (vpBackfillCount > 0)
+            _logger.LogInformation("Backfilled Entry_Id onto {Count} vendor portal record(s)", vpBackfillCount);
 
         return new ImportCommitResult
         {
@@ -1283,5 +1312,7 @@ public class ImportService : IImportService
         }
 
         await File.WriteAllBytesAsync(destPath, fileBytes);
+
+        _logger.LogInformation("Archived {Type} file to {DestPath}", type, destPath);
     }
 }

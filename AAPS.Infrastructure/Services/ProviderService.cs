@@ -231,6 +231,10 @@ public class ProviderService : IProviderService
             using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
+                bool isNew = dto.Id == 0;
+                _logger.LogInformation("Saving provider {Id} ({FirstName} {LastName}), isNew={IsNew}, contacts={ContactCount}",
+                    dto.Id, dto.FirstName, dto.LastName, isNew, contacts.Count);
+
                 // 1. Update/Add the Provider
                 int providerId;
                 if (dto.Id == 0)
@@ -318,6 +322,10 @@ public class ProviderService : IProviderService
 
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                _logger.LogInformation("Provider {Id} ({FirstName} {LastName}) saved successfully with {ContactCount} contact(s)",
+                    providerId, dto.FirstName, dto.LastName, contacts.Count);
+
                 return providerId;
             }
             catch (Exception ex)
@@ -340,6 +348,7 @@ public class ProviderService : IProviderService
         var hasActiveMandates = ProviderHasAssignments(db, provider.Provider_Id);
         if (hasActiveMandates)
         {
+            _logger.LogWarning("Delete blocked for provider {Id} — has active assignments", id);
             throw new InvalidOperationException("Cannot delete: This provider is still assigned to active mandates.");
         }
 
@@ -354,7 +363,10 @@ public class ProviderService : IProviderService
         db.Providers.Remove(provider);
 
         // 5. ATOMIC SAVE: SQL deletes everything in one shot
-        return await db.SaveChangesAsync(ct) > 0;
+        var deleted = await db.SaveChangesAsync(ct) > 0;
+        if (deleted)
+            _logger.LogInformation("Provider {Id} deleted", id);
+        return deleted;
     }
 
     /// <summary>

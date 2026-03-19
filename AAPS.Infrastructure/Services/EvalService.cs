@@ -5,6 +5,7 @@ using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services;
@@ -12,10 +13,12 @@ namespace AAPS.Infrastructure.Services;
 public class EvalService : IEvalService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
+    private readonly ILogger<EvalService> _logger;
 
-    public EvalService(IDbContextFactory<AppDbContext> factory)
+    public EvalService(IDbContextFactory<AppDbContext> factory, ILogger<EvalService> logger)
     {
         _factory = factory;
+        _logger = logger;
     }
 
     public async Task<PagedResult<EvalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
@@ -125,8 +128,14 @@ public class EvalService : IEvalService
             Appointment = dto.AppointmentDate,
             Status = dto.Status
         };
+        _logger.LogInformation("Creating eval for student {StudentId} ({FirstName} {LastName})",
+            dto.StudentId, dto.StudentFirstName, dto.StudentLastName);
+
         db.Evals.Add(entity);
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Eval {Id} created for student {StudentId}", entity.Eval_Id, dto.StudentId);
+
         return entity.Eval_Id;
     }
 
@@ -135,6 +144,8 @@ public class EvalService : IEvalService
         await using var db = _factory.CreateDbContext();
         var entity = await db.Evals.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException();
+
+        _logger.LogInformation("Updating eval {Id} for student {StudentId}", id, entity.Student_ID);
 
         entity.StudentFirst = dto.StudentFirstName;
         entity.StudentLast = dto.StudentLastName;
@@ -163,6 +174,8 @@ public class EvalService : IEvalService
         entity.Status = dto.Status;
 
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Eval {Id} updated", id);
     }
 
 
@@ -172,8 +185,10 @@ public class EvalService : IEvalService
         var entity = await db.Evals.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
+            _logger.LogInformation("Deleting eval {Id} for student {StudentId}", id, entity.Student_ID);
             db.Evals.Remove(entity);
             await db.SaveChangesAsync(ct);
+            _logger.LogInformation("Eval {Id} deleted", id);
         }
     }
 

@@ -1,6 +1,7 @@
 using AAPS.Application.Abstractions.Services;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AAPS.Infrastructure.Services;
 
@@ -32,10 +33,12 @@ internal sealed class VendorPortalDiscrepancyRaw
 public class DashboardService : IDashboardService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
+    private readonly ILogger<DashboardService> _logger;
 
-    public DashboardService(IDbContextFactory<AppDbContext> factory)
+    public DashboardService(IDbContextFactory<AppDbContext> factory, ILogger<DashboardService> logger)
     {
         _factory = factory;
+        _logger = logger;
     }
 
     public async Task<DashboardStats> GetStatsAsync(CancellationToken ct = default)
@@ -53,13 +56,19 @@ public class DashboardService : IDashboardService
         var operationAlerts = await db.Seses
             .CountAsync(s => s.Entry_Id == null || s.Provider_Id == null || s.bRate == null, ct);
 
-        return new DashboardStats
+        var stats = new DashboardStats
         {
             TotalProviders = totalProviders,
             VendorPortalDiscrepancies = discrepancies,
             EvalsPendingPayment = evalsPending,
             OperationAlerts = operationAlerts
         };
+
+        if (operationAlerts > 0 || discrepancies > 0)
+            _logger.LogWarning("Dashboard: {OperationAlerts} operation alert(s), {Discrepancies} vendor portal discrepancy(ies), {EvalsPending} eval(s) pending payment",
+                operationAlerts, discrepancies, evalsPending);
+
+        return stats;
     }
 
     public async Task<List<OperationAlertItem>> GetOperationAlertsAsync(int limit = 15, CancellationToken ct = default)

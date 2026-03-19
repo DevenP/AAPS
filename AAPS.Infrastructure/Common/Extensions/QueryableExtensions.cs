@@ -1,14 +1,34 @@
-using AAPS.Application.Common.Paging;
 using AAPS.Application.Common.Extensions;
+using AAPS.Application.Common.Paging;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace AAPS.Infrastructure.Common.Extensions
 {
     public static class QueryableExtensions
     {
-        // -- In-memory overload (for raw SQL / stored proc results) ---------------
+        // ── Reflection cache — populated once per DTO type, reused on every request ──
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _browseableStringProps = new();
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _allProps = new();
+
+        // Cache the EF.Functions.Like MethodInfo — looked up once at startup
+        private static readonly MethodInfo _likeMethod =
+            typeof(DbFunctionsExtensions).GetMethod("Like",
+                new[] { typeof(DbFunctions), typeof(string), typeof(string) })!;
+
+        private static PropertyInfo[] GetBrowsableStringProps(Type type) =>
+            _browseableStringProps.GetOrAdd(type, t =>
+                t.GetProperties()
+                 .Where(p => p.PropertyType == typeof(string) && p.IsBrowsable())
+                 .ToArray());
+
+        private static PropertyInfo[] GetAllProps(Type type) =>
+            _allProps.GetOrAdd(type, t => t.GetProperties());
+
+        // ── In-memory overload (for raw SQL / stored proc results) ───────────────
         // Use this when the source is already materialized (e.g. from SqlQueryRaw).
         // Applies search, column filters, sorting, and paging entirely in memory.
         public static Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
@@ -18,22 +38,19 @@ namespace AAPS.Infrastructure.Common.Extensions
         {
             var query = source;
 
-            // Global search
             if (!string.IsNullOrWhiteSpace(request.Search))
                 query = ApplySearchInMemory(query, request.Search.Trim());
 
-            // Column filters
-            if (request.ColumnFilters != null && request.ColumnFilters.Any())
+            if (request.ColumnFilters != null && request.ColumnFilters.Count > 0)
                 query = ApplyColumnFiltersInMemory(query, request.ColumnFilters);
 
-            // Sorting
             if (!string.IsNullOrWhiteSpace(request.SortBy))
                 query = ApplySortInMemory(query, request.SortBy, request.SortDir);
 
             var list = query.ToList();
             var totalCount = list.Count;
 
-            // Export
+            // Export — return all items
             if (request.PageSize == -1)
                 return Task.FromResult(new AAPS.Application.Common.Paging.PagedResult<T>(list, 1, totalCount, totalCount));
 
@@ -50,8 +67,7 @@ namespace AAPS.Infrastructure.Common.Extensions
 
         private static IEnumerable<T> ApplySearchInMemory<T>(IEnumerable<T> source, string term) where T : class
         {
-            var props = typeof(T).GetProperties()
-                .Where(p => p.PropertyType == typeof(string) && p.IsBrowsable());
+            var props = GetBrowsableStringProps(typeof(T));
 
             return source.Where(item =>
                 props.Any(p =>
@@ -63,7 +79,7 @@ namespace AAPS.Infrastructure.Common.Extensions
 
         private static IEnumerable<T> ApplyColumnFiltersInMemory<T>(IEnumerable<T> source, Dictionary<string, string> filters) where T : class
         {
-            var properties = typeof(T).GetProperties();
+            var properties = GetAllProps(typeof(T));
 
             foreach (var filter in filters)
             {
@@ -105,13 +121,22 @@ namespace AAPS.Infrastructure.Common.Extensions
                     else
                         source = source.Where(item => (prop.GetValue(item) as string ?? "").Contains(filter.Value, StringComparison.OrdinalIgnoreCase));
                 }
+                else if (IsNumericType(type))
+                {
+                    if (filter.Key.EndsWith("_From") && decimal.TryParse(filter.Value, out var fromNum))
+                        source = source.Where(item => { var v = prop.GetValue(item); return v != null && Convert.ToDecimal(v) >= fromNum; });
+                    else if (filter.Key.EndsWith("_To") && decimal.TryParse(filter.Value, out var toNum))
+                        source = source.Where(item => { var v = prop.GetValue(item); return v != null && Convert.ToDecimal(v) <= toNum; });
+                    else if (decimal.TryParse(filter.Value, out var exact))
+                        source = source.Where(item => { var v = prop.GetValue(item); return v != null && Convert.ToDecimal(v) == exact; });
+                }
             }
             return source;
         }
 
         private static IEnumerable<T> ApplySortInMemory<T>(IEnumerable<T> source, string sortBy, string dir) where T : class
         {
-            var prop = typeof(T).GetProperty(sortBy, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var prop = typeof(T).GetProperty(sortBy, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             if (prop == null) return source;
 
             var descending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
@@ -120,25 +145,23 @@ namespace AAPS.Infrastructure.Common.Extensions
                 : source.OrderBy(x => prop.GetValue(x));
         }
 
-        // -- EF Core / IQueryable overload ----------------------------------------
+        // ── EF Core / IQueryable overload ────────────────────────────────────────
         public static async Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
             this IQueryable<T> query,
             PagedRequest request,
             CancellationToken ct = default,
             bool performSearch = true) where T : class
         {
-            // Global search (skip if the service handled it manually with performSearch: false)
             if (performSearch && !string.IsNullOrWhiteSpace(request.Search))
                 query = ApplySearch(query, request.Search.Trim());
 
-            // Column filters (date ranges, booleans, string contains/null checks)
-            if (request.ColumnFilters != null && request.ColumnFilters.Any())
+            if (request.ColumnFilters != null && request.ColumnFilters.Count > 0)
                 query = ApplyColumnFilters(query, request.ColumnFilters);
 
-            // Sorting � always apply to guarantee stable pagination (falls back to "Id" if no column specified)
+            // Sorting — always apply to guarantee stable pagination
             query = ApplySort(query, request.SortBy, request.SortDir);
 
-            // Export � return everything without a separate COUNT query
+            // Export — return everything without a separate COUNT query
             if (request.PageSize == -1)
             {
                 var allItems = await query.ToListAsync(ct);
@@ -160,28 +183,24 @@ namespace AAPS.Infrastructure.Common.Extensions
 
         private static IQueryable<T> ApplyColumnFilters<T>(IQueryable<T> query, Dictionary<string, string> filters)
         {
-            var properties = typeof(T).GetProperties();
+            var properties = GetAllProps(typeof(T));
 
             foreach (var filter in filters)
             {
-                if (filter.Key == "Global") continue; // handled separately as global search
+                if (filter.Key == "Global") continue;
                 if (string.IsNullOrWhiteSpace(filter.Value)) continue;
 
-                // Strip _From/_To suffix to get the real property name
                 var cleanKey = filter.Key.Replace("_From", "").Replace("_To", "");
                 var prop = properties.FirstOrDefault(p => p.Name.Equals(cleanKey, StringComparison.OrdinalIgnoreCase));
-
                 if (prop == null) continue;
 
                 var type = prop.PropertyType;
 
-                // Handle BOOLEANS
                 if (type == typeof(bool) || type == typeof(bool?))
                 {
                     if (bool.TryParse(filter.Value, out var boolValue))
                         query = query.Where($"{prop.Name} == @0", boolValue);
                 }
-                // Handle DATE RANGES (From/To suffix)
                 else if (type == typeof(DateTime) || type == typeof(DateTime?))
                 {
                     if (filter.Key.EndsWith("_From") && DateTime.TryParse(filter.Value, out var fromDate))
@@ -192,7 +211,6 @@ namespace AAPS.Infrastructure.Common.Extensions
                         query = query.Where($"{prop.Name} != null && {prop.Name} <= @0", endOfDay);
                     }
                 }
-                // Handle STRINGS � "null", "notnull", or plain contains
                 else if (type == typeof(string))
                 {
                     var val = filter.Value.ToLower();
@@ -203,6 +221,15 @@ namespace AAPS.Infrastructure.Common.Extensions
                     else
                         query = query.Where($"{prop.Name}.Contains(@0)", filter.Value);
                 }
+                else if (IsNumericType(type))
+                {
+                    if (filter.Key.EndsWith("_From") && decimal.TryParse(filter.Value, out var fromNum))
+                        query = query.Where($"{prop.Name} != null && {prop.Name} >= @0", fromNum);
+                    else if (filter.Key.EndsWith("_To") && decimal.TryParse(filter.Value, out var toNum))
+                        query = query.Where($"{prop.Name} != null && {prop.Name} <= @0", toNum);
+                    else if (decimal.TryParse(filter.Value, out var exact))
+                        query = query.Where($"{prop.Name} == @0", exact);
+                }
             }
             return query;
         }
@@ -210,24 +237,27 @@ namespace AAPS.Infrastructure.Common.Extensions
         private static IQueryable<T> ApplySearch<T>(IQueryable<T> query, string term)
         {
             var param = Expression.Parameter(typeof(T), "e");
-
-            // Get string properties that are browsable
-            var stringProperties = typeof(T).GetProperties()
-                .Where(p => p.PropertyType == typeof(string) && p.IsBrowsable());
+            var stringProperties = GetBrowsableStringProps(typeof(T));
 
             Expression? filterBody = null;
             var pattern = Expression.Constant($"%{term}%");
-            var likeMethod = typeof(DbFunctionsExtensions).GetMethod("Like", new[] { typeof(DbFunctions), typeof(string), typeof(string) });
 
             foreach (var prop in stringProperties)
             {
                 try
                 {
                     var member = Expression.Property(param, prop);
-                    var likeCall = Expression.Call(null, likeMethod!, Expression.Property(null, typeof(EF), nameof(EF.Functions)), member, pattern);
+                    var likeCall = Expression.Call(
+                        null, _likeMethod,
+                        Expression.Property(null, typeof(EF), nameof(EF.Functions)),
+                        member, pattern);
                     filterBody = filterBody == null ? likeCall : Expression.OrElse(filterBody, likeCall);
                 }
-                catch { continue; }
+                catch (Exception)
+                {
+                    // Property not translatable to SQL — skip it
+                    continue;
+                }
             }
 
             if (filterBody == null) return query;
@@ -239,15 +269,33 @@ namespace AAPS.Infrastructure.Common.Extensions
             var column = !string.IsNullOrWhiteSpace(sortBy) ? sortBy : "Id";
             var direction = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
 
-            query = query.OrderBy($"{column} {direction}");
+            try
+            {
+                query = query.OrderBy($"{column} {direction}");
 
-            // Secondary sort on Id to prevent rows with the same value from swapping pages.
-            // Guard: only apply if the DTO actually has an "Id" property.
-            var hasId = typeof(T).GetProperty("Id") != null;
-            if (column != "Id" && hasId)
-                query = ((IOrderedQueryable<T>)query).ThenBy("Id asc");
+                // Secondary sort on Id for stable pagination across pages
+                var hasId = typeof(T).GetProperty("Id") != null;
+                if (column != "Id" && hasId)
+                    query = ((IOrderedQueryable<T>)query).ThenBy("Id asc");
+            }
+            catch (Exception)
+            {
+                // Column doesn't exist on the DTO — fall back to Id ascending
+                query = query.OrderBy("Id asc");
+            }
 
             return query;
+        }
+
+        private static bool IsNumericType(Type type)
+        {
+            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+            return underlying == typeof(int)
+                || underlying == typeof(long)
+                || underlying == typeof(decimal)
+                || underlying == typeof(double)
+                || underlying == typeof(float)
+                || underlying == typeof(short);
         }
     }
 }

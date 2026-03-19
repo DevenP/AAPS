@@ -5,6 +5,7 @@ using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services;
@@ -12,8 +13,13 @@ namespace AAPS.Infrastructure.Services;
 public class SesiService : ISesiService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
+    private readonly ILogger<SesiService> _logger;
 
-    public SesiService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
+    public SesiService(IDbContextFactory<AppDbContext> factory, ILogger<SesiService> logger)
+    {
+        _factory = factory;
+        _logger = logger;
+    }
 
     public async Task<PagedResult<SesiDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
@@ -120,8 +126,14 @@ public class SesiService : ISesiService
             OverDuration = dto.IsOverDuration,
             UnderGroup = dto.IsUnderGroup
         };
-        db.Seses.Add(entity); // Assuming 'Seses' is the DbSet name
+        _logger.LogInformation("Creating sesi record for student {StudentId} on {DateOfService}",
+            dto.StudentId, dto.DateOfService?.ToString("yyyy-MM-dd"));
+
+        db.Seses.Add(entity);
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Sesi {Id} created for student {StudentId}", entity.Sesis_Id, dto.StudentId);
+
         return entity.Sesis_Id;
     }
 
@@ -129,6 +141,8 @@ public class SesiService : ISesiService
     {
         await using var db = _factory.CreateDbContext();
         var entity = await db.Seses.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+
+        _logger.LogInformation("Updating sesi {Id} for student {StudentId}", id, entity.Student_ID);
 
         entity.Student_ID = dto.StudentId;
         entity.Last_Name = dto.StudentLastName;
@@ -176,6 +190,8 @@ public class SesiService : ISesiService
         entity.UnderGroup = dto.IsUnderGroup;
 
         await db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Sesi {Id} updated", id);
     }
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
@@ -184,8 +200,10 @@ public class SesiService : ISesiService
         var entity = await db.Seses.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
+            _logger.LogInformation("Deleting sesi {Id} for student {StudentId}", id, entity.Student_ID);
             db.Seses.Remove(entity);
             await db.SaveChangesAsync(ct);
+            _logger.LogInformation("Sesi {Id} deleted", id);
         }
     }
 

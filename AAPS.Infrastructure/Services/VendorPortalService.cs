@@ -5,6 +5,7 @@ using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace AAPS.Infrastructure.Services
@@ -37,10 +38,12 @@ namespace AAPS.Infrastructure.Services
     public class VendorPortalService : IVendorPortalService
     {
         private readonly IDbContextFactory<AppDbContext> _factory;
+        private readonly ILogger<VendorPortalService> _logger;
 
-        public VendorPortalService(IDbContextFactory<AppDbContext> factory)
+        public VendorPortalService(IDbContextFactory<AppDbContext> factory, ILogger<VendorPortalService> logger)
         {
             _factory = factory;
+            _logger = logger;
         }
 
         public async Task<PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
@@ -124,8 +127,13 @@ namespace AAPS.Infrastructure.Services
                 VPFile = dto.VenderPortalFile,
                 Entry_Id = dto.EntryId
             };
+            _logger.LogInformation("Creating vendor portal record for assign {AssignId}", dto.AssignmentId);
+
             db.VendorPortals.Add(entity);
             await db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Vendor portal record {Id} created for assign {AssignId}", entity.VendorPortal_Id, dto.AssignmentId);
+
             return entity.VendorPortal_Id;
         }
 
@@ -134,6 +142,8 @@ namespace AAPS.Infrastructure.Services
             await using var db = _factory.CreateDbContext();
             var entity = await db.VendorPortals.FindAsync(new object[] { id }, ct)
                 ?? throw new KeyNotFoundException();
+
+            _logger.LogInformation("Updating vendor portal record {Id} (assign {AssignId})", id, entity.Assign_Id);
 
             entity.pSsn = dto.ProviderSSN;
             entity.pBoro = dto.Boro;
@@ -150,6 +160,8 @@ namespace AAPS.Infrastructure.Services
             entity.Entry_Id = dto.EntryId;
 
             await db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Vendor portal record {Id} updated", id);
         }
 
         public async Task DeleteAsync(int id, CancellationToken ct = default)
@@ -158,8 +170,10 @@ namespace AAPS.Infrastructure.Services
             var entity = await db.VendorPortals.FindAsync(new object[] { id }, ct);
             if (entity != null)
             {
+                _logger.LogInformation("Deleting vendor portal record {Id} (assign {AssignId})", id, entity.Assign_Id);
                 db.VendorPortals.Remove(entity);
                 await db.SaveChangesAsync(ct);
+                _logger.LogInformation("Vendor portal record {Id} deleted", id);
             }
         }
 
@@ -170,8 +184,11 @@ namespace AAPS.Infrastructure.Services
             var entities = await db.VendorPortals
                 .Where(v => idList.Contains(v.VendorPortal_Id))
                 .ToListAsync(ct);
+
+            _logger.LogInformation("Deleting {Count} vendor portal records", entities.Count);
             db.VendorPortals.RemoveRange(entities);
             await db.SaveChangesAsync(ct);
+            _logger.LogInformation("Deleted {Count} vendor portal records", entities.Count);
         }
 
         public async Task ReplaceEntryIdAsync(IEnumerable<int> ids, int newEntryId, CancellationToken ct = default)
@@ -184,6 +201,8 @@ namespace AAPS.Infrastructure.Services
             foreach (var entity in entities)
                 entity.Entry_Id = newEntryId;
             await db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Replaced Entry_Id with {NewEntryId} on {Count} vendor portal records", newEntryId, entities.Count);
         }
 
         private static readonly Expression<Func<VendorPortal, VendorPortalDTO>> ToDTO = v => new VendorPortalDTO
