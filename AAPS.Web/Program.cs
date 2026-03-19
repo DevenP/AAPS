@@ -56,7 +56,10 @@ namespace AAPS.Web
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents();
+                .AddInteractiveServerComponents(options =>
+                {
+                    options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(30);
+                });
 
             RegisterDependencies(builder);
 
