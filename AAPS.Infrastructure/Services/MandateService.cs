@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
@@ -12,20 +12,21 @@ namespace AAPS.Infrastructure.Services;
 
 public class MandateService : IMandateService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public MandateService(IAppDbContext db) => _db = db;
+    public MandateService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
 
     public async Task<Application.Common.Paging.PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var assignedIds = _db.Seses
+        await using var db = _factory.CreateDbContext();
+        var assignedIds = db.Seses
             .Where(s => s.Entry_Id != null)
             .Select(s => s.Entry_Id)
             .Distinct();
 
         // Apply global search on the raw entity before projection so EF can
         // translate it against real indexed columns instead of DTO properties.
-        var baseQuery = _db.Mandates.AsNoTracking();
+        var baseQuery = db.Mandates.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -94,7 +95,8 @@ public class MandateService : IMandateService
 
     public async Task<MandateDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.Mandates
+        await using var db = _factory.CreateDbContext();
+        return await db.Mandates
             .AsNoTracking()
             .Where(m => m.Entry_Id == id)
             .Select(ToDTO)
@@ -103,6 +105,7 @@ public class MandateService : IMandateService
 
     public async Task<int> CreateAsync(MandateDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new Mandate
         {
             Conf_Date = dto.ConferenceDate,
@@ -133,14 +136,15 @@ public class MandateService : IMandateService
             RowNumber = dto.RowNumber,
             Service_Start_Date = dto.ServiceStartDate
         };
-        _db.Mandates.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        db.Mandates.Add(entity);
+        await db.SaveChangesAsync(ct);
         return entity.Entry_Id;
     }
 
     public async Task UpdateAsync(int id, MandateDTO dto, CancellationToken ct = default)
     {
-        var entity = await _db.Mandates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Mandates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
         entity.Conf_Date = dto.ConferenceDate;
         entity.Student_ID = dto.StudentId;
         entity.Last_Name = dto.LastName;
@@ -168,17 +172,18 @@ public class MandateService : IMandateService
         entity.FileName = dto.FileName;
         entity.RowNumber = dto.RowNumber;
         entity.Service_Start_Date = dto.ServiceStartDate;
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.Mandates.FindAsync(new object[] { id }, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Mandates.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
-            _db.Mandates.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            db.Mandates.Remove(entity);
+            await db.SaveChangesAsync(ct);
         }
     }
 

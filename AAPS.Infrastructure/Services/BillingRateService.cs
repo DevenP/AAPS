@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
@@ -12,18 +12,19 @@ namespace AAPS.Infrastructure.Services;
 
 public class BillingRateService : IBillingRateService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public BillingRateService(IAppDbContext db)
+    public BillingRateService(IDbContextFactory<AppDbContext> factory)
     {
-        _db = db;
+        _factory = factory;
     }
 
     public async Task<Application.Common.Paging.PagedResult<BillingRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // Apply global search on the raw entity before projection so EF can
         // translate it against real indexed columns instead of DTO properties.
-        var baseQuery = _db.BillingRates.AsNoTracking();
+        var baseQuery = db.BillingRates.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -43,7 +44,8 @@ public class BillingRateService : IBillingRateService
 
     public async Task<BillingRateDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.BillingRates
+        await using var db = _factory.CreateDbContext();
+        return await db.BillingRates
             .AsNoTracking()
             .Where(b => b.BillingRate_Id == id)
             .Select(ToDTO)
@@ -52,6 +54,7 @@ public class BillingRateService : IBillingRateService
 
     public async Task<int> CreateAsync(BillingRateDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new BillingRate
         {
             District = dto.District,
@@ -61,14 +64,15 @@ public class BillingRateService : IBillingRateService
             Active = dto.IsActive,
             Lang = dto.Language
         };
-        _db.BillingRates.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        db.BillingRates.Add(entity);
+        await db.SaveChangesAsync(ct);
         return entity.BillingRate_Id;
     }
 
     public async Task UpdateAsync(int id, BillingRateDTO dto, CancellationToken ct = default)
     {
-        var entity = await _db.BillingRates.FindAsync(new object[] { id }, ct)
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.BillingRates.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException();
 
         entity.District = dto.District;
@@ -78,16 +82,17 @@ public class BillingRateService : IBillingRateService
         entity.Active = dto.IsActive;
         entity.Lang = dto.Language;
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.BillingRates.FindAsync(new object[] { id }, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.BillingRates.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
-            _db.BillingRates.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            db.BillingRates.Remove(entity);
+            await db.SaveChangesAsync(ct);
         }
     }
 

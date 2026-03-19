@@ -48,7 +48,9 @@
         <GridCell TItem="ProviderRateDTO" Column="EffectiveDate" IsHeader="true">
             <MudTableSortLabel SortLabel="EffectiveDate" T="ProviderRateDTO">Effective</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="ProviderRateDTO" Column="IsActive" IsHeader="true">Active</GridCell>
+        <GridCell TItem="ProviderRateDTO" Column="IsActive" IsHeader="true">
+            <MudTableSortLabel SortLabel="IsActive" T="ProviderRateDTO">Active</MudTableSortLabel>
+        </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="rate">
@@ -80,7 +82,7 @@
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="IsActive">
             <MudChip T="string"
-                     Color="@(rate.IsActive ? Color.Success : Color.Error)"
+                     Color="@(rate.IsActive ? Color.Success : Color.Default)"
                      Size="Size.Small"
                      Variant="Variant.Text">
                 @(rate.IsActive ? "Active" : "Inactive")
@@ -121,7 +123,7 @@
             return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
         });
         // Keep passing ValidateValue for per-field display:
-        parameters.Add(x => x.Validator, _validator.ValidateValue); parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
         parameters.Add(x => x.ChildContent, (ProviderRateDTO context) =>
             @<ProviderRateForm Model="context" IsAdd=isNew />);
 

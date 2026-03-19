@@ -30,7 +30,9 @@
         <GridCell TItem="BillingRateDTO" Column="EffectiveDate" IsHeader="true">
             <MudTableSortLabel SortLabel="EffectiveDate" T="BillingRateDTO">Effective Date</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="BillingRateDTO" Column="IsActive" IsHeader="true">Status</GridCell>
+        <GridCell TItem="BillingRateDTO" Column="IsActive" IsHeader="true">
+            <MudTableSortLabel SortLabel="IsActive" T="BillingRateDTO">Status</MudTableSortLabel>
+        </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="rate">
@@ -48,7 +50,7 @@
         </GridCell>
         <GridCell TItem="BillingRateDTO" Column="IsActive">
             <MudChip T="bool"
-                     Color="@(rate.IsActive ? Color.Success : Color.Error)"
+                     Color="@(rate.IsActive ? Color.Success : Color.Default)"
                      Size="Size.Small"
                      Variant="Variant.Text">
                 @(rate.IsActive ? "Active" : "Inactive")

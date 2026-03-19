@@ -20,23 +20,25 @@
     @* ── STEP 1: Upload ── *@
     @if (_step == 1)
     {
-        <div class="d-flex align-center gap-4">
-            <MudFileUpload T="IBrowserFile" FilesChanged="OnFileSelected" Accept=".xlsx">
-                <ActivatorContent>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.UploadFile"
-                               Disabled="_loading">
-                        Select Excel File
-                    </MudButton>
-                </ActivatorContent>
-            </MudFileUpload>
-
+        <div class="import-drop-zone" style="@(_isDragging ? "border-color: var(--mud-palette-primary-darken); background-color: var(--mud-palette-action-default-hover);" : "")">
             @if (_loading)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                <MudText Typo="Typo.body2" Class="mud-text-secondary">Processing file...</MudText>
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" Class="mb-3" />
+                <MudText Typo="Typo.body1">Processing file...</MudText>
             }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Style="font-size:3.5rem; pointer-events:none;" Color="Color.Primary" Class="mb-2" />
+                <MudText Typo="Typo.h6" Class="mb-1" Style="pointer-events:none;">Drop your Excel file here</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="pointer-events:none;">or click to browse (.xlsx)</MudText>
+            }
+            <InputFile accept=".xlsx"
+                       OnChange="OnFileInputChanged"
+                       disabled="@_loading"
+                       @ondragenter="@(() => _isDragging = true)"
+                       @ondragleave="@(() => _isDragging = false)"
+                       @ondrop="@(() => _isDragging = false)"
+                       style="position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;" />
         </div>
 
         @if (_parseError != null)
@@ -210,6 +212,26 @@
 
 </div>
 
+<style>
+    .import-drop-zone {
+        position: relative;
+        border: 2px dashed var(--mud-palette-primary);
+        border-radius: 12px;
+        padding: 60px 40px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 220px;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .import-drop-zone:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
+</style>
+
 @code {
     [Parameter] public ImportType ImportType { get; set; }
     [Parameter] public string Description { get; set; } = "";
@@ -219,9 +241,12 @@
     private int _step = 1;
     private int _previewTab = 0;
     private bool _loading = false;
+    private bool _isDragging = false;
     private string? _parseError;
     private ImportPreviewResult? _preview;
     private ImportCommitResult? _result;
+
+    private Task OnFileInputChanged(InputFileChangeEventArgs e) => OnFileSelected(e.File);
 
     private async Task OnFileSelected(IBrowserFile file)
     {

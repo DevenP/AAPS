@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -36,21 +36,22 @@ namespace AAPS.Infrastructure.Services
 
     public class VendorPortalService : IVendorPortalService
     {
-        private readonly IAppDbContext _db;
+        private readonly IDbContextFactory<AppDbContext> _factory;
 
-        public VendorPortalService(IAppDbContext db)
+        public VendorPortalService(IDbContextFactory<AppDbContext> factory)
         {
-            _db = db;
+            _factory = factory;
         }
 
         public async Task<Application.Common.Paging.PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
         {
+            await using var db = _factory.CreateDbContext();
             List<VendorPortalRaw> raw;
             try
             {
                 // Use the stored proc directly — the multi-join LINQ translation is
                 // unreliable with nullable datetime keys and produces wrong counts.
-                raw = await _db.Database
+                raw = await db.Database
                     .SqlQueryRaw<VendorPortalRaw>(
                         "EXEC [dbo].[VendorPortal_Select] @searchBy=0, @searchByValue=NULL, @dateSearch=0, @from=NULL, @to=NULL, @unbound=0")
                     .ToListAsync(ct);
@@ -96,7 +97,8 @@ namespace AAPS.Infrastructure.Services
 
         public async Task<VendorPortalDTO?> GetByIdAsync(int id, CancellationToken ct = default)
         {
-            return await _db.VendorPortals
+            await using var db = _factory.CreateDbContext();
+            return await db.VendorPortals
                 .AsNoTracking()
                 .Where(v => v.VendorPortal_Id == id)
                 .Select(ToDTO)
@@ -105,6 +107,7 @@ namespace AAPS.Infrastructure.Services
 
         public async Task<int> CreateAsync(VendorPortalDTO dto, CancellationToken ct = default)
         {
+            await using var db = _factory.CreateDbContext();
             var entity = new VendorPortal
             {
                 pSsn = dto.ProviderSSN,
@@ -121,14 +124,15 @@ namespace AAPS.Infrastructure.Services
                 VPFile = dto.VenderPortalFile,
                 Entry_Id = dto.EntryId
             };
-            _db.VendorPortals.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            db.VendorPortals.Add(entity);
+            await db.SaveChangesAsync(ct);
             return entity.VendorPortal_Id;
         }
 
         public async Task UpdateAsync(int id, VendorPortalDTO dto, CancellationToken ct = default)
         {
-            var entity = await _db.VendorPortals.FindAsync(new object[] { id }, ct)
+            await using var db = _factory.CreateDbContext();
+            var entity = await db.VendorPortals.FindAsync(new object[] { id }, ct)
                 ?? throw new KeyNotFoundException();
 
             entity.pSsn = dto.ProviderSSN;
@@ -145,38 +149,41 @@ namespace AAPS.Infrastructure.Services
             entity.VPFile = dto.VenderPortalFile;
             entity.Entry_Id = dto.EntryId;
 
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
         }
 
         public async Task DeleteAsync(int id, CancellationToken ct = default)
         {
-            var entity = await _db.VendorPortals.FindAsync(new object[] { id }, ct);
+            await using var db = _factory.CreateDbContext();
+            var entity = await db.VendorPortals.FindAsync(new object[] { id }, ct);
             if (entity != null)
             {
-                _db.VendorPortals.Remove(entity);
-                await _db.SaveChangesAsync(ct);
+                db.VendorPortals.Remove(entity);
+                await db.SaveChangesAsync(ct);
             }
         }
 
         public async Task DeleteManyAsync(IEnumerable<int> ids, CancellationToken ct = default)
         {
+            await using var db = _factory.CreateDbContext();
             var idList = ids.ToList();
-            var entities = await _db.VendorPortals
+            var entities = await db.VendorPortals
                 .Where(v => idList.Contains(v.VendorPortal_Id))
                 .ToListAsync(ct);
-            _db.VendorPortals.RemoveRange(entities);
-            await _db.SaveChangesAsync(ct);
+            db.VendorPortals.RemoveRange(entities);
+            await db.SaveChangesAsync(ct);
         }
 
         public async Task ReplaceEntryIdAsync(IEnumerable<int> ids, int newEntryId, CancellationToken ct = default)
         {
+            await using var db = _factory.CreateDbContext();
             var idList = ids.ToList();
-            var entities = await _db.VendorPortals
+            var entities = await db.VendorPortals
                 .Where(v => idList.Contains(v.VendorPortal_Id))
                 .ToListAsync(ct);
             foreach (var entity in entities)
                 entity.Entry_Id = newEntryId;
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
         }
 
         private static readonly Expression<Func<VendorPortal, VendorPortalDTO>> ToDTO = v => new VendorPortalDTO

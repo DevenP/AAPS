@@ -8,7 +8,7 @@
 
 <GenericGrid TItem="OperationsDTO"
              Title="Operations Registry"
-             Columns="@(new[] { "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "LastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
+             Columns="@(new[] { "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
              GetData="SesiService.GetOperationsPagedAsync">
 
     <HeaderContent>
@@ -19,13 +19,27 @@
         <GridCell TItem="OperationsDTO" Column="DateOfService" IsHeader="true">
             <MudTableSortLabel SortLabel="DateOfService" T="OperationsDTO">DOS</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="OperationsDTO" Column="StartTime" IsHeader="true">Time</GridCell>
-        <GridCell TItem="OperationsDTO" Column="StudentId" IsHeader="true">Student ID</GridCell>
-        <GridCell TItem="OperationsDTO" Column="LastName" IsHeader="true">Student Name</GridCell>
-        <GridCell TItem="OperationsDTO" Column="ProviderLastName" IsHeader="true">Provider</GridCell>
-        <GridCell TItem="OperationsDTO" Column="AssignId" IsHeader="true">Assign ID</GridCell>
-        <GridCell TItem="OperationsDTO" Column="BilledRate" IsHeader="true">Rate</GridCell>
-        <GridCell TItem="OperationsDTO" Column="Duration" IsHeader="true">Min</GridCell>
+        <GridCell TItem="OperationsDTO" Column="StartTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="StartTime" T="OperationsDTO">Time</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="OperationsDTO">Student ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="StudentLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentLastName" T="OperationsDTO">Student Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="ProviderLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderLastName" T="OperationsDTO">Provider</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="AssignId" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignId" T="OperationsDTO">Assign ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="BilledRate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledRate" T="OperationsDTO">Rate</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="Duration" IsHeader="true">
+            <MudTableSortLabel SortLabel="Duration" T="OperationsDTO">Min</MudTableSortLabel>
+        </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="op">
@@ -75,14 +89,14 @@
 
         <GridCell TItem="OperationsDTO" Column="DateOfService">
             <MudTooltip Text="@op.DateOfService?.ToLongDateString()">
-                <span>@op.DateOfService?.ToString("MM/dd/yy")</span>
+                <span>@op.DateOfService?.ToString("MM/dd/yyyy")</span>
             </MudTooltip>
         </GridCell>
 
         <GridCell TItem="OperationsDTO" Column="StartTime">@op.StartTime</GridCell>
         <GridCell TItem="OperationsDTO" Column="StudentId">@op.StudentId</GridCell>
 
-        <GridCell TItem="OperationsDTO" Column="LastName">
+        <GridCell TItem="OperationsDTO" Column="StudentLastName">
             <MudTooltip Text="@($"{op.StudentLastName}, {op.StudentFirstName}")">
                 <span>@op.StudentLastName</span>
             </MudTooltip>

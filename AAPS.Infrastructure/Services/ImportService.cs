@@ -1,8 +1,8 @@
-using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Settings;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
+using AAPS.Infrastructure.Data.Scaffolded;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,14 +12,14 @@ namespace AAPS.Infrastructure.Services;
 
 public class ImportService : IImportService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly IImportLogService _importLogService;
     private readonly ImportSettings _settings;
     private readonly ILogger<ImportService> _logger;
 
-    public ImportService(IAppDbContext db, IImportLogService importLogService, IOptions<ImportSettings> settings, ILogger<ImportService> logger)
+    public ImportService(IDbContextFactory<AppDbContext> factory, IImportLogService importLogService, IOptions<ImportSettings> settings, ILogger<ImportService> logger)
     {
-        _db = db;
+        _factory = factory;
         _importLogService = importLogService;
         _settings = settings.Value;
         _logger = logger;
@@ -541,6 +541,7 @@ public class ImportService : IImportService
     // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitMandatesAsync(ImportPreviewResult preview, CancellationToken ct)
     {
+        await using var db = _factory.CreateDbContext();
         using var workbook = new XLWorkbook(new MemoryStream(preview.FileBytes));
         var ws = workbook.Worksheet(1);
 
@@ -571,7 +572,7 @@ public class ImportService : IImportService
                 string mandateId = Get(39)!;
 
                 // Duplicate check
-                bool exists = await _db.Mandates.AnyAsync(m =>
+                bool exists = await db.Mandates.AnyAsync(m =>
                     m.Student_ID == studentId &&
                     m.Service_Type == serviceType &&
                     m.Remaining_Freq == remainingFreq &&
@@ -628,8 +629,8 @@ public class ImportService : IImportService
                     RowNumber = i
                 };
 
-                _db.Mandates.Add(entity);
-                await _db.SaveChangesAsync(ct);
+                db.Mandates.Add(entity);
+                await db.SaveChangesAsync(ct);
 
                 int newEntryId = entity.Entry_Id;
 
@@ -638,7 +639,7 @@ public class ImportService : IImportService
                 {
                     int grpSizeInt = int.TryParse(grpSize, out var g) ? g : 0;
 
-                    var matchingSesis = await _db.Seses
+                    var matchingSesis = await db.Seses
                         .Where(s => s.Entry_Id == null &&
                                     s.Service_Type!.Trim() == serviceType.Trim() &&
                                     s.Student_ID!.Trim() == studentId.Trim() &&
@@ -659,7 +660,7 @@ public class ImportService : IImportService
                         sesi.Entry_Id = newEntryId;
                     }
 
-                    await _db.SaveChangesAsync(ct);
+                    await db.SaveChangesAsync(ct);
                 }
 
                 inserted++;
@@ -685,6 +686,7 @@ public class ImportService : IImportService
     // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitSesisAsync(ImportPreviewResult preview, CancellationToken ct)
     {
+        await using var db = _factory.CreateDbContext();
         using var workbook = new XLWorkbook(new MemoryStream(preview.FileBytes));
         var ws = workbook.Worksheet(1);
 
@@ -695,7 +697,7 @@ public class ImportService : IImportService
         // ── Bulk lookups ──────────────────────────────────────────────────
 
         // 1. Existing duplicate keys: StudentId|ServiceType|DOSDate|StartTime|EndTime|ProviderLast|ProviderFirst|ActualSize
-        var existingKeys = await _db.Seses
+        var existingKeys = await db.Seses
             .Where(s => s.date_of_Service.HasValue)
             .Select(s => s.Student_ID + "|" + s.Service_Type + "|" +
                          s.date_of_Service!.Value.Date.ToString("yyyyMMdd") + "|" +
@@ -704,12 +706,15 @@ public class ImportService : IImportService
             .ToHashSetAsync(ct);
 
         // 2. All providers: "LastName,FirstName" -> Provider_Id
-        var providerDict = await _db.Providers
+        // Use GroupBy to handle duplicate names gracefully (takes the first match)
+        var providerDict = (await db.Providers
             .Select(p => new { Key = (p.LastName ?? "").Trim() + "," + (p.FirstName ?? "").Trim(), p.Provider_Id })
-            .ToDictionaryAsync(p => p.Key, p => (int?)p.Provider_Id, StringComparer.OrdinalIgnoreCase, ct);
+            .ToListAsync(ct))
+            .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => (int?)g.First().Provider_Id, StringComparer.OrdinalIgnoreCase);
 
         // 3. All mandates for in-memory matching
-        var allMandates = await _db.Mandates
+        var allMandates = await db.Mandates
             .Select(m => new
             {
                 m.Entry_Id,
@@ -723,13 +728,13 @@ public class ImportService : IImportService
             .ToListAsync(ct);
 
         // 4. All active billing rates: "ServiceType|District|Lang" -> Rate
-        var billingRateDict = await _db.BillingRates
+        var billingRateDict = await db.BillingRates
             .Where(b => b.Active == true)
             .Select(b => new { Key = (b.ServiceType ?? "").Trim() + "|" + (b.District ?? "").Trim() + "|" + (b.Lang ?? "").Trim(), b.Rate })
             .ToDictionaryAsync(b => b.Key, b => (decimal?)b.Rate, StringComparer.OrdinalIgnoreCase, ct);
 
         // 5. All active provider rates: "ServiceType|District|Lang|ProviderId" -> Rate
-        var providerRateDict = await _db.ProviderRates
+        var providerRateDict = await db.ProviderRates
             .Where(p => p.Active == true)
             .Select(p => new { Key = (p.ServiceType ?? "").Trim() + "|" + (p.District ?? "").Trim() + "|" + (p.Lang ?? "").Trim() + "|" + p.Provider_Id, p.Rate })
             .ToDictionaryAsync(p => p.Key, p => (decimal?)p.Rate, StringComparer.OrdinalIgnoreCase, ct);
@@ -744,21 +749,21 @@ public class ImportService : IImportService
             if (batch.Count == 0) return;
             try
             {
-                _db.Seses.AddRange(batch);
-                await _db.SaveChangesAsync(ct);
+                db.Seses.AddRange(batch);
+                await db.SaveChangesAsync(ct);
                 inserted += batch.Count;
             }
             catch (Exception ex)
             {
                 // Batch failed — fall back to row-by-row so we can skip only the bad ones
                 _logger.LogWarning(ex, "CommitSesisAsync: batch of {Count} rows failed, falling back to row-by-row", batch.Count);
-                ((DbContext)_db).ChangeTracker.Clear();
+                db.ChangeTracker.Clear();
                 foreach (var e in batch)
                 {
                     try
                     {
-                        _db.Seses.Add(e);
-                        await _db.SaveChangesAsync(ct);
+                        db.Seses.Add(e);
+                        await db.SaveChangesAsync(ct);
                         inserted++;
                     }
                     catch (Exception rowEx)
@@ -931,6 +936,7 @@ public class ImportService : IImportService
     // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitVendorPortalAsync(ImportPreviewResult preview, CancellationToken ct)
     {
+        await using var db = _factory.CreateDbContext();
         using var workbook = new XLWorkbook(new MemoryStream(preview.FileBytes));
         var ws = workbook.Worksheet(1);
 
@@ -941,18 +947,18 @@ public class ImportService : IImportService
         // ── Bulk lookups ──────────────────────────────────────────────────
 
         // 1. All existing Assign_Ids
-        var existingAssignIds = await _db.VendorPortals
+        var existingAssignIds = await db.VendorPortals
             .Where(v => v.Assign_Id != null)
             .Select(v => v.Assign_Id!)
             .ToHashSetAsync(StringComparer.OrdinalIgnoreCase, ct);
 
         // 2. All providers: SSN (dashes stripped) -> Provider entity
-        var providersBySsn = await _db.Providers
+        var providersBySsn = await db.Providers
             .Where(p => p.Ssn != null)
             .ToListAsync(ct);
 
         // 3. All mandates for Entry_Id backfill matching
-        var allMandates = await _db.Mandates
+        var allMandates = await db.Mandates
             .Select(m => new
             {
                 m.Entry_Id,
@@ -982,21 +988,21 @@ public class ImportService : IImportService
             if (batch.Count == 0) return;
             try
             {
-                _db.VendorPortals.AddRange(batch);
-                await _db.SaveChangesAsync(ct);
+                db.VendorPortals.AddRange(batch);
+                await db.SaveChangesAsync(ct);
                 inserted += batch.Count;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "CommitVendorPortalAsync: batch of {Count} rows failed, falling back to row-by-row", batch.Count);
-                ((DbContext)_db).ChangeTracker.Clear();
+                db.ChangeTracker.Clear();
                 for (int b = 0; b < batch.Count; b++)
                 {
                     var e = batch[b];
                     try
                     {
-                        _db.VendorPortals.Add(e);
-                        await _db.SaveChangesAsync(ct);
+                        db.VendorPortals.Add(e);
+                        await db.SaveChangesAsync(ct);
                         inserted++;
                     }
                     catch (Exception rowEx)
@@ -1062,7 +1068,7 @@ public class ImportService : IImportService
         // ── Entry_Id backfill pass ────────────────────────────────────────
         // Now that rows are inserted and have VendorPortal_Ids, link Entry_Id
         // Only process rows that were successfully inserted (no Entry_Id yet)
-        var newRows = await _db.VendorPortals
+        var newRows = await db.VendorPortals
             .Where(v => v.Entry_Id == null && v.VPFile == preview.FileName)
             .ToListAsync(ct);
 
@@ -1096,7 +1102,7 @@ public class ImportService : IImportService
                 vp.Entry_Id = matchedMandate.Entry_Id;
         }
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
         return new ImportCommitResult
         {
@@ -1113,6 +1119,7 @@ public class ImportService : IImportService
     // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitPaymentsAsync(ImportPreviewResult preview, CancellationToken ct)
     {
+        await using var db = _factory.CreateDbContext();
         using var workbook = new XLWorkbook(new MemoryStream(preview.FileBytes));
         var ws = workbook.Worksheet(1);
 
@@ -1170,7 +1177,7 @@ public class ImportService : IImportService
         var minDate = rowData.Min(r => r.DosDate);
         var maxDate = rowData.Max(r => r.DosDate);
 
-        var allCandidateSesis = await _db.Seses
+        var allCandidateSesis = await db.Seses
             .Where(s => s.Student_ID != null &&
                         studentIds.Contains(s.Student_ID.Trim()) &&
                         s.date_of_Service.HasValue &&
@@ -1180,7 +1187,7 @@ public class ImportService : IImportService
 
         // Load all providers referenced by those Sesis in one query
         var providerIds = allCandidateSesis.Select(s => s.Provider_Id).Where(id => id.HasValue).Distinct().ToList();
-        var allProviders = await _db.Providers
+        var allProviders = await db.Providers
             .Where(p => providerIds.Contains(p.Provider_Id))
             .ToListAsync(ct);
         var providerById = allProviders.ToDictionary(p => p.Provider_Id);
@@ -1226,7 +1233,7 @@ public class ImportService : IImportService
         {
             try
             {
-                await _db.SaveChangesAsync(ct);
+                await db.SaveChangesAsync(ct);
             }
             catch (Exception ex)
             {
@@ -1259,16 +1266,20 @@ public class ImportService : IImportService
 
         if (string.IsNullOrWhiteSpace(basePath)) return;
 
-        Directory.CreateDirectory(basePath);
-        var destPath = Path.Combine(basePath, fileName);
+        var now = DateTime.Now;
+        var destFolder = Path.Combine(basePath, now.Year.ToString(), now.Month.ToString("D2"));
+        Directory.CreateDirectory(destFolder);
 
-        // Avoid overwriting — append timestamp if file exists
+        var datePrefix = now.ToString("MM.dd.yy");
+        var prefixedFileName = $"{datePrefix} {fileName}";
+        var destPath = Path.Combine(destFolder, prefixedFileName);
+
+        // Avoid overwriting — append time if file already exists
         if (File.Exists(destPath))
         {
-            var ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var name = Path.GetFileNameWithoutExtension(fileName);
-            var ext = Path.GetExtension(fileName);
-            destPath = Path.Combine(basePath, $"{name}_{ts}{ext}");
+            var name = Path.GetFileNameWithoutExtension(prefixedFileName);
+            var ext = Path.GetExtension(prefixedFileName);
+            destPath = Path.Combine(destFolder, $"{name}_{now:HHmmss}{ext}");
         }
 
         await File.WriteAllBytesAsync(destPath, fileBytes);

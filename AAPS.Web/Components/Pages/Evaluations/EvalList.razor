@@ -25,21 +25,39 @@
         <GridCell TItem="EvalDTO" Column="StudentLastName" IsHeader="true">
             <MudTableSortLabel SortLabel="StudentLastName" T="EvalDTO">Student Last</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="EvalDTO" Column="StudentFirstName" IsHeader="true">Student First</GridCell>
+        <GridCell TItem="EvalDTO" Column="StudentFirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentFirstName" T="EvalDTO">Student First</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="EvalDTO" Column="ProviderLastName" IsHeader="true">
             <MudTableSortLabel SortLabel="ProviderLastName" T="EvalDTO">Provider</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="EvalDTO" Column="ServiceType" IsHeader="true">Service</GridCell>
+        <GridCell TItem="EvalDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="EvalDTO">Service</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="EvalDTO" Column="EvalDate" IsHeader="true">
             <MudTableSortLabel SortLabel="EvalDate" T="EvalDTO">Eval Date</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="EvalDTO" Column="BillingAmount" IsHeader="true">Bill Amt</GridCell>
-        <GridCell TItem="EvalDTO" Column="BilledDate" IsHeader="true">Billed</GridCell>
-        <GridCell TItem="EvalDTO" Column="BillPaidDate" IsHeader="true">Paid</GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderPaidAmount" IsHeader="true">P-Paid</GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderPaidDate" IsHeader="true">P-Date</GridCell>
-        <GridCell TItem="EvalDTO" Column="District" IsHeader="true">Dist</GridCell>
-        <GridCell TItem="EvalDTO" Column="Language" IsHeader="true">Lang</GridCell>
+        <GridCell TItem="EvalDTO" Column="BillingAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="BillingAmount" T="EvalDTO">Bill Amt</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="BilledDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledDate" T="EvalDTO">Billed</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="BillPaidDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BillPaidDate" T="EvalDTO">Paid</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ProviderPaidAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderPaidAmount" T="EvalDTO">P-Paid</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ProviderPaidDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderPaidDate" T="EvalDTO">P-Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="District" IsHeader="true">
+            <MudTableSortLabel SortLabel="District" T="EvalDTO">Dist</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="Language" IsHeader="true">
+            <MudTableSortLabel SortLabel="Language" T="EvalDTO">Lang</MudTableSortLabel>
+        </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="eval">
@@ -78,7 +96,7 @@
 
         <GridCell TItem="EvalDTO" Column="BilledDate">
             <span style="opacity: @(eval.BilledDate == null ? "0.5" : "1")">
-                @(eval.BilledDate?.ToString("MM/dd/yy") ?? "---")
+                @(eval.BilledDate?.ToString("MM/dd/yyyy") ?? "---")
             </span>
         </GridCell>
 
@@ -92,7 +110,7 @@
         </GridCell>
 
         <GridCell TItem="EvalDTO" Column="ProviderPaidAmount">@eval.ProviderPaidAmount?.ToString("C2")</GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderPaidDate">@eval.ProviderPaidDate?.ToString("MM/dd/yy")</GridCell>
+        <GridCell TItem="EvalDTO" Column="ProviderPaidDate">@eval.ProviderPaidDate?.ToString("MM/dd/yyyy")</GridCell>
         <GridCell TItem="EvalDTO" Column="District">@eval.District</GridCell>
         <GridCell TItem="EvalDTO" Column="Language">@eval.Language</GridCell>
     </RowTemplate>

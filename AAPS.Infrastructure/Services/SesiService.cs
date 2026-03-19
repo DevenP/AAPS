@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
@@ -12,15 +12,16 @@ namespace AAPS.Infrastructure.Services;
 
 public class SesiService : ISesiService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public SesiService(IAppDbContext db) => _db = db;
+    public SesiService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
 
     public async Task<Application.Common.Paging.PagedResult<SesiDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // Apply global search on the raw entity before projection so EF can
         // translate it against real indexed columns instead of DTO properties.
-        var baseQuery = _db.Seses.AsNoTracking();
+        var baseQuery = db.Seses.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -62,7 +63,8 @@ public class SesiService : ISesiService
 
     public async Task<SesiDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.Seses
+        await using var db = _factory.CreateDbContext();
+        return await db.Seses
             .AsNoTracking()
             .Where(s => s.Sesis_Id == id)
             .Select(ToDTO)
@@ -71,6 +73,7 @@ public class SesiService : ISesiService
 
     public async Task<int> CreateAsync(SesiDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new Sesi
         {
             Student_ID = dto.StudentId,
@@ -118,14 +121,15 @@ public class SesiService : ISesiService
             OverDuration = dto.IsOverDuration,
             UnderGroup = dto.IsUnderGroup
         };
-        _db.Seses.Add(entity); // Assuming 'Seses' is the DbSet name
-        await _db.SaveChangesAsync(ct);
+        db.Seses.Add(entity); // Assuming 'Seses' is the DbSet name
+        await db.SaveChangesAsync(ct);
         return entity.Sesis_Id;
     }
 
     public async Task UpdateAsync(int id, SesiDTO dto, CancellationToken ct = default)
     {
-        var entity = await _db.Seses.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Seses.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
 
         entity.Student_ID = dto.StudentId;
         entity.Last_Name = dto.StudentLastName;
@@ -172,21 +176,23 @@ public class SesiService : ISesiService
         entity.OverDuration = dto.IsOverDuration;
         entity.UnderGroup = dto.IsUnderGroup;
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.Seses.FindAsync(new object[] { id }, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Seses.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
-            _db.Seses.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            db.Seses.Remove(entity);
+            await db.SaveChangesAsync(ct);
         }
     }
 
     public async Task<Application.Common.Paging.PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // Mirrors the stored proc's two-step VendorPortal join:
         //
         //   Step 1 — find the MIN(VendorPortal_Id) per Entry_Id + pSsn combo
@@ -198,7 +204,7 @@ public class SesiService : ISesiService
         // provider's session rows that happen to share the same Entry_Id.
 
         // Step 1: get the winning VendorPortal_Id per (Entry_Id, pSsn)
-        var topAssignByEntryAndSsn = _db.VendorPortals.AsNoTracking()
+        var topAssignByEntryAndSsn = db.VendorPortals.AsNoTracking()
             .Where(v => v.Entry_Id != null && v.pSsn != null)
             .GroupBy(v => new { v.Entry_Id, v.pSsn })
             .Select(g => new
@@ -211,7 +217,7 @@ public class SesiService : ISesiService
         // Step 2: join back to get the Assign_Id for that winning row
         var topAssignments =
             from t in topAssignByEntryAndSsn
-            join v in _db.VendorPortals.AsNoTracking() on t.TopId equals v.VendorPortal_Id
+            join v in db.VendorPortals.AsNoTracking() on t.TopId equals v.VendorPortal_Id
             select new
             {
                 t.EntryId,
@@ -221,7 +227,7 @@ public class SesiService : ISesiService
 
         // Apply global search on the raw Seses table BEFORE joins/projection
         // so EF hits real indexed columns instead of DTO projections
-        var baseQuery = _db.Seses.AsNoTracking();
+        var baseQuery = db.Seses.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -240,11 +246,11 @@ public class SesiService : ISesiService
         var query =
             from s in baseQuery
 
-            join m in _db.Mandates.AsNoTracking()
+            join m in db.Mandates.AsNoTracking()
                 on s.Entry_Id equals m.Entry_Id into mGroup
             from m in mGroup.DefaultIfEmpty()
 
-            join p in _db.Providers.AsNoTracking()
+            join p in db.Providers.AsNoTracking()
                 on s.Provider_Id equals p.Provider_Id into pGroup
             from p in pGroup.DefaultIfEmpty()
 

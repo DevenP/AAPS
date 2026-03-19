@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
@@ -12,20 +12,22 @@ namespace AAPS.Infrastructure.Services;
 
 public class ImportLogService : IImportLogService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public ImportLogService(IAppDbContext db) => _db = db;
+    public ImportLogService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
 
     public async Task<Application.Common.Paging.PagedResult<ImportLogDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var query = _db.ImportLogs.AsNoTracking().Select(ToDTO);
+        await using var db = _factory.CreateDbContext();
+        var query = db.ImportLogs.AsNoTracking().Select(ToDTO);
 
         return await query.ToPagedResultAsync(request, ct);
     }
 
     public async Task<ImportLogDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.ImportLogs
+        await using var db = _factory.CreateDbContext();
+        return await db.ImportLogs
             .AsNoTracking()
             .Where(l => l.Log_Id == id)
             .Select(ToDTO)
@@ -34,29 +36,32 @@ public class ImportLogService : IImportLogService
 
     public async Task<int> CreateAsync(ImportLogDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new ImportLog { ImportRecord = dto.ImportRecord, ImportOn = dto.ImportDate, FileName = dto.FileName };
-        _db.ImportLogs.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        db.ImportLogs.Add(entity);
+        await db.SaveChangesAsync(ct);
         return entity.Log_Id;
     }
 
     public async Task UpdateAsync(int id, ImportLogDTO dto, CancellationToken ct = default)
     {
-        var entity = await _db.ImportLogs.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.ImportLogs.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
         entity.ImportRecord = dto.ImportRecord;
         entity.ImportOn = dto.ImportDate;
         entity.FileName = dto.FileName;
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.ImportLogs.FindAsync(new object[] { id }, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.ImportLogs.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
-            _db.ImportLogs.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            db.ImportLogs.Remove(entity);
+            await db.SaveChangesAsync(ct);
         }
     }
 

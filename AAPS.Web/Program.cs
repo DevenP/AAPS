@@ -96,10 +96,6 @@ namespace AAPS.Web
                         maxRetryDelay: TimeSpan.FromSeconds(maxRetryDelay),
                         errorNumbersToAdd: null)));
 
-            // 3. Register the Interface to map to the Factory-created context
-            builder.Services.AddScoped<IAppDbContext>(p =>
-                p.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
-
             // Services
             builder.Services.AddInfrastructureServices(builder.Configuration);
 

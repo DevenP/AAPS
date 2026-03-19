@@ -66,12 +66,18 @@
         <GridCell TItem="VendorPortalDTO" Column="StudentId" IsHeader="true">
             <MudTableSortLabel SortLabel="StudentId" T="VendorPortalDTO">Student ID</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="VendorPortalDTO" Column="StudentLastName" IsHeader="true">Student</GridCell>
-        <GridCell TItem="VendorPortalDTO" Column="ProviderLastName" IsHeader="true">Provider</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="StudentLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentLastName" T="VendorPortalDTO">Student</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderLastName" T="VendorPortalDTO">Provider</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="ApprovalStartDate" IsHeader="true">
             <MudTableSortLabel SortLabel="ApprovalStartDate" T="VendorPortalDTO">Start Date</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile" IsHeader="true">File Source</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile" IsHeader="true">
+            <MudTableSortLabel SortLabel="VenderPortalFile" T="VendorPortalDTO">File Source</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="EntryId" IsHeader="true">
             <MudTableSortLabel SortLabel="EntryId" T="VendorPortalDTO">Approval ID</MudTableSortLabel>
         </GridCell>
@@ -202,10 +208,17 @@
 
         if (confirmed != true) return;
 
-        await VendorPortalService.DeleteManyAsync(idsToDelete);
-        ClearSelection();
-        Snackbar.Add($"{count} discrepancy record{(count == 1 ? "" : "s")} removed.", Severity.Success);
-        await _grid.ReloadServerData();
+        try
+        {
+            await VendorPortalService.DeleteManyAsync(idsToDelete);
+            ClearSelection();
+            Snackbar.Add($"{count} discrepancy record{(count == 1 ? "" : "s")} removed.", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Delete failed: {ex.Message}", Severity.Error);
+        }
     }
 
     // ── Replace Approval ID ──────────────────────────────────────────────────
@@ -238,10 +251,17 @@
 
         if (confirmed != true) return;
 
-        await VendorPortalService.ReplaceEntryIdAsync(idsToUpdate, newEntryId);
-        ClearSelection();
-        Snackbar.Add($"Approval ID updated to {newEntryId} on {count} record(s).", Severity.Success);
-        await _grid.ReloadServerData();
+        try
+        {
+            await VendorPortalService.ReplaceEntryIdAsync(idsToUpdate, newEntryId);
+            ClearSelection();
+            Snackbar.Add($"Approval ID updated to {newEntryId} on {count} record(s).", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Update failed: {ex.Message}", Severity.Error);
+        }
     }
 
     private Task OnFilterRemoved(string key)

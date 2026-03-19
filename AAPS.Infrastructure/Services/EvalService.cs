@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
@@ -12,18 +12,19 @@ namespace AAPS.Infrastructure.Services;
 
 public class EvalService : IEvalService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public EvalService(IAppDbContext db)
+    public EvalService(IDbContextFactory<AppDbContext> factory)
     {
-        _db = db;
+        _factory = factory;
     }
 
     public async Task<Application.Common.Paging.PagedResult<EvalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // Apply global search on the raw entity before projection so EF can
         // translate it against real indexed columns instead of DTO properties.
-        var baseQuery = _db.Evals.AsNoTracking();
+        var baseQuery = db.Evals.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -46,7 +47,7 @@ public class EvalService : IEvalService
 
         // Left-join to Providers to surface provider name in the DTO
         var query = from ev in baseQuery
-                    join prov in _db.Providers.AsNoTracking() on ev.Provider_Id equals prov.Provider_Id into grouping
+                    join prov in db.Providers.AsNoTracking() on ev.Provider_Id equals prov.Provider_Id into grouping
                     from prov in grouping.DefaultIfEmpty() // This makes it a LEFT JOIN
                     select new EvalDTO
                     {
@@ -86,7 +87,8 @@ public class EvalService : IEvalService
 
     public async Task<EvalDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.Evals
+        await using var db = _factory.CreateDbContext();
+        return await db.Evals
             .AsNoTracking()
             .Where(e => e.Eval_Id == id)
             .Select(ToDTO)
@@ -95,6 +97,7 @@ public class EvalService : IEvalService
 
     public async Task<int> CreateAsync(EvalDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new Eval
         {
             StudentFirst = dto.StudentFirstName,
@@ -123,14 +126,15 @@ public class EvalService : IEvalService
             Appointment = dto.AppointmentDate,
             Status = dto.Status
         };
-        _db.Evals.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        db.Evals.Add(entity);
+        await db.SaveChangesAsync(ct);
         return entity.Eval_Id;
     }
 
     public async Task UpdateAsync(int id, EvalDTO dto, CancellationToken ct = default)
     {
-        var entity = await _db.Evals.FindAsync(new object[] { id }, ct)
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Evals.FindAsync(new object[] { id }, ct)
             ?? throw new KeyNotFoundException();
 
         entity.StudentFirst = dto.StudentFirstName;
@@ -159,17 +163,18 @@ public class EvalService : IEvalService
         entity.Appointment = dto.AppointmentDate;
         entity.Status = dto.Status;
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.Evals.FindAsync(new object[] { id }, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Evals.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
-            _db.Evals.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            db.Evals.Remove(entity);
+            await db.SaveChangesAsync(ct);
         }
     }
 

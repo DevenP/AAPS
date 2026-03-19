@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq.Dynamic.Core;
@@ -13,20 +13,21 @@ namespace AAPS.Infrastructure.Services;
 
 public class ProviderService : IProviderService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly ILogger<ProviderService> _logger;
 
-    public ProviderService(IAppDbContext db, ILogger<ProviderService> logger)
+    public ProviderService(IDbContextFactory<AppDbContext> factory, ILogger<ProviderService> logger)
     {
-        _db = db;
+        _factory = factory;
         _logger = logger;
     }
 
     public async Task<Application.Common.Paging.PagedResult<ProviderDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // 1. Apply global search on the raw entity BEFORE any joins/projections
         //    so EF translates it against real indexed columns.
-        var baseQuery = _db.Providers.AsNoTracking();
+        var baseQuery = db.Providers.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -54,7 +55,7 @@ public class ProviderService : IProviderService
 
         // 2. Pre-compute duplicate names as a set to avoid N+1 per-row subquery.
         //    Pull just Id+name, group in memory — EF can't translate GroupBy+SelectMany together.
-        var allProviderNames = await _db.Providers
+        var allProviderNames = await db.Providers
             .AsNoTracking()
             .Select(p => new { p.Provider_Id, p.LastName, p.FirstName })
             .ToListAsync(ct);
@@ -66,7 +67,7 @@ public class ProviderService : IProviderService
             .ToHashSet();
 
         // 3. Subquery for Assigned Student Counts from Sesis
-        var assignedCounts = _db.Seses
+        var assignedCounts = db.Seses
             .Where(s => s.Provider_Id != null && s.Entry_Id != null)
             .GroupBy(s => s.Provider_Id)
             .Select(g => new {
@@ -134,7 +135,7 @@ public class ProviderService : IProviderService
             var ssnValue = request.ColumnFilters["Ssn"];
             if (!string.IsNullOrWhiteSpace(ssnValue))
             {
-                query = query.Where(dto => _db.Providers
+                query = query.Where(dto => db.Providers
                     .Any(original => original.Provider_Id == dto.Id && original.Ssn != null && original.Ssn.EndsWith(ssnValue)));
             }
         }
@@ -154,7 +155,8 @@ public class ProviderService : IProviderService
 
     public async Task<ProviderDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.Providers
+        await using var db = _factory.CreateDbContext();
+        return await db.Providers
             .AsNoTracking()
             .Where(p => p.Provider_Id == id)
             .Select(ToDTO)
@@ -163,6 +165,7 @@ public class ProviderService : IProviderService
 
     public async Task<int> AddAsync(ProviderDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new Provider
         {
             FirstName = dto.FirstName,
@@ -181,17 +184,18 @@ public class ProviderService : IProviderService
             Pets = dto.HasPets
         };
 
-        _db.Providers.Add(entity);
+        db.Providers.Add(entity);
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
         return entity.Provider_Id;
     }
 
     public async Task<bool> UpdateAsync(ProviderDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // 1. Fetch the existing entity from the DB
-        var provider = await _db.Providers
+        var provider = await db.Providers
             .FirstOrDefaultAsync(p => p.Provider_Id == dto.Id, ct);
 
         if (provider == null) return false;
@@ -213,26 +217,69 @@ public class ProviderService : IProviderService
         provider.Pets = dto.HasPets;
 
         // 3. Save Changes
-        return await _db.SaveChangesAsync(ct) > 0;
+        return await db.SaveChangesAsync(ct) > 0;
     }
 
     public async Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts)
     {
+        await using var db = _factory.CreateDbContext();
         // EnableRetryOnFailure requires all transactions to go through CreateExecutionStrategy
         // so EF can retry the entire unit if a transient failure occurs.
-        var strategy = _db.Database.CreateExecutionStrategy();
+        var strategy = db.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
         {
-            using var transaction = await _db.Database.BeginTransactionAsync();
+            using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
                 // 1. Update/Add the Provider
-                int providerId = dto.Id == 0 ? await AddAsync(dto) : dto.Id;
-                if (dto.Id > 0) await UpdateAsync(dto);
+                int providerId;
+                if (dto.Id == 0)
+                {
+                    var entity = new Provider
+                    {
+                        FirstName = dto.FirstName,
+                        LastName = dto.LastName,
+                        Ssn = StripSsn(dto.Ssn),
+                        Phone = StripPhone(dto.Phone),
+                        Email = dto.Email,
+                        Status = ProviderStatus.Active,
+                        TaxId = dto.TaxId,
+                        NpiNumber = dto.NpiNumber,
+                        Address = dto.Address,
+                        City = dto.City,
+                        State = dto.State,
+                        Zipcode = dto.Zipcode,
+                        Pets = dto.HasPets
+                    };
+                    db.Providers.Add(entity);
+                    await db.SaveChangesAsync();
+                    providerId = entity.Provider_Id;
+                }
+                else
+                {
+                    providerId = dto.Id;
+                    var provider = await db.Providers.FirstOrDefaultAsync(p => p.Provider_Id == dto.Id);
+                    if (provider != null)
+                    {
+                        provider.FirstName = dto.FirstName;
+                        provider.LastName = dto.LastName;
+                        provider.Ssn = StripSsn(dto.Ssn);
+                        provider.Email = dto.Email;
+                        provider.Phone = StripPhone(dto.Phone);
+                        provider.Status = dto.IsActive.Value ? ProviderStatus.Active : ProviderStatus.Inactive;
+                        provider.License1Exp = dto.License1Expiration;
+                        provider.TaxId = dto.TaxId;
+                        provider.Address = dto.Address;
+                        provider.City = dto.City;
+                        provider.State = dto.State;
+                        provider.Zipcode = dto.Zipcode;
+                        provider.Pets = dto.HasPets;
+                    }
+                }
 
                 // 2. Fetch the current state from DB
-                var dbContacts = await _db.Provider_Contacts
+                var dbContacts = await db.Provider_Contacts
                     .Where(c => c.Provider_Id == providerId)
                     .ToListAsync();
 
@@ -241,7 +288,7 @@ public class ProviderService : IProviderService
                 // A. DELETE: Find IDs in DB that are NOT in the incoming list
                 var incomingIds = contacts.Select(c => c.Id).ToList();
                 var toDelete = dbContacts.Where(c => !incomingIds.Contains(c.Contact_Id));
-                _db.Provider_Contacts.RemoveRange(toDelete);
+                db.Provider_Contacts.RemoveRange(toDelete);
 
                 // B. ADD / UPDATE: Loop through incoming
                 foreach (var c in contacts)
@@ -251,7 +298,7 @@ public class ProviderService : IProviderService
                     if (c.Id == 0)
                     {
                         // It's a brand NEW row from the UI
-                        _db.Provider_Contacts.Add(new Provider_Contact
+                        db.Provider_Contacts.Add(new Provider_Contact
                         {
                             Provider_Id = providerId,
                             ContactNote = c.Notes,
@@ -270,7 +317,7 @@ public class ProviderService : IProviderService
                     }
                 }
 
-                await _db.SaveChangesAsync();
+                await db.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return providerId;
             }
@@ -285,29 +332,30 @@ public class ProviderService : IProviderService
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         // 1. Fetch the provider
-        var provider = await _db.Providers.FindAsync(new object[] { id }, ct);
+        var provider = await db.Providers.FindAsync(new object[] { id }, ct);
         if (provider == null) return false;
 
         // 2. CHECK BUSINESS RULES (The "Guard")
-        var hasActiveMandates = ProviderHasAssignments(provider.Provider_Id);
+        var hasActiveMandates = ProviderHasAssignments(db, provider.Provider_Id);
         if (hasActiveMandates)
         {
             throw new InvalidOperationException("Cannot delete: This provider is still assigned to active mandates.");
         }
 
         // 3. WIPE ASSOCIATED DATA (Contacts & Rates)
-        var contacts = _db.Provider_Contacts.Where(c => c.Provider_Id == id);
-        _db.Provider_Contacts.RemoveRange(contacts);
+        var contacts = db.Provider_Contacts.Where(c => c.Provider_Id == id);
+        db.Provider_Contacts.RemoveRange(contacts);
 
-        var rates = _db.ProviderRates.Where(r => r.Provider_Id == id);
-        _db.ProviderRates.RemoveRange(rates);
+        var rates = db.ProviderRates.Where(r => r.Provider_Id == id);
+        db.ProviderRates.RemoveRange(rates);
 
         // 4. MARK PROVIDER FOR DELETION
-        _db.Providers.Remove(provider);
+        db.Providers.Remove(provider);
 
         // 5. ATOMIC SAVE: SQL deletes everything in one shot
-        return await _db.SaveChangesAsync(ct) > 0;
+        return await db.SaveChangesAsync(ct) > 0;
     }
 
     /// <summary>
@@ -360,9 +408,9 @@ public class ProviderService : IProviderService
         DirectDepositInfo = p.DDInfo
     };
 
-    private bool ProviderHasAssignments(int providerId)
+    private static bool ProviderHasAssignments(AppDbContext db, int providerId)
     {
-        var assignedCounts = _db.Seses
+        var assignedCounts = db.Seses
         .Where(s => s.Provider_Id != null && s.Entry_Id != null)
         .GroupBy(s => s.Provider_Id)
         .Select(g => new {

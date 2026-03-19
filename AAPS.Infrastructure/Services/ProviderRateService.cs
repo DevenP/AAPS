@@ -1,9 +1,9 @@
-﻿using AAPS.Application.Abstractions.Data;
 using AAPS.Application.Abstractions.Services;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
+using AAPS.Infrastructure.Data.Scaffolded;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
@@ -12,14 +12,15 @@ namespace AAPS.Infrastructure.Services;
 
 public class ProviderRateService : IProviderRateService
 {
-    private readonly IAppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public ProviderRateService(IAppDbContext db) => _db = db;
+    public ProviderRateService(IDbContextFactory<AppDbContext> factory) => _factory = factory;
 
     public async Task<Application.Common.Paging.PagedResult<ProviderRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
-        var query = from rate in _db.ProviderRates.AsNoTracking()
-                    join prov in _db.Providers.AsNoTracking()
+        await using var db = _factory.CreateDbContext();
+        var query = from rate in db.ProviderRates.AsNoTracking()
+                    join prov in db.Providers.AsNoTracking()
                       on rate.Provider_Id equals prov.Provider_Id into provJoin
                     from prov in provJoin.DefaultIfEmpty() // Left Join
                     select new ProviderRateDTO
@@ -42,10 +43,11 @@ public class ProviderRateService : IProviderRateService
 
     public async Task<ProviderRateDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
-        return await _db.ProviderRates
+        await using var db = _factory.CreateDbContext();
+        return await db.ProviderRates
             .AsNoTracking()
             .Where(r => r.ProviderRate_Id == id)
-            .Join(_db.Providers.AsNoTracking(),
+            .Join(db.Providers.AsNoTracking(),
                   rate => rate.Provider_Id,
                   prov => prov.Provider_Id,
                   (rate, prov) => new ProviderRateDTO
@@ -66,16 +68,18 @@ public class ProviderRateService : IProviderRateService
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.ProviderRates.FindAsync(new object[] { id }, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.ProviderRates.FindAsync(new object[] { id }, ct);
         if (entity != null)
         {
-            _db.ProviderRates.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            db.ProviderRates.Remove(entity);
+            await db.SaveChangesAsync(ct);
         }
     }
 
     public async Task<int> CreateAsync(ProviderRateDTO dto, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var entity = new ProviderRate
         {
             Provider_Id = dto.ProviderId,
@@ -86,14 +90,15 @@ public class ProviderRateService : IProviderRateService
             Active = dto.IsActive,
             Lang = dto.Language
         };
-        _db.ProviderRates.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        db.ProviderRates.Add(entity);
+        await db.SaveChangesAsync(ct);
         return entity.ProviderRate_Id;
     }
 
     public async Task UpdateAsync(int id, ProviderRateDTO dto, CancellationToken ct = default)
     {
-        var entity = await _db.ProviderRates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.ProviderRates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
         entity.Provider_Id = dto.ProviderId;
         entity.ServiceType = dto.ServiceType;
         entity.District = dto.District;
@@ -101,7 +106,7 @@ public class ProviderRateService : IProviderRateService
         entity.Effective = dto.EffectiveDate;
         entity.Active = dto.IsActive;
         entity.Lang = dto.Language;
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 
 
