@@ -251,8 +251,10 @@
     private async Task OnFileSelected(IBrowserFile file)
     {
         _parseError = null;
+        _isDragging = false;
         _loading = true;
         StateHasChanged();
+        await Task.Yield(); // let the spinner render before heavy parsing starts
 
         try
         {

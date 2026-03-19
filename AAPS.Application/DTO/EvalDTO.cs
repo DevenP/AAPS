@@ -1,121 +1,90 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record EvalDTO
 {
-    [Browsable(true)]
-    [Display(Name = "Id")]
+    [DisplayField("Id")]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentFirstName")]
+    [DisplayField("First Name")]
     public string? StudentFirstName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentLastName")]
+    [DisplayField("Last Name")]
     public string? StudentLastName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentId")]
+    [DisplayField("Student ID")]
     public string? StudentId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Phone")]
+    [DisplayField("Phone")]
     public string? Phone { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Email")]
+    [DisplayField("Email")]
     public string? Email { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ParentFirstName")]
+    [DisplayField("Parent First")]
     public string? ParentFirstName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ParentLastName")]
+    [DisplayField("Parent Last")]
     public string? ParentLastName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "EvalReceivedDate")]
+    [DisplayField("Eval Received")]
     public DateTime? EvalReceivedDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderId")]
+    [DisplayField("Provider ID", browsable: false)]
     public int? ProviderId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "AssignedDate")]
+    [DisplayField("Assigned Date")]
     public DateTime? AssignedDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ReportReceivedDate")]
+    [DisplayField("Report Received")]
     public DateTime? ReportReceivedDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "EvalDate")]
+    [DisplayField("Eval Date")]
     public DateTime? EvalDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ReportSubmittedDate")]
+    [DisplayField("Report Submitted")]
     public DateTime? ReportSubmittedDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "District")]
+    [DisplayField("District")]
     public string? District { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Language")]
+    [DisplayField("Language")]
     public string? Language { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ServiceType")]
+    [DisplayField("Service Type")]
     public string? ServiceType { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Contact")]
+    [DisplayField("Contact")]
     public string? Contact { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderPaidAmount")]
+    [DisplayField("Provider Paid Amt")]
     public decimal? ProviderPaidAmount { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BillingAmount")]
+    [DisplayField("Billing Amount")]
     public decimal? BillingAmount { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderPaidDate")]
+    [DisplayField("Provider Paid Date")]
     public DateTime? ProviderPaidDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BillPaidDate")]
+    [DisplayField("Bill Paid Date")]
     public DateTime? BillPaidDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "BilledDate")]
+    [DisplayField("Billed Date")]
     public DateTime? BilledDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Memo")]
+    [DisplayField("Memo")]
     public string? Memo { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "AppointmentDate")]
+    [DisplayField("Appointment Date")]
     public DateTime? AppointmentDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Status")]
+    [DisplayField("Status")]
     public string? Status { get; set; }
 
-    //
-
-    [Browsable(true)]
-    [Display(Name = "ProviderFirstName")]
+    [DisplayField("Provider First")]
     public string? ProviderFirstName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ProviderLastName")]
+    [DisplayField("Provider Last")]
     public string? ProviderLastName { get; set; }
 }

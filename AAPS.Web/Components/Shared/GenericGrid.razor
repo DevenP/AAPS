@@ -367,7 +367,7 @@
 
     private async Task<TableData<TItem>> ReloadData(TableState state, CancellationToken ct)
     {
-        // 2. Adjust for initial load from URL
+        // Adjust for initial load from URL
         if (_isFirstLoad)
         {
             state.Page = _initialPage;
@@ -379,13 +379,12 @@
         var request = new PagedRequest(_search, ColumnFilters, state.SortLabel,
             state.SortDirection == SortDirection.Descending ? "desc" : "asc", state.Page + 1, state.PageSize);
 
-        // 3. Sync to URL
+        // Sync to URL
         UpdateUrl(request);
 
         var result = await GetData(request, ct);
 
         _pageSize = state.PageSize;
-
         _totalItems = result.TotalCount;
 
         return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };

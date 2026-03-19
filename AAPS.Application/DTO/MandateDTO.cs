@@ -1,125 +1,93 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record MandateDTO
 {
-    [Browsable(true)]
-    [Display(Name = "Id")]
+    [DisplayField("Id")]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ConferenceDate")]
+    [DisplayField("Conference Date")]
     public DateTime? ConferenceDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "StudentId")]
+    [DisplayField("Student ID")]
     public string? StudentId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "LastName")]
+    [DisplayField("Last Name")]
     public string? LastName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "FirstName")]
+    [DisplayField("First Name")]
     public string? FirstName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "HomeDistrict")]
+    [DisplayField("Home District")]
     public string? HomeDistrict { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Cse")]
+    [DisplayField("CSE")]
     public string? Cse { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "CseDistrict")]
+    [DisplayField("CSE District")]
     public string? CseDistrict { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Grade")]
+    [DisplayField("Grade")]
     public string? Grade { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "DateOfBirth")]
+    [DisplayField("Date of Birth")]
     public DateTime? DateOfBirth { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "AdminDbn")]
+    [DisplayField("Admin DBN")]
     public string? AdminDbn { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "D75")]
+    [DisplayField("D75")]
     public string? D75 { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ServiceType")]
+    [DisplayField("Service Type")]
     public string? ServiceType { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Language")]
+    [DisplayField("Language")]
     public string? Language { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "GroupSize")]
+    [DisplayField("Group Size")]
     public string? GroupSize { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Duration")]
+    [DisplayField("Duration")]
     public string? Duration { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ServiceLocation")]
+    [DisplayField("Service Location")]
     public string? ServiceLocation { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "RemainingFrequency")]
+    [DisplayField("Remaining Freq")]
     public string? RemainingFrequency { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Provider")]
+    [DisplayField("Provider")]
     public string? Provider { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "FirstAttendDate")]
+    [DisplayField("First Attend Date")]
     public DateTime? FirstAttendDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "MandateId")]
+    [DisplayField("Mandate ID")]
     public string? MandateId { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "PrimaryPhone1")]
+    [DisplayField("Primary Phone 1")]
     public string? PrimaryPhone1 { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "PrimaryPhone2")]
+    [DisplayField("Primary Phone 2")]
     public string? PrimaryPhone2 { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "MandateStart")]
+    [DisplayField("Mandate Start")]
     public DateTime? MandateStart { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "MandateEnd")]
+    [DisplayField("Mandate End")]
     public DateTime? MandateEnd { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "FileName")]
+    [DisplayField("File Name", browsable: false)]
     public string? FileName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "RowNumber")]
+    [DisplayField("Row Number", browsable: false)]
     public int? RowNumber { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ServiceStartDate")]
+    [DisplayField("Service Start Date")]
     public DateTime? ServiceStartDate { get; set; }
 
-    //
-
-    [Browsable(true)]
-    [Display(Name = "IsMismatched")]
+    [DisplayField("Mismatched")]
     public bool IsMismatched { get; set; }
 }

@@ -22,8 +22,25 @@
     </MudDrawer>
 
     <MudMainContent Class="pa-4">
-        <ErrorBoundary>
-            @Body
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent>
+                <div class="d-flex flex-column align-center justify-center" style="height: 60vh;">
+                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size:4rem;" Class="mb-4" />
+                    <MudText Typo="Typo.h5" Class="mb-2">Something went wrong</MudText>
+                    <MudText Typo="Typo.body1" Class="mud-text-secondary mb-4">An unexpected error occurred on this page.</MudText>
+                    <div class="d-flex gap-3">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="@(() => _errorBoundary?.Recover())">
+                            Try Again
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => Nav.NavigateTo("/", true))">
+                            Go to Home
+                        </MudButton>
+                    </div>
+                </div>
+            </ErrorContent>
         </ErrorBoundary>
     </MudMainContent>
 </MudLayout>
@@ -35,6 +52,7 @@
 </style>
 
 @code {
+    private ErrorBoundary? _errorBoundary;
     bool _drawerOpen = true;
     public bool _isDarkMode;
 
