@@ -5,6 +5,7 @@ using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using AAPS.Infrastructure.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
@@ -13,8 +14,13 @@ namespace AAPS.Infrastructure.Services;
 public class ProviderService : IProviderService
 {
     private readonly IAppDbContext _db;
+    private readonly ILogger<ProviderService> _logger;
 
-    public ProviderService(IAppDbContext db) => _db = db;
+    public ProviderService(IAppDbContext db, ILogger<ProviderService> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
 
     public async Task<Application.Common.Paging.PagedResult<ProviderDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
@@ -129,7 +135,7 @@ public class ProviderService : IProviderService
             if (!string.IsNullOrWhiteSpace(ssnValue))
             {
                 query = query.Where(dto => _db.Providers
-                    .Any(original => original.Provider_Id == dto.Id && original.Ssn.EndsWith(ssnValue)));
+                    .Any(original => original.Provider_Id == dto.Id && original.Ssn != null && original.Ssn.EndsWith(ssnValue)));
             }
         }
 
@@ -162,7 +168,7 @@ public class ProviderService : IProviderService
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             Ssn = StripSsn(dto.Ssn),
-            Phone = dto.Phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", ""),
+            Phone = StripPhone(dto.Phone),
             Email = dto.Email,
             Status = ProviderStatus.Active,
             //IsActive = dto.IsActive ?? true, // Default to true for new providers
@@ -196,7 +202,7 @@ public class ProviderService : IProviderService
         provider.LastName = dto.LastName;
         provider.Ssn = StripSsn(dto.Ssn);
         provider.Email = dto.Email;
-        provider.Phone = dto.Phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", "");
+        provider.Phone = StripPhone(dto.Phone);
         provider.Status = dto.IsActive.Value ? ProviderStatus.Active : ProviderStatus.Inactive;
         provider.License1Exp = dto.License1Expiration;
         provider.TaxId = dto.TaxId;
@@ -268,8 +274,9 @@ public class ProviderService : IProviderService
                 await transaction.CommitAsync();
                 return providerId;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "UpdateWithContactsAsync failed for provider {ProviderId}", dto.Id);
                 await transaction.RollbackAsync();
                 return 0;
             }
@@ -308,6 +315,9 @@ public class ProviderService : IProviderService
     /// DB stores SSN as 9 raw digits with no dashes.
     /// </summary>
     private static string? StripSsn(string? ssn) => ssn?.Replace("-", "");
+
+    private static string? StripPhone(string? phone) =>
+        phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", "");
 
     private static readonly Expression<Func<Provider, ProviderDTO>> ToDTO = p => new ProviderDTO
     {

@@ -26,7 +26,7 @@ public class GlobalExceptionHandler
         catch (OperationCanceledException)
         {
             // Request was cancelled (e.g. MudTable debounce cancelling in-flight queries).
-            // This is normal — do not treat as an error.
+            // This is normal ï¿½ do not treat as an error.
         }
         catch (Exception exception)
         {
@@ -38,9 +38,13 @@ public class GlobalExceptionHandler
     {
         _logger.LogError(exception, "An unhandled exception occurred");
 
-        var isApiRequest = context.Request.Path.StartsWithSegments("/vendorportals")
-            || context.Request.Path.StartsWithSegments("/files/download")
-            || context.Request.Path.StartsWithSegments("/files/preview")
+        var path = context.Request.Path;
+        var isApiRequest = path.StartsWithSegments("/vendorportals")
+            || path.StartsWithSegments("/files/download")
+            || path.StartsWithSegments("/files/preview")
+            || path.StartsWithSegments("/provider-files/download")
+            || path.StartsWithSegments("/provider-files/preview")
+            || path.StartsWithSegments("/reports")
             || context.Request.Headers["Accept"].Any(h => h!.Contains("application/json"));
 
         if (!isApiRequest)

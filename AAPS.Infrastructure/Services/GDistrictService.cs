@@ -7,8 +7,6 @@ using AAPS.Infrastructure.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-
 namespace AAPS.Infrastructure.Services;
 
 public class GDistrictService : IGDistrictService

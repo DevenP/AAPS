@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"\\\\.Replace.*Replace.*Replace\" /c/Users/deven/source/repos/AAPS/AAPS.Infrastructure/Services/*.cs)"
+    ]
+  }
+}

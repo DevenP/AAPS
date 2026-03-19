@@ -135,9 +135,8 @@ namespace AAPS.Infrastructure.Common.Extensions
             if (request.ColumnFilters != null && request.ColumnFilters.Any())
                 query = ApplyColumnFilters(query, request.ColumnFilters);
 
-            // Sorting
-            if (!string.IsNullOrWhiteSpace(request.SortBy))
-                query = ApplySort(query, request.SortBy, request.SortDir);
+            // Sorting — always apply to guarantee stable pagination (falls back to "Id" if no column specified)
+            query = ApplySort(query, request.SortBy, request.SortDir);
 
             // Export — return everything without a separate COUNT query
             if (request.PageSize == -1)

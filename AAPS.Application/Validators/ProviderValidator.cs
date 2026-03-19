@@ -20,10 +20,6 @@ public class ProviderValidator : AbstractValidator<ProviderDTO>
         RuleFor(x => x.Ssn)
             .NotEmpty().WithMessage("Ssn is required");
 
-        //RuleFor(x => x.Ssn)
-        //    .Matches(@"^\d{9}$").WithMessage("SSN must be exactly 9 digits (no dashes).")
-        //    .When(x => !string.IsNullOrEmpty(x.Ssn));
-
         // Logic Validation
         RuleFor(x => x.License1Expiration)
             .GreaterThan(DateTime.Today).WithMessage("License cannot be expired.")

@@ -6,10 +6,14 @@ using AAPS.Infrastructure.Data;
 using AAPS.Infrastructure.Data.Scaffolded;
 using AAPS.Web.Components;
 using AAPS.Web.Middleware;
+using AAPS.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Extensions;
 using MudBlazor.Services;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.MSSqlServer;
 
 namespace AAPS.Web
 {
@@ -18,6 +22,37 @@ namespace AAPS.Web
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            var connectionString = builder.Configuration.GetConnectionString("Default")!;
+            var logFilePath = builder.Configuration.GetValue<string>("Logging:FilePath", "C:\\AAPS\\Logs\\aaps-.log")!;
+            var retainedFileDays = builder.Configuration.GetValue<int>("Logging:RetainedFileDays", 30);
+            var seqUrl = builder.Configuration.GetValue<string>("Logging:SeqUrl", "http://localhost:5341")!;
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .WriteTo.File(
+                    path: logFilePath,
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: retainedFileDays,
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.MSSqlServer(
+                    connectionString: connectionString,
+                    sinkOptions: new MSSqlServerSinkOptions
+                    {
+                        TableName = "Logs",
+                        AutoCreateSqlTable = true
+                    },
+                    restrictedToMinimumLevel: LogEventLevel.Warning)
+                .WriteTo.Seq(
+                    serverUrl: seqUrl,
+                    restrictedToMinimumLevel: LogEventLevel.Information)
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
@@ -50,13 +85,15 @@ namespace AAPS.Web
         {
             // 1. Get Connection String
             var connectionString = builder.Configuration.GetConnectionString("Default");
+            var maxRetryCount = builder.Configuration.GetValue<int>("Database:MaxRetryCount", 3);
+            var maxRetryDelay = builder.Configuration.GetValue<int>("Database:MaxRetryDelaySeconds", 5);
 
             // 2. Register DbContextFactory (Crucial for Blazor)
             builder.Services.AddDbContextFactory<AppDbContext>(options =>
                 options.UseSqlServer(connectionString, sql =>
                     sql.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        maxRetryCount: maxRetryCount,
+                        maxRetryDelay: TimeSpan.FromSeconds(maxRetryDelay),
                         errorNumbersToAdd: null)));
 
             // 3. Register the Interface to map to the Factory-created context
@@ -71,6 +108,9 @@ namespace AAPS.Web
 
             // Packages
             builder.Services.AddMudServices();
+
+            // Background services
+            builder.Services.AddHostedService<LogCleanupService>();
 
         }
 

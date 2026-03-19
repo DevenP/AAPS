@@ -5,6 +5,7 @@ using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AAPS.Infrastructure.Services;
@@ -14,12 +15,14 @@ public class ImportService : IImportService
     private readonly IAppDbContext _db;
     private readonly IImportLogService _importLogService;
     private readonly ImportSettings _settings;
+    private readonly ILogger<ImportService> _logger;
 
-    public ImportService(IAppDbContext db, IImportLogService importLogService, IOptions<ImportSettings> settings)
+    public ImportService(IAppDbContext db, IImportLogService importLogService, IOptions<ImportSettings> settings, ILogger<ImportService> logger)
     {
         _db = db;
         _importLogService = importLogService;
         _settings = settings.Value;
+        _logger = logger;
     }
 
 
@@ -77,11 +80,10 @@ public class ImportService : IImportService
         await fileStream.CopyToAsync(ms);
         var fileBytes = ms.ToArray();
 
-        // 3. Size check (50MB)
-        const long maxBytes = 50L * 1024 * 1024;
-        if (fileBytes.Length > maxBytes)
+        // 3. Size check
+        if (fileBytes.Length > _settings.MaxFileSizeBytes)
             throw new InvalidOperationException(
-                $"File is too large ({fileBytes.Length / 1024 / 1024}MB). Maximum allowed size is 50MB.");
+                $"File is too large ({fileBytes.Length / 1024 / 1024}MB). Maximum allowed size is {_settings.MaxFileSizeBytes / 1024 / 1024}MB.");
 
         // 4. Try opening as workbook
         ms.Position = 0;
@@ -662,8 +664,9 @@ public class ImportService : IImportService
 
                 inserted++;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "CommitMandatesAsync: skipping row {Row} due to error", i - 3);
                 skippedRowNumbers.Add(i - 3);
             }
         }
@@ -733,7 +736,7 @@ public class ImportService : IImportService
 
         // ── Row processing ────────────────────────────────────────────────
 
-        const int batchSize = 500;
+        int batchSize = _settings.BatchSize;
         var batch = new List<Sesi>(batchSize);
 
         async Task FlushBatchAsync()
@@ -745,9 +748,10 @@ public class ImportService : IImportService
                 await _db.SaveChangesAsync(ct);
                 inserted += batch.Count;
             }
-            catch
+            catch (Exception ex)
             {
                 // Batch failed — fall back to row-by-row so we can skip only the bad ones
+                _logger.LogWarning(ex, "CommitSesisAsync: batch of {Count} rows failed, falling back to row-by-row", batch.Count);
                 ((DbContext)_db).ChangeTracker.Clear();
                 foreach (var e in batch)
                 {
@@ -757,8 +761,9 @@ public class ImportService : IImportService
                         await _db.SaveChangesAsync(ct);
                         inserted++;
                     }
-                    catch
+                    catch (Exception rowEx)
                     {
+                        _logger.LogWarning(rowEx, "CommitSesisAsync: skipping row {Row} due to error", e.RowNumber);
                         if (e.RowNumber.HasValue)
                             skippedRowNumbers.Add(e.RowNumber.Value - 1);
                     }
@@ -968,7 +973,7 @@ public class ImportService : IImportService
                 r => r.RowNumber - 1,
                 StringComparer.OrdinalIgnoreCase);
 
-        const int batchSize = 500;
+        int batchSize = _settings.BatchSize;
         var batch = new List<VendorPortal>(batchSize);
         var batchAssignIds = new List<string>(); // parallel list for skip tracking
 
@@ -981,8 +986,9 @@ public class ImportService : IImportService
                 await _db.SaveChangesAsync(ct);
                 inserted += batch.Count;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "CommitVendorPortalAsync: batch of {Count} rows failed, falling back to row-by-row", batch.Count);
                 ((DbContext)_db).ChangeTracker.Clear();
                 for (int b = 0; b < batch.Count; b++)
                 {
@@ -993,8 +999,9 @@ public class ImportService : IImportService
                         await _db.SaveChangesAsync(ct);
                         inserted++;
                     }
-                    catch
+                    catch (Exception rowEx)
                     {
+                        _logger.LogWarning(rowEx, "CommitVendorPortalAsync: skipping assign {AssignId} due to error", batchAssignIds[b]);
                         if (assignIdToDisplayRow.TryGetValue(batchAssignIds[b], out int dispRow))
                             skippedRowNumbers.Add(dispRow);
                     }
@@ -1114,10 +1121,13 @@ public class ImportService : IImportService
         var skippedRowNumbers = new List<int>();
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
 
+        // ── Bulk lookups upfront (2 queries total instead of 2 per row) ──────
+        // Collect the date range and student IDs from the file first
+        var rowData = new List<(int RowNumber, string Voucher, string StudentId, string? SsnLast4, string? Provider, DateTime DosDate, string StartTimeNormalized)>();
+
         foreach (var row in preview.ValidRows)
         {
             int i = row.RowNumber;
-
             string? Get(int col) => ws.Cell(i, col).IsEmpty() ? null : ws.Cell(i, col).GetValue<string>()?.Trim();
             DateTime? GetDate(int col)
             {
@@ -1132,16 +1142,14 @@ public class ImportService : IImportService
             string? provider = Get(10);
             DateTime? dateOfService = GetDate(15);
 
-            // Parse start time from col 16 — stored as "12:30:00", normalize to "12:30 PM" format
+            // Normalize start time from col 16 (e.g. "12:30:00" -> "12:30 PM")
             string? startTimeRaw = Get(16);
             string? startTimeNormalized = null;
             if (!string.IsNullOrWhiteSpace(startTimeRaw))
             {
-                // Try parsing as TimeSpan "12:30:00"
-                if (TimeSpan.TryParse(startTimeRaw, out var ts))
-                    startTimeNormalized = DateTime.Today.Add(ts).ToString("h:mm tt");
-                else
-                    startTimeNormalized = startTimeRaw;
+                startTimeNormalized = TimeSpan.TryParse(startTimeRaw, out var ts)
+                    ? DateTime.Today.Add(ts).ToString("h:mm tt")
+                    : startTimeRaw;
             }
 
             if (string.IsNullOrWhiteSpace(studentId) || !dateOfService.HasValue || string.IsNullOrWhiteSpace(startTimeNormalized))
@@ -1151,20 +1159,40 @@ public class ImportService : IImportService
             }
 
             string? ssnLast4 = ssn?.Length >= 4 ? ssn.Substring(ssn.Length - 4) : ssn;
-            DateTime dosDate = dateOfService.Value.Date;
+            rowData.Add((i, voucher, studentId, ssnLast4, provider, dateOfService.Value.Date, startTimeNormalized));
+        }
 
-            // Load candidate Sesis rows for this student + date
-            var candidates = await _db.Seses
-                .Where(s => s.Student_ID!.Trim() == studentId.Trim() &&
+        if (rowData.Count == 0)
+            return new ImportCommitResult { Updated = 0, Skipped = noMatch, SkippedRowNumbers = skippedRowNumbers };
+
+        // Load all relevant Sesis in one query (all students + date range in this file)
+        var studentIds = rowData.Select(r => r.StudentId).Distinct().ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var minDate = rowData.Min(r => r.DosDate);
+        var maxDate = rowData.Max(r => r.DosDate);
+
+        var allCandidateSesis = await _db.Seses
+            .Where(s => s.Student_ID != null &&
+                        studentIds.Contains(s.Student_ID.Trim()) &&
+                        s.date_of_Service.HasValue &&
+                        s.date_of_Service.Value.Date >= minDate &&
+                        s.date_of_Service.Value.Date <= maxDate)
+            .ToListAsync(ct);
+
+        // Load all providers referenced by those Sesis in one query
+        var providerIds = allCandidateSesis.Select(s => s.Provider_Id).Where(id => id.HasValue).Distinct().ToList();
+        var allProviders = await _db.Providers
+            .Where(p => providerIds.Contains(p.Provider_Id))
+            .ToListAsync(ct);
+        var providerById = allProviders.ToDictionary(p => p.Provider_Id);
+
+        // ── In-memory matching loop ────────────────────────────────────────
+        foreach (var r in rowData)
+        {
+            var candidates = allCandidateSesis
+                .Where(s => string.Equals(s.Student_ID?.Trim(), r.StudentId, StringComparison.OrdinalIgnoreCase) &&
                             s.date_of_Service.HasValue &&
-                            s.date_of_Service.Value.Date == dosDate)
-                .ToListAsync(ct);
-
-            // For each candidate, verify provider SSN last 4 and name
-            var providerIds = candidates.Select(s => s.Provider_Id).Where(id => id.HasValue).Distinct().ToList();
-            var providers = await _db.Providers
-                .Where(p => providerIds.Contains(p.Provider_Id))
-                .ToListAsync(ct);
+                            s.date_of_Service.Value.Date == r.DosDate)
+                .ToList();
 
             int matchCount = 0;
             foreach (var sesi in candidates)
@@ -1174,29 +1202,36 @@ public class ImportService : IImportService
                 if (!string.IsNullOrWhiteSpace(storedTime) && storedTime.StartsWith("0"))
                     storedTime = storedTime.Substring(1);
 
-                if (storedTime?.Trim() != startTimeNormalized?.Trim()) continue;
+                if (!string.Equals(storedTime?.Trim(), r.StartTimeNormalized, StringComparison.OrdinalIgnoreCase)) continue;
 
-                // Match provider
-                var prov = providers.FirstOrDefault(p => p.Provider_Id == sesi.Provider_Id);
-                if (prov == null) continue;
-                if (ssnLast4 != null && !prov.Ssn!.EndsWith(ssnLast4)) continue;
-                if (provider != null &&
-                    !provider.Contains(prov.LastName ?? "", StringComparison.OrdinalIgnoreCase) &&
-                    !provider.Contains(prov.FirstName ?? "", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!sesi.Provider_Id.HasValue || !providerById.TryGetValue(sesi.Provider_Id.Value, out var prov)) continue;
+                if (r.SsnLast4 != null && (prov.Ssn == null || !prov.Ssn.EndsWith(r.SsnLast4))) continue;
+                if (r.Provider != null &&
+                    !r.Provider.Contains(prov.LastName ?? "", StringComparison.OrdinalIgnoreCase) &&
+                    !r.Provider.Contains(prov.FirstName ?? "", StringComparison.OrdinalIgnoreCase)) continue;
 
                 sesi.bPaid = DateTime.Now;
-                sesi.Voucher = voucher;
+                sesi.Voucher = r.Voucher;
                 matchCount++;
             }
 
             if (matchCount > 0)
+                updated += matchCount;
+            else
+                noMatch++;
+        }
+
+        // ── Single save for all changes ────────────────────────────────────
+        if (updated > 0)
+        {
+            try
             {
                 await _db.SaveChangesAsync(ct);
-                updated += matchCount;
             }
-            else
+            catch (Exception ex)
             {
-                noMatch++;
+                _logger.LogError(ex, "CommitPaymentsAsync: failed to save {Count} payment updates", updated);
+                throw;
             }
         }
 
