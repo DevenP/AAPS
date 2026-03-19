@@ -61,6 +61,16 @@
                 <MudText Typo="Typo.body2" Class="mud-text-secondary">
                     @_preview.FileName
                 </MudText>
+                @if (ImportType == ImportType.Payments && _preview.ValidRows.Count > 0)
+                {
+                    var voucher = _preview.ValidRows[0].PreviewColumns.GetValueOrDefault("Voucher");
+                    if (!string.IsNullOrWhiteSpace(voucher))
+                    {
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.Receipt">
+                            Voucher: @voucher
+                        </MudChip>
+                    }
+                }
             </div>
             <div class="d-flex gap-2">
                 <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="Reset" Disabled="_loading">
@@ -175,6 +185,13 @@
 
             @if (ImportType == ImportType.Payments)
             {
+                var voucherNum = _preview?.ValidRows.FirstOrDefault()?.PreviewColumns.GetValueOrDefault("Voucher");
+                @if (!string.IsNullOrWhiteSpace(voucherNum))
+                {
+                    <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.Receipt" Class="mb-3">
+                        Voucher @voucherNum
+                    </MudChip>
+                }
                 <MudText Typo="Typo.body1" Class="mb-1">
                     <b>@_result.Updated</b> Provider Billing records updated with payment info
                 </MudText>
