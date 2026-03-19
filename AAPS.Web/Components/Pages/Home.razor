@@ -1,7 +1,264 @@
-﻿@page "/"
+@page "/"
+@using AAPS.Application.Abstractions.Services
+@inject IDashboardService DashboardService
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Home — AAPS</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudText Typo="Typo.h5" Class="mb-1">Dashboard</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-5">Welcome to the AAPS Portal</MudText>
 
-Welcome to your new app.
+@* ── Stat Cards ───────────────────────────────────────────── *@
+@if (_stats == null)
+{
+    <MudGrid Spacing="3" Class="mb-6">
+        @for (int i = 0; i < 4; i++)
+        {
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudSkeleton Width="60%" Height="20px" Class="mb-2" />
+                    <MudSkeleton Width="40%" Height="36px" />
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else
+{
+    <MudGrid Spacing="3" Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-primary);">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Total Providers</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4"><b>@_stats.TotalProviders</b></MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/providers" Typo="Typo.caption" Color="Color.Primary">View Providers</MudLink>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-error);">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Vendor Portal Discrepancies</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4" Color="@(_stats.VendorPortalDiscrepancies > 0 ? Color.Error : Color.Default)">
+                        <b>@_stats.VendorPortalDiscrepancies</b>
+                    </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/vendorportal" Typo="Typo.caption" Color="Color.Primary">View Vendor Portal</MudLink>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-warning);">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Evals Pending Payment</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4" Color="@(_stats.EvalsPendingPayment > 0 ? Color.Warning : Color.Default)">
+                        <b>@_stats.EvalsPendingPayment</b>
+                    </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.PendingActions" Color="Color.Warning" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/evaluations" Typo="Typo.caption" Color="Color.Primary">View Evaluations</MudLink>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-info);">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Operation Alerts</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4" Color="@(_stats.OperationAlerts > 0 ? Color.Info : Color.Default)">
+                        <b>@_stats.OperationAlerts</b>
+                    </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Info" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/operations" Typo="Typo.caption" Color="Color.Primary">View Operations</MudLink>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@* ── Quick Navigation ─────────────────────────────────────── *@
+<MudText Typo="Typo.h6" Class="mb-3">Quick Access</MudText>
+<MudGrid Spacing="3" Class="mb-6">
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/providers")'>
+            <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Providers</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/operations")'>
+            <MudIcon Icon="@Icons.Material.Filled.TableChart" Color="Color.Secondary" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Operations</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/evaluations")'>
+            <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Warning" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Evaluations</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/vendorportal")'>
+            <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Vendor Portal</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/import")'>
+            <MudIcon Icon="@Icons.Material.Filled.Upload" Color="Color.Success" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Import</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/importlogs")'>
+            <MudIcon Icon="@Icons.Material.Filled.History" Color="Color.Info" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Import Logs</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@* ── Bottom Section: Alerts + Discrepancies / Evals ──────── *@
+<MudGrid Spacing="3">
+
+    @* Operation Alerts *@
+    <MudItem xs="12" md="4">
+        <MudText Typo="Typo.h6" Class="mb-2">Operation Alerts
+            @if (_stats != null && _stats.OperationAlerts > 0)
+            {
+                <MudChip T="string" Color="Color.Info" Size="Size.Small" Class="ml-2">@_stats.OperationAlerts total</MudChip>
+            }
+        </MudText>
+        <MudPaper Elevation="1">
+            @if (_operationAlerts == null)
+            {
+                <div class="pa-3">
+                    @for (int i = 0; i < 5; i++) { <MudSkeleton Width="100%" Height="28px" Class="mb-1" /> }
+                </div>
+            }
+            else if (_operationAlerts.Count == 0)
+            {
+                <MudAlert Severity="Severity.Success" Class="ma-0">No operation alerts.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_operationAlerts" Dense="true" Hover="true" Striped="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Student</MudTh>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Issue</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="white-space:nowrap;">@context.StudentLastName, @context.StudentFirstName</MudTd>
+                        <MudTd Style="white-space:nowrap;">@context.ServiceDate?.ToString("MM/dd/yyyy")</MudTd>
+                        <MudTd><MudChip T="string" Color="Color.Warning" Size="Size.Small">@context.Issue</MudChip></MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <div class="d-flex justify-end pa-2">
+                    <MudLink Href="/operations" Typo="Typo.caption" Color="Color.Primary">View all operations</MudLink>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+    @* Vendor Portal Discrepancies *@
+    <MudItem xs="12" sm="6" md="4">
+        <MudText Typo="Typo.h6" Class="mb-2">Unmatched Vendor Portal
+            @if (_stats != null && _stats.VendorPortalDiscrepancies > 0)
+            {
+                <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="ml-2">@_stats.VendorPortalDiscrepancies total</MudChip>
+            }
+        </MudText>
+        <MudPaper Elevation="1">
+            @if (_discrepancies == null)
+            {
+                <div class="pa-3">
+                    @for (int i = 0; i < 5; i++) { <MudSkeleton Width="100%" Height="28px" Class="mb-1" /> }
+                </div>
+            }
+            else if (_discrepancies.Count == 0)
+            {
+                <MudAlert Severity="Severity.Success" Class="ma-0">No discrepancies found.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_discrepancies" Dense="true" Hover="true" Striped="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Student</MudTh>
+                        <MudTh>Provider</MudTh>
+                        <MudTh>Start Date</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="white-space:nowrap;">@context.StudentLastName, @context.StudentFirstName</MudTd>
+                        <MudTd Style="white-space:nowrap;">@context.ProviderLastName, @context.ProviderFirstName</MudTd>
+                        <MudTd Style="white-space:nowrap;">@context.StartDate?.ToString("MM/dd/yyyy")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <div class="d-flex justify-end pa-2">
+                    <MudLink Href="/vendorportal" Typo="Typo.caption" Color="Color.Primary">View all discrepancies</MudLink>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+    @* Evals Pending Payment *@
+    <MudItem xs="12" sm="6" md="4">
+        <MudText Typo="Typo.h6" Class="mb-2">Evals Pending Payment
+            @if (_stats != null && _stats.EvalsPendingPayment > 0)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ml-2">@_stats.EvalsPendingPayment total</MudChip>
+            }
+        </MudText>
+        <MudPaper Elevation="1">
+            @if (_evalsPending == null)
+            {
+                <div class="pa-3">
+                    @for (int i = 0; i < 5; i++) { <MudSkeleton Width="100%" Height="28px" Class="mb-1" /> }
+                </div>
+            }
+            else if (_evalsPending.Count == 0)
+            {
+                <MudAlert Severity="Severity.Success" Class="ma-0">No evals pending payment.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_evalsPending" Dense="true" Hover="true" Striped="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Student</MudTh>
+                        <MudTh>Service</MudTh>
+                        <MudTh>Billed</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="white-space:nowrap;">@context.StudentLastName, @context.StudentFirstName</MudTd>
+                        <MudTd>@context.ServiceType</MudTd>
+                        <MudTd Style="white-space:nowrap;">@context.BilledDate?.ToString("MM/dd/yyyy")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <div class="d-flex justify-end pa-2">
+                    <MudLink Href="/evaluations" Typo="Typo.caption" Color="Color.Primary">View all evaluations</MudLink>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    private DashboardStats? _stats;
+    private List<OperationAlertItem>? _operationAlerts;
+    private List<DiscrepancyItem>? _discrepancies;
+    private List<EvalPendingItem>? _evalsPending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var statsTask        = DashboardService.GetStatsAsync();
+        var alertsTask       = DashboardService.GetOperationAlertsAsync(15);
+        var discrepancyTask  = DashboardService.GetVendorPortalDiscrepanciesAsync(15);
+        var evalsTask        = DashboardService.GetEvalsPendingPaymentAsync(15);
+
+        await Task.WhenAll(statsTask, alertsTask, discrepancyTask, evalsTask);
+
+        _stats           = await statsTask;
+        _operationAlerts = await alertsTask;
+        _discrepancies   = await discrepancyTask;
+        _evalsPending    = await evalsTask;
+    }
+}

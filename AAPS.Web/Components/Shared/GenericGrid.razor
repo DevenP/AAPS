@@ -382,12 +382,18 @@
         // Sync to URL
         UpdateUrl(request);
 
-        var result = await GetData(request, ct);
-
-        _pageSize = state.PageSize;
-        _totalItems = result.TotalCount;
-
-        return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
+        try
+        {
+            var result = await GetData(request, ct);
+            _pageSize = state.PageSize;
+            _totalItems = result.TotalCount;
+            return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
+        }
+        catch (OperationCanceledException)
+        {
+            // Previous request was superseded by a newer one — return current state quietly
+            return new TableData<TItem> { TotalItems = _totalItems, Items = [] };
+        }
     }
 
     private void UpdateUrl(PagedRequest req)

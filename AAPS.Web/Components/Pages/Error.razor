@@ -1,34 +1,29 @@
-﻿@page "/Error"
+@page "/Error"
+@layout MainLayout
 @using System.Diagnostics
 @rendermode InteractiveServer
+@inject NavigationManager Nav
 
-<PageTitle>System Error</PageTitle>
+<PageTitle>Error — AAPS</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
-    <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Large" Style="font-size: 5rem;" />
-
-    <MudText Typo="Typo.h3" Color="Color.Error" Class="mb-4">Oops!</MudText>
-    <MudText Typo="Typo.h6">An error occurred while processing your request.</MudText>
+<div class="d-flex flex-column align-center justify-center" style="height: 60vh;">
+    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size:4rem;" Class="mb-4" />
+    <MudText Typo="Typo.h5" Class="mb-2">Something Went Wrong</MudText>
+    <MudText Typo="Typo.body1" Class="mud-text-secondary mb-4">
+        An unexpected error occurred while processing your request.
+    </MudText>
 
     @if (ShowRequestId)
     {
-        <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mt-6">
-            <strong>Request ID:</strong> <code>@RequestId</code>
+        <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mb-4" Style="max-width:420px;">
+            <b>Request ID:</b> <MudText Typo="Typo.caption" Inline="true" Style="font-family:monospace;">@RequestId</MudText>
         </MudAlert>
     }
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" href="/" Class="mt-8">
-        Back to Dashboard
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Home" OnClick="@(() => Nav.NavigateTo("/"))">
+        Back to Home
     </MudButton>
-
-    <MudExpansionPanels Class="mt-10">
-        <MudExpansionPanel Text="Technical Details (Admin Only)">
-            <MudText Typo="Typo.body2" Align="Align.Left">
-                The Development environment should not be enabled for deployed applications as it can result in displaying sensitive information.
-            </MudText>
-        </MudExpansionPanel>
-    </MudExpansionPanels>
-</MudContainer>
+</div>
 
 @code {
     [CascadingParameter] private HttpContext? HttpContext { get; set; }

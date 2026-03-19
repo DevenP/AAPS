@@ -36,6 +36,7 @@ namespace AAPS.Infrastructure
                     ?? throw new InvalidOperationException("ProviderFiles:RootPath is not configured in appsettings.json")));
 
             services.AddScoped<IImportService, ImportService>();
+            services.AddScoped<IDashboardService, DashboardService>();
 
             // Reports — logo path resolved at registration time via IWebHostEnvironment
             services.AddScoped<IConsentReportService, ConsentReportService>();
