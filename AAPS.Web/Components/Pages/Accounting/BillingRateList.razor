@@ -91,6 +91,15 @@
     private GenericGrid<BillingRateDTO>? _grid;
     private BillingRateValidator _validator = new();
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_grid!.ColumnFilters.ContainsKey("IsActive"))
+        {
+            _grid.ColumnFilters["IsActive"] = "true";
+            await _grid.ReloadServerData();
+        }
+    }
+
     private async Task OpenEditDialog(BillingRateDTO? rate = null)
     {
         BillingRateDTO model;
