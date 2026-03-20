@@ -9,7 +9,7 @@
              Columns="@(new[] { "StudentId", "LastName", "FirstName", "DateOfService", "StartTime", "EndTime", "Duration", "ServiceType", "BilledRate", "ProviderRate", "BilledDate", "BilledPaidDate" })"
              GetData="SesiService.GetPagedAsync"
              ExportHeaders="@(new[] { "Student ID", "Last", "First", "DOS", "Start", "End", "Min", "Service", "B-Rate", "P-Rate", "Billed", "Paid" })"
-             ExportMapper="@(s => new object[] { s.StudentId, s.StudentLastName, s.StudentFirstName, s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.BilledRate, s.ProviderRate, s.BilledDate, s.BilledPaidDate })">
+             ExportMapper="@(s => new object?[] { s.StudentId, s.StudentLastName, s.StudentFirstName, s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.BilledRate, s.ProviderRate, s.BilledDate, s.BilledPaidDate })">
 
     <HeaderContent>
 @*         <GridCell TItem="SesiDTO" Column="Id" IsHeader="true">

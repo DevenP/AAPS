@@ -9,7 +9,7 @@
              Columns="@(new[] { "Id", "StudentId", "LastName", "FirstName", "ServiceType", "MandateStart", "MandateEnd", "Provider", "GroupSize", "Duration", "AdminDbn", "CseDistrict" })"
              GetData="MandateService.GetPagedAsync"
              ExportHeaders="@(new[] { "Entry ID", "Student ID", "Last Name", "First Name", "Service", "Start", "End", "Provider", "Group", "Min", "DBN", "DOB" })"
-             ExportMapper="@(m => new object[] { m.Id, m.StudentId, m.LastName, m.FirstName, m.ServiceType, m.MandateStart?.ToShortDateString(), m.MandateEnd?.ToShortDateString(), m.Provider, m.GroupSize, m.Duration, m.AdminDbn, m.DateOfBirth?.ToShortDateString() })">
+             ExportMapper="@(m => new object?[] { m.Id, m.StudentId, m.LastName, m.FirstName, m.ServiceType, m.MandateStart?.ToShortDateString(), m.MandateEnd?.ToShortDateString(), m.Provider, m.GroupSize, m.Duration, m.AdminDbn, m.DateOfBirth?.ToShortDateString() })">
 
     <HeaderContent>
         <GridCell TItem="MandateDTO" Column="Id" IsHeader="true">
@@ -72,5 +72,5 @@
 
 @code {
 
-    private GenericGrid<MandateDTO> _grid;
+    private GenericGrid<MandateDTO> _grid = default!;
 }

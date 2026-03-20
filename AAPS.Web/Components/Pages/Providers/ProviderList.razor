@@ -12,7 +12,7 @@
              Columns="@(new[] { "Actions","Id", "IsActive", "FirstName", "LastName", "AssignedCount", "Email", "Phone", "Ssn", "TaxId", "NpiNumber", "Birthdate", "CorporationName", "ServiceType", "City", "State", "HasPets" })"
              GetData="ProviderService.GetPagedAsync"
              ExportHeaders="@(new[] { "Id", "IsActive", "FirstName", "LastName", "Students", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
-             ExportMapper="@(p => new object[] { p.Id, p.IsActive, p.FirstName, p.LastName, p.AssignedCount, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
+             ExportMapper="@(p => new object?[] { p.Id, p.IsActive, p.FirstName, p.LastName, p.AssignedCount, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
 
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
@@ -148,10 +148,9 @@
 
 @code {
 
-    private GenericGrid<ProviderDTO> _grid;
+    private GenericGrid<ProviderDTO> _grid = default!;
 
-
-    [Inject] IDialogService DialogService { get; set; }
+    [Inject] IDialogService DialogService { get; set; } = default!;
 
     private ProviderValidator _validator = new();
 
@@ -178,8 +177,9 @@
         else
         {
             // 2. EDIT SCENARIO: Fetch the fresh data (unmasked SSN, etc.)
-            model = await ProviderService.GetByIdAsync(provider.Id);
-            if (model == null) return;
+            var fetched = await ProviderService.GetByIdAsync(provider.Id);
+            if (fetched == null) return;
+            model = fetched;
         }
 
         var parameters = new DialogParameters<EntityDialog<ProviderDTO>>();
@@ -202,7 +202,7 @@
         var result = await dialog.Result;
 
         // 3. THE SAVE LOGIC: Covers both Add and Edit
-        if (!result.Canceled && result.Data is ProviderDTO savedDto)
+        if (result is not null && !result.Canceled && result.Data is ProviderDTO savedDto)
         {
             var contacts = _providerForm?.contacts ?? new List<ProviderContactDTO>();
             var isNew = provider == null;

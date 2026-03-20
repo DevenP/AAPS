@@ -165,31 +165,31 @@
 
 
 @code {
-    [Parameter] public string Title { get; set; }
-    [Parameter] public Func<PagedRequest, CancellationToken, Task<PagedResult<TItem>>> GetData { get; set; }
-    [Parameter] public RenderFragment HeaderContent { get; set; }
-    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; }
+    [Parameter] public string Title { get; set; } = default!;
+    [Parameter] public Func<PagedRequest, CancellationToken, Task<PagedResult<TItem>>> GetData { get; set; } = default!;
+    [Parameter] public RenderFragment HeaderContent { get; set; } = default!;
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
     [Parameter] public RenderFragment? CustomActionContent { get; set; }
 
     /// <summary>
     /// Columns to inclue in the menu toggle check list
     /// </summary>
-    [Parameter] public string[] Columns { get; set; }
+    [Parameter] public string[] Columns { get; set; } = default!;
     /// <summary>
     /// Headers to include in the export file
     /// </summary>
-    [Parameter] public string[] ExportHeaders { get; set; }
+    [Parameter] public string[] ExportHeaders { get; set; } = default!;
     /// <summary>
     /// Data mapping for the headers
     /// </summary>
-    [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; }
-    [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; }
+    [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; } = default!;
+    [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; } = default!;
 
     // Called when a filter chip is removed, with the filter key that was removed.
     // Parent pages can use this to sync their own toggle state.
     [Parameter] public EventCallback<string> OnFilterRemoved { get; set; }
 
-    private MudTable<TItem> _table;
+    private MudTable<TItem> _table = default!;
     private string _search = "";
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
     private Dictionary<string, bool> _columnVisibility = new();
@@ -205,7 +205,7 @@
         var query = QueryHelpers.ParseQuery(uri.Query);
 
         // 1. Basic Paging/Sorting from URL
-        if (query.TryGetValue("search", out var s)) _search = s;
+        if (query.TryGetValue("search", out var s)) _search = s.ToString() ?? string.Empty;
         if (query.TryGetValue("page", out var p) && int.TryParse(p, out var page))
         {
             _initialPage = page - 1;
@@ -215,12 +215,12 @@
         {
             _pageSize = pageSize;
         }
-        if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb;
+        if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb.ToString() ?? string.Empty;
 
         // 2. Load Column Filters (Data search)
         foreach (var key in query.Keys.Where(k => k.StartsWith("col_")))
         {
-            ColumnFilters[key.Replace("col_", "")] = query[key];
+            ColumnFilters[key.Replace("col_", "")] = query[key].ToString() ?? string.Empty;
         }
 
         // 3. BUILD THE VISIBILITY DICTIONARY (The Correct Way)
@@ -255,9 +255,9 @@
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<FilterDialog<TItem>>("Advanced Search", parameters, options);
         var result = await dialog.Result;
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
         {
-            ColumnFilters = (Dictionary<string, string>)result.Data;
+            ColumnFilters = result.Data as Dictionary<string, string> ?? new();
             await _table.ReloadServerData();
         }
     }
@@ -269,7 +269,7 @@
         var dialog = await DialogService.ShowAsync<ExportDialog>("Export Data", parameters, options);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is string chosenName)
+        if (result is not null && !result.Canceled && result.Data is string chosenName)
         {
             // Fetch all matching records
             var request = new PagedRequest(_search, ColumnFilters, PageSize: -1);
@@ -335,6 +335,7 @@
     private async Task RemoveFilter(MudChip<string> chip)
     {
         var key = chip.Value;
+        if (key is null) return;
         ColumnFilters.Remove(key);
 
         if (key == "Global")

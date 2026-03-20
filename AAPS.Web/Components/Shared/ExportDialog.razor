@@ -19,7 +19,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } // Updated interface
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public string DefaultName { get; set; } = "Export";
 
     private string _fileName = "";

@@ -206,7 +206,7 @@ public class ProviderService : IProviderService
         provider.Ssn = StripSsn(dto.Ssn);
         provider.Email = dto.Email;
         provider.Phone = StripPhone(dto.Phone);
-        provider.Status = dto.IsActive.Value ? ProviderStatus.Active : ProviderStatus.Inactive;
+        provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
         provider.License1Exp = dto.License1Expiration;
         provider.TaxId = dto.TaxId;
         provider.Address = dto.Address;
@@ -270,7 +270,7 @@ public class ProviderService : IProviderService
                         provider.Ssn = StripSsn(dto.Ssn);
                         provider.Email = dto.Email;
                         provider.Phone = StripPhone(dto.Phone);
-                        provider.Status = dto.IsActive.Value ? ProviderStatus.Active : ProviderStatus.Inactive;
+                        provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
                         provider.License1Exp = dto.License1Expiration;
                         provider.TaxId = dto.TaxId;
                         provider.Address = dto.Address;

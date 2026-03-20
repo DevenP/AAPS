@@ -14,8 +14,8 @@
 }
 
 @code {
-    [CascadingParameter(Name = "ParentGrid")] public GenericGrid<TItem> ParentGrid { get; set; }
-    [Parameter] public string Column { get; set; }
+    [CascadingParameter(Name = "ParentGrid")] public GenericGrid<TItem> ParentGrid { get; set; } = default!;
+    [Parameter] public string Column { get; set; } = default!;
     [Parameter] public bool IsHeader { get; set; }
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; } = default!;
 }

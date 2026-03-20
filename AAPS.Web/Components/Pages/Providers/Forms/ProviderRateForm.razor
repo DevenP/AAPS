@@ -105,7 +105,7 @@
         </MudItem>
 
         <MudItem xs="12">
-            <MudCheckBox T="bool" @bind-Checked="Model.IsActive"
+            <MudCheckBox T="bool" @bind-Value="Model.IsActive"
                          Label="Is Active"
                          Color="Color.Primary" />
         </MudItem>
@@ -114,16 +114,16 @@
 
 @code {
     [Parameter]
-    public ProviderRateDTO Model { get; set; }
+    public ProviderRateDTO Model { get; set; } = default!;
 
     [Parameter]
     public bool IsAdd { get; set; }
 
     [CascadingParameter]
-    public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; }
+    public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; } = default!;
 
     private DateTime? _effectiveDate;
-    private ProviderDTO _selectedProvider;
+    private ProviderDTO? _selectedProvider;
     private List<ProviderDTO> _providers = new();
 
     protected override async Task OnInitializedAsync()
@@ -135,7 +135,7 @@
             // If editing, load the provider to pre-select it
             if (Model.ProviderId.HasValue)
             {
-                _selectedProvider = await ProviderService.GetByIdAsync(Model.ProviderId.Value);
+                _selectedProvider = await ProviderService.GetByIdAsync(Model.ProviderId.Value) ?? null;
             }
 
             // Load all providers for autocomplete
@@ -164,8 +164,8 @@
 
         var searchTerm = value.ToLower();
         return _providers.Where(p =>
-            p.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-            p.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            (p.FirstName ?? "").Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            (p.LastName ?? "").Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
             p.Id.ToString().Contains(searchTerm)).ToList();
     }
 

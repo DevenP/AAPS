@@ -80,7 +80,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public Dictionary<string, string> InitialFilters { get; set; } = new();
 
     private Dictionary<string, string> _localFilters = new();

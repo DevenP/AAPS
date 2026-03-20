@@ -45,9 +45,9 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
-    [Parameter] public FileExplorerItem Item { get; set; }
-    [Parameter] public IFileExplorerService FileExplorerService { get; set; }
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public FileExplorerItem Item { get; set; } = default!;
+    [Parameter] public IFileExplorerService FileExplorerService { get; set; } = default!;
 
     // Defaults to /files so existing FileExplorerList usage needs no changes.
     // Pass /provider-files when opening from ProviderForm.

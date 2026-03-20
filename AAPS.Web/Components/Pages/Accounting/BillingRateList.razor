@@ -12,7 +12,7 @@
              Columns="@(new[] { "Actions", "Id", "District", "ServiceType", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="BillingRateService.GetPagedAsync"
              ExportHeaders="@(new[] { "ID", "District", "Service", "Language", "Rate", "Effective Date", "Active" })"
-             ExportMapper="@(r => new object[] { r.Id, r.District, r.ServiceType, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
+             ExportMapper="@(r => new object?[] { r.Id, r.District, r.ServiceType, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
 
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
@@ -123,7 +123,7 @@
         var dialog = await DialogService.ShowAsync<EntityDialog<BillingRateDTO>>(" ", parameters, options);
         var result = await dialog.Result;
 
-        if (!result.Canceled && result.Data is BillingRateDTO saved)
+        if (result is not null && !result.Canceled && result.Data is BillingRateDTO saved)
         {
             try
             {

@@ -31,15 +31,15 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
-    [Parameter] public TItem Item { get; set; }
-    [Parameter] public string Title { get; set; }
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public TItem Item { get; set; } = default!;
+    [Parameter] public string Title { get; set; } = default!;
     [Parameter] public bool IsNew { get; set; }
-    [Parameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; }
-    [Parameter] public Func<TItem, Task<IList<string>>> ValidateModel { get; set; }
-    [Parameter] public RenderFragment<TItem> ChildContent { get; set; }
+    [Parameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; } = default!;
+    [Parameter] public Func<TItem, Task<IList<string>>> ValidateModel { get; set; } = default!;
+    [Parameter] public RenderFragment<TItem> ChildContent { get; set; } = default!;
 
-    private MudForm _form;
+    private MudForm _form = default!;
 
     private async Task Submit()
     {

@@ -12,7 +12,7 @@
              Columns="@(new[] { "Actions", "ProviderFirstName", "ProviderLastName", "ServiceType", "District", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="ProviderRateService.GetPagedAsync"
              ExportHeaders="@(new[] { "FirstName", "LastName", "Service", "District", "Language", "Rate", "Effective Date", "Active" })"
-             ExportMapper="@(r => new object[] { r.ProviderFirstName, r.ProviderLastName, r.ServiceType, r.District, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
+             ExportMapper="@(r => new object?[] { r.ProviderFirstName, r.ProviderLastName, r.ServiceType, r.District, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
 
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
@@ -92,7 +92,7 @@
 </GenericGrid>
 
 @code {
-    private GenericGrid<ProviderRateDTO> _grid;
+    private GenericGrid<ProviderRateDTO> _grid = default!;
     private ProviderRateValidator _validator = new();
 
     // If 'rate' is passed, it's an EDIT. If it's null, it's an ADD.
@@ -108,8 +108,9 @@
         else
         {
             // 2. EDIT SCENARIO: Fetch the fresh data
-            model = await ProviderRateService.GetByIdAsync(rate.Id);
-            if (model == null) return;
+            var fetched = await ProviderRateService.GetByIdAsync(rate.Id);
+            if (fetched == null) return;
+            model = fetched;
         }
 
         var isNew = rate == null;
@@ -132,7 +133,7 @@
         var result = await dialog.Result;
 
         // 3. THE SAVE LOGIC: Covers both Add and Edit
-        if (!result.Canceled && result.Data is ProviderRateDTO savedDto)
+        if (result is not null && !result.Canceled && result.Data is ProviderRateDTO savedDto)
         {
             try
             {

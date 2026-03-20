@@ -5,7 +5,7 @@
 <div class="error-boundary">
     @if (_hasError)
     {
-        <MudAlert Severity="Severity.Error" ShowCloseButton="true" CloseButtonClicked="OnErrorClose" Class="mb-4">
+        <MudAlert Severity="Severity.Error" ShowCloseIcon="true" OnClose="OnErrorClose" Class="mb-4">
             <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
                 @_errorMessage
             </MudText>

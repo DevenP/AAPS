@@ -10,7 +10,7 @@
              Columns="@(new[] { "Print", "Id", "Status", "StudentLastName", "StudentFirstName", "ProviderLastName", "ServiceType", "EvalDate", "BillingAmount", "BilledDate", "BillPaidDate", "ProviderPaidAmount", "ProviderPaidDate", "District", "Language" })"
              GetData="EvalService.GetPagedAsync"
              ExportHeaders="@(new[] { "ID", "Status", "Student Last", "Student First", "Provider", "Service", "Eval Date", "Bill Amt", "Billed Date", "Paid Date", "Memo" })"
-             ExportMapper="@(e => new object[] { e.Id, e.Status, e.StudentLastName, e.StudentFirstName, $"{e.ProviderFirstName} {e.ProviderLastName}", e.ServiceType, e.EvalDate?.ToShortDateString(), e.BillingAmount, e.BilledDate?.ToShortDateString(), e.BillPaidDate?.ToShortDateString(), e.Memo })">
+             ExportMapper="@(e => new object?[] { e.Id, e.Status, e.StudentLastName, e.StudentFirstName, $"{e.ProviderFirstName} {e.ProviderLastName}", e.ServiceType, e.EvalDate?.ToShortDateString(), e.BillingAmount, e.BilledDate?.ToShortDateString(), e.BillPaidDate?.ToShortDateString(), e.Memo })">
 
     <HeaderContent>
         <GridCell TItem="EvalDTO" Column="Print" IsHeader="true">

@@ -239,7 +239,7 @@
             "Replace Approval ID", parameters, options);
         var result = await dialog.Result;
 
-        if (result.Canceled) return;
+        if (result is null || result.Canceled) return;
 
         int newEntryId = (int)result.Data!;
 

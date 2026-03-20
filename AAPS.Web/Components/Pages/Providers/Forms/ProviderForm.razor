@@ -256,11 +256,11 @@
 </MudTabs>
 
 @code {
-    [Parameter] public ProviderDTO Model { get; set; }
+    [Parameter] public ProviderDTO Model { get; set; } = default!;
 
     public List<ProviderContactDTO> contacts = new();
 
-    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; }
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; } = default!;
 
     // Keyed injection for provider-specific file root (C:\AAPS\Provider Profiles)
     private IFileExplorerService FileExplorerService = default!;
