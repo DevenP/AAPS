@@ -10,6 +10,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel
 @inject NavigationManager Nav
+@inject ILogger<GenericGrid<TItem>> Logger
 
 <MudTable ServerData="ReloadData"
           Dense="true"
@@ -22,7 +23,7 @@
           Height="75vh"
           RowsPerPage="@_pageSize"
           HorizontalScrollbar="true"
-          SortLabel="Id" InitialDirection="SortDirection.Ascending"
+          SortLabel="@DefaultSortLabel" InitialDirection="SortDirection.Ascending"
           RowStyleFunc="@RowStyleFunc"
           Class="sticky-table mud-width-full">
     <ToolBarContent>
@@ -184,6 +185,8 @@
     /// </summary>
     [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; } = default!;
     [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; } = default!;
+
+    [Parameter] public string DefaultSortLabel { get; set; } = "Id";
 
     // Called when a filter chip is removed, with the filter key that was removed.
     // Parent pages can use this to sync their own toggle state.
@@ -393,6 +396,11 @@
         catch (OperationCanceledException)
         {
             // Previous request was superseded by a newer one — return current state quietly
+            return new TableData<TItem> { TotalItems = _totalItems, Items = [] };
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading grid data for {Title}", Title);
             return new TableData<TItem> { TotalItems = _totalItems, Items = [] };
         }
     }

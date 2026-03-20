@@ -266,7 +266,11 @@ namespace AAPS.Infrastructure.Common.Extensions
 
         private static IQueryable<T> ApplySort<T>(IQueryable<T> query, string? sortBy, string dir)
         {
-            var column = !string.IsNullOrWhiteSpace(sortBy) ? sortBy : "Id";
+            var hasId = typeof(T).GetProperty("Id") != null;
+            var column = !string.IsNullOrWhiteSpace(sortBy) ? sortBy : (hasId ? "Id" : null);
+
+            if (column == null) return query;
+
             var direction = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
 
             try
@@ -274,14 +278,14 @@ namespace AAPS.Infrastructure.Common.Extensions
                 query = query.OrderBy($"{column} {direction}");
 
                 // Secondary sort on Id for stable pagination across pages
-                var hasId = typeof(T).GetProperty("Id") != null;
                 if (column != "Id" && hasId)
                     query = ((IOrderedQueryable<T>)query).ThenBy("Id asc");
             }
             catch (Exception)
             {
-                // Column doesn't exist on the DTO — fall back to Id ascending
-                query = query.OrderBy("Id asc");
+                // Column doesn't exist on the DTO — try Id fallback, otherwise leave unsorted
+                if (hasId)
+                    query = query.OrderBy("Id asc");
             }
 
             return query;

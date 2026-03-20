@@ -12,6 +12,8 @@ namespace AAPS.Infrastructure
         {
             services.Configure<ImportSettings>(options =>
                 configuration.GetSection("Import").Bind(options));
+            services.Configure<BillingSettings>(options =>
+                configuration.GetSection("Billing").Bind(options));
             services.AddScoped<IGDistrictService, GDistrictService>();
             services.AddScoped<IBillingRateService, BillingRateService>();
             services.AddScoped<IEvalService, EvalService>();
@@ -23,6 +25,7 @@ namespace AAPS.Infrastructure
             services.AddScoped<IProviderRateService, ProviderRateService>();
             services.AddScoped<IServiceTypeService, ServiceTypeService>();
             services.AddScoped<ISesiService, SesiService>();
+            services.AddScoped<IBillingService, BillingService>();
 
             services.AddScoped<IVendorPortalService, VendorPortalService>();
 

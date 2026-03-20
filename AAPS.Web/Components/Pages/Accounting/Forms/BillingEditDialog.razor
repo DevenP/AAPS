@@ -1,0 +1,54 @@
+@using AAPS.Application.DTO
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="1" Class="mb-4">
+            <MudText Typo="Typo.subtitle2">@_dto.Provider</MudText>
+            <MudText Typo="Typo.body2">@_dto.Student &nbsp;|&nbsp; @_dto.DateOfService?.ToString("MM/dd/yyyy") &nbsp;|&nbsp; @_dto.ServiceType</MudText>
+        </MudStack>
+
+        <MudDatePicker @bind-Date="_billed"
+                       Label="Billed On"
+                       Clearable="true"
+                       DateFormat="MM/dd/yyyy"
+                       Class="mb-2" />
+
+        <MudDatePicker @bind-Date="_billedPaidOn"
+                       Label="Bill Paid On"
+                       Clearable="true"
+                       DateFormat="MM/dd/yyyy"
+                       Class="mb-2" />
+
+        <MudDatePicker @bind-Date="_providerPaidOn"
+                       Label="Provider Paid On"
+                       Clearable="true"
+                       DateFormat="MM/dd/yyyy" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public BillingRecordDTO Item { get; set; } = default!;
+
+    private BillingRecordDTO _dto = default!;
+    private DateTime? _billed;
+    private DateTime? _billedPaidOn;
+    private DateTime? _providerPaidOn;
+
+    protected override void OnInitialized()
+    {
+        _dto = Item;
+        _billed        = Item.Billed;
+        _billedPaidOn  = Item.BilledPaidOn;
+        _providerPaidOn = Item.ProviderPaidOn;
+    }
+
+    private void Save() =>
+        MudDialog.Close(DialogResult.Ok((_billed, _billedPaidOn, _providerPaidOn)));
+
+    private void Cancel() => MudDialog.Cancel();
+}

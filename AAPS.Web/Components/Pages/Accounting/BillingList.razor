@@ -1,0 +1,207 @@
+@page "/billing"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Accounting.Forms
+@using AAPS.Web.Components.Shared
+@inject IBillingService BillingService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<GenericGrid @ref="_grid" TItem="BillingRecordDTO"
+             Title="Billing"
+             Columns="@(new[] { "Actions", "SesisId", "DateOfService", "StartTime", "EndTime", "Provider", "GDistrict", "StudentId", "Student", "Grade", "ServiceType", "ActualSize", "Duration", "Frequency", "Billed", "BilledPaidOn", "ProviderPaidOn", "BillingRate", "ProviderRate", "BillingAmount", "ProviderAmount", "AssignId", "EntryId" })"
+             GetData="BillingService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Sesis ID", "Service Date", "Start Time", "End Time", "Provider", "G. District", "Student ID", "Student", "Grade", "Service Type", "Group", "Duration", "Frequency", "Billed On", "Bill Paid On", "Provider Paid On", "Billing Rate", "Provider Rate", "Billing Amount", "Provider Amount", "Assignment ID", "Approval ID" })"
+             DefaultSortLabel="DateOfService"
+             ExportMapper="@(r => new object?[] { r.SesisId, r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
+
+    <HeaderContent>
+        <GridCell TItem="BillingRecordDTO" Column="Actions" IsHeader="true">Actions</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="SesisId" IsHeader="true">
+            <MudTableSortLabel SortLabel="SesisId" T="BillingRecordDTO">Sesis ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="DateOfService" IsHeader="true">
+            <MudTableSortLabel SortLabel="DateOfService" T="BillingRecordDTO">Service Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="StartTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="StartTime" T="BillingRecordDTO">Start Time</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="EndTime" IsHeader="true">End Time</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Provider" IsHeader="true">
+            <MudTableSortLabel SortLabel="Provider" T="BillingRecordDTO">Provider</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="GDistrict" IsHeader="true">
+            <MudTableSortLabel SortLabel="GDistrict" T="BillingRecordDTO">G. District</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="BillingRecordDTO">Student ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Student" IsHeader="true">
+            <MudTableSortLabel SortLabel="Student" T="BillingRecordDTO">Student</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Grade" IsHeader="true">
+            <MudTableSortLabel SortLabel="Grade" T="BillingRecordDTO">Grade</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="BillingRecordDTO">Service Type</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ActualSize" IsHeader="true">Group</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Duration" IsHeader="true">Duration</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Frequency" IsHeader="true">Frequency</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Billed" IsHeader="true">
+            <MudTableSortLabel SortLabel="Billed" T="BillingRecordDTO">Billed On</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="BilledPaidOn" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledPaidOn" T="BillingRecordDTO">Bill Paid On</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ProviderPaidOn" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderPaidOn" T="BillingRecordDTO">Provider Paid On</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="BillingRate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BillingRate" T="BillingRecordDTO">Billing Rate</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ProviderRate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderRate" T="BillingRecordDTO">Provider Rate</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="BillingAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="BillingAmount" T="BillingRecordDTO">Billing Amount</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ProviderAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderAmount" T="BillingRecordDTO">Provider Amount</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="AssignId" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignId" T="BillingRecordDTO">Assignment ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="EntryId" IsHeader="true">
+            <MudTableSortLabel SortLabel="EntryId" T="BillingRecordDTO">Approval ID</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="record">
+        <GridCell TItem="BillingRecordDTO" Column="Actions">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                           Size="Size.Small" Color="Color.Primary"
+                           Title="Edit Billing Dates"
+                           OnClick="@(() => OpenEditDialog(record))" />
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="SesisId">@record.SesisId</GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="DateOfService">
+            @record.DateOfService?.ToString("MM/dd/yyyy")
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="StartTime">@record.StartTime</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="EndTime">@record.EndTime</GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="Provider">
+            <MudTooltip Text="@record.Provider">@record.Provider</MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="GDistrict">@record.GDistrict</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="StudentId">@record.StudentId</GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="Student">
+            <MudTooltip Text="@record.Student">@record.Student</MudTooltip>
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="Grade">@record.Grade</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ServiceType">@record.ServiceType</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ActualSize">@record.ActualSize</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Duration">@record.Duration</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Frequency">@record.Frequency</GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="Billed">
+            @if (record.Billed.HasValue)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                    @record.Billed.Value.ToString("MM/dd/yyyy")
+                </MudChip>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Style="opacity:0.4;">—</MudText>
+            }
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="BilledPaidOn">
+            @if (record.BilledPaidOn.HasValue)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
+                    @record.BilledPaidOn.Value.ToString("MM/dd/yyyy")
+                </MudChip>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Style="opacity:0.4;">—</MudText>
+            }
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="ProviderPaidOn">
+            @if (record.ProviderPaidOn.HasValue)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Text">
+                    @record.ProviderPaidOn.Value.ToString("MM/dd/yyyy")
+                </MudChip>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Style="opacity:0.4;">—</MudText>
+            }
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="BillingRate">
+            <MudText Color="Color.Primary" Style="font-weight:600;">@record.BillingRate?.ToString("C2")</MudText>
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="ProviderRate">
+            @record.ProviderRate?.ToString("C2")
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="BillingAmount">
+            <MudText Color="Color.Success" Style="font-weight:600;">@record.BillingAmount?.ToString("C2")</MudText>
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="ProviderAmount">
+            @record.ProviderAmount?.ToString("C2")
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="AssignId">
+            <span style="font-family:monospace;">@record.AssignId</span>
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="EntryId">@record.EntryId</GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<BillingRecordDTO> _grid = default!;
+
+    private async Task OpenEditDialog(BillingRecordDTO record)
+    {
+        var parameters = new DialogParameters<BillingEditDialog>
+        {
+            { x => x.Item, record }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<BillingEditDialog>("Edit Billing Dates", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled) return;
+
+        if (result.Data is ValueTuple<DateTime?, DateTime?, DateTime?> dates)
+        {
+            try
+            {
+                await BillingService.UpdateBillingDatesAsync(record.SesisId, dates.Item1, dates.Item2, dates.Item3);
+                Snackbar.Add("Billing dates updated.", Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}
