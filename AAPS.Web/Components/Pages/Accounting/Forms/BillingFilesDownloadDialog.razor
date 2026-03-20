@@ -1,0 +1,46 @@
+@using AAPS.Application.Abstractions.Services
+@inject IJSRuntime JS
+
+<MudDialog>
+    <DialogContent>
+        <MudText Class="mb-3">The following files were saved to disk. Would you like to download them?</MudText>
+        <MudList T="string" Dense="true">
+            @foreach (var file in Files)
+            {
+                <MudListItem Icon="@Icons.Material.Filled.InsertDriveFile" IconColor="Color.Success">
+                    @file.FileName
+                </MudListItem>
+            }
+        </MudList>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">No Thanks</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DownloadAll" Disabled="_downloading">
+            @if (_downloading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Download All
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public List<GeneratedBillingFile> Files { get; set; } = [];
+
+    private bool _downloading;
+
+    private async Task DownloadAll()
+    {
+        _downloading = true;
+        foreach (var file in Files)
+        {
+            await JS.InvokeVoidAsync("downloadFile", file.FileName, "text/plain", file.Bytes);
+        }
+        _downloading = false;
+        MudDialog.Close();
+    }
+
+    private void Close() => MudDialog.Cancel();
+}

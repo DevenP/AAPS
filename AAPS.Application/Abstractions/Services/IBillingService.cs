@@ -3,8 +3,11 @@ using AAPS.Application.DTO;
 
 namespace AAPS.Application.Abstractions.Services;
 
+public record GeneratedBillingFile(string FileName, string FilePath, byte[] Bytes);
+
 public interface IBillingService
 {
     Task<PagedResult<BillingRecordDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default);
     Task UpdateBillingDatesAsync(int sesisId, DateTime? billed, DateTime? billedPaidOn, DateTime? providerPaidOn, CancellationToken ct = default);
+    Task<List<GeneratedBillingFile>> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default);
 }

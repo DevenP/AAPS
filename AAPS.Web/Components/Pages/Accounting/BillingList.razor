@@ -6,6 +6,7 @@
 @inject IBillingService BillingService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <GenericGrid @ref="_grid" TItem="BillingRecordDTO"
              Title="Billing"
@@ -13,6 +14,7 @@
              GetData="BillingService.GetPagedAsync"
              ExportHeaders="@(new[] { "Sesis ID", "Service Date", "Start Time", "End Time", "Provider", "G. District", "Student ID", "Student", "Grade", "Service Type", "Group", "Duration", "Frequency", "Billed On", "Bill Paid On", "Provider Paid On", "Billing Rate", "Provider Rate", "Billing Amount", "Provider Amount", "Assignment ID", "Approval ID" })"
              DefaultSortLabel="DateOfService"
+             CustomActionContent="@GenerateFilesButton"
              ExportMapper="@(r => new object?[] { r.SesisId, r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
 
     <HeaderContent>
@@ -177,6 +179,44 @@
 
 @code {
     private GenericGrid<BillingRecordDTO> _grid = default!;
+    private bool _generating = false;
+
+    private RenderFragment GenerateFilesButton => @<MudIconButton Icon="@Icons.Material.Filled.FileOpen"
+        Color="Color.Warning" Title="Generate Billing Files"
+        Disabled="_generating"
+        OnClick="GenerateFiles" />;
+
+    private async Task GenerateFiles()
+    {
+        _generating = true;
+        try
+        {
+            var files = await BillingService.GenerateBillingFilesAsync(_grid.Search, _grid.ColumnFilters);
+
+            if (files.Count == 0)
+            {
+                Snackbar.Add("No unbilled records found to generate files from.", Severity.Info);
+                return;
+            }
+
+            Snackbar.Add($"{files.Count} billing file(s) saved to disk.", Severity.Success);
+
+            var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+            var parameters = new DialogParameters<BillingFilesDownloadDialog>
+            {
+                { x => x.Files, files }
+            };
+            await DialogService.ShowAsync<BillingFilesDownloadDialog>("Billing Files Generated", parameters, options);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error generating files: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _generating = false;
+        }
+    }
 
     private async Task OpenEditDialog(BillingRecordDTO record)
     {

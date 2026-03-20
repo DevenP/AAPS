@@ -193,7 +193,8 @@
     [Parameter] public EventCallback<string> OnFilterRemoved { get; set; }
 
     private MudTable<TItem> _table = default!;
-    private string _search = "";
+    public string Search { get; private set; } = "";
+    private string _search { get => Search; set => Search = value; }
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
     private Dictionary<string, bool> _columnVisibility = new();
     private bool _isFirstLoad = true;

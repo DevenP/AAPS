@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /c/Users/deven/source/repos/AAPS log --all --source --remotes --decorate --graph --oneline)",
+      "Bash(find C:UsersdevenDesktopDesignAAPS -type f \\\\\\(-name *.sql -o -name billingSet.Designer.cs \\\\\\))",
+      "Bash(python3 -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
+      "Bash(python3 -c \"import xlrd; print\\(''xlrd available''\\)\")",
+      "Bash(python3 -c \"import pandas; print\\(''pandas available''\\)\")",
+      "Bash(py --version)",
+      "Bash(where python:*)",
+      "Bash(where py:*)"
+    ]
+  }
+}
