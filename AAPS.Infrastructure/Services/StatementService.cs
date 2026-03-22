@@ -202,7 +202,7 @@ public class StatementService : IStatementService
                            .Text("** Payment is made pending the acceptance of the NYC Dept. of Education")
                            .FontSize(6.5f).Italic();
                         if (footerBytes != null)
-                            col.Item().AlignCenter().Height(55).Image(footerBytes).FitHeight();
+                            col.Item().AlignCenter().Height(70).Image(footerBytes).FitHeight();
                         else
                             col.Item().AlignCenter()
                                .Text("SERVICES OFFERED  ■  Occupational Therapy (OT)  ■  Speech Therapy  ■  Physical Therapy (PT)  ■  Counseling")
