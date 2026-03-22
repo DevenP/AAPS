@@ -296,14 +296,15 @@
 
                 // If the user provided a custom mapper, use it.
                 // Otherwise, automatically map EVERY property in the DTO.
-                if (ExportMapper != null && ExportHeaders != null)
+                if (ExportMapper != null)
                 {
-                    bytes = ExcelExportHelper.ToExcel(res.Items, ExportHeaders, ExportMapper);
+                    var headers = ExportHeaders ?? typeof(TItem).GetProperties().Select(p => GetDisplayName(p.Name)).ToArray();
+                    bytes = ExcelExportHelper.ToExcel(res.Items, headers, ExportMapper);
                 }
                 else
                 {
                     var props = typeof(TItem).GetProperties();
-                    var headers = props.Select(p => p.Name).ToArray();
+                    var headers = props.Select(p => GetDisplayName(p.Name)).ToArray();
                     bytes = ExcelExportHelper.ToExcel(res.Items, headers, item => props.Select(p => p.GetValue(item)).ToArray());
                 }
 

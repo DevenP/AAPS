@@ -16,7 +16,6 @@
              Title="Billing"
              Columns="@(new[] { "Actions", "SesisId", "DateOfService", "StartTime", "EndTime", "Provider", "GDistrict", "StudentId", "Student", "Grade", "ServiceType", "ActualSize", "Duration", "Frequency", "Billed", "BilledPaidOn", "ProviderPaidOn", "BillingRate", "ProviderRate", "BillingAmount", "ProviderAmount", "AssignId", "EntryId" })"
              GetData="BillingService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Sesis ID", "Service Date", "Start Time", "End Time", "Provider", "G. District", "Student ID", "Student", "Grade", "Service Type", "Group", "Duration", "Frequency", "Billed On", "Bill Paid On", "Provider Paid On", "Billing Rate", "Provider Rate", "Billing Amount", "Provider Amount", "Assignment ID", "Approval ID" })"
              DefaultSortLabel="DateOfService"
              CustomActionContent="@ActionButtons"
              ExportMapper="@(r => new object?[] { r.SesisId, r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
@@ -24,62 +23,62 @@
     <HeaderContent>
         <GridCell TItem="BillingRecordDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="BillingRecordDTO" Column="SesisId" IsHeader="true">
-            <MudTableSortLabel SortLabel="SesisId" T="BillingRecordDTO">Sesis ID</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="SesisId" T="BillingRecordDTO">@_grid.GetDisplayName("SesisId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="DateOfService" IsHeader="true">
-            <MudTableSortLabel SortLabel="DateOfService" T="BillingRecordDTO">Service Date</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="DateOfService" T="BillingRecordDTO">@_grid.GetDisplayName("DateOfService")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="StartTime" IsHeader="true">
-            <MudTableSortLabel SortLabel="StartTime" T="BillingRecordDTO">Start Time</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StartTime" T="BillingRecordDTO">@_grid.GetDisplayName("StartTime")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="BillingRecordDTO" Column="EndTime" IsHeader="true">End Time</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="EndTime" IsHeader="true">@_grid.GetDisplayName("EndTime")</GridCell>
         <GridCell TItem="BillingRecordDTO" Column="Provider" IsHeader="true">
-            <MudTableSortLabel SortLabel="Provider" T="BillingRecordDTO">Provider</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Provider" T="BillingRecordDTO">@_grid.GetDisplayName("Provider")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="GDistrict" IsHeader="true">
-            <MudTableSortLabel SortLabel="GDistrict" T="BillingRecordDTO">G. District</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="GDistrict" T="BillingRecordDTO">@_grid.GetDisplayName("GDistrict")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="StudentId" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentId" T="BillingRecordDTO">Student ID</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StudentId" T="BillingRecordDTO">@_grid.GetDisplayName("StudentId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="Student" IsHeader="true">
-            <MudTableSortLabel SortLabel="Student" T="BillingRecordDTO">Student</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Student" T="BillingRecordDTO">@_grid.GetDisplayName("Student")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="Grade" IsHeader="true">
-            <MudTableSortLabel SortLabel="Grade" T="BillingRecordDTO">Grade</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Grade" T="BillingRecordDTO">@_grid.GetDisplayName("Grade")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="ServiceType" IsHeader="true">
-            <MudTableSortLabel SortLabel="ServiceType" T="BillingRecordDTO">Service Type</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ServiceType" T="BillingRecordDTO">@_grid.GetDisplayName("ServiceType")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="BillingRecordDTO" Column="ActualSize" IsHeader="true">Group</GridCell>
-        <GridCell TItem="BillingRecordDTO" Column="Duration" IsHeader="true">Duration</GridCell>
-        <GridCell TItem="BillingRecordDTO" Column="Frequency" IsHeader="true">Frequency</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="ActualSize" IsHeader="true">@_grid.GetDisplayName("ActualSize")</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Duration" IsHeader="true">@_grid.GetDisplayName("Duration")</GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="Frequency" IsHeader="true">@_grid.GetDisplayName("Frequency")</GridCell>
         <GridCell TItem="BillingRecordDTO" Column="Billed" IsHeader="true">
-            <MudTableSortLabel SortLabel="Billed" T="BillingRecordDTO">Billed On</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Billed" T="BillingRecordDTO">@_grid.GetDisplayName("Billed")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="BilledPaidOn" IsHeader="true">
-            <MudTableSortLabel SortLabel="BilledPaidOn" T="BillingRecordDTO">Bill Paid On</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="BilledPaidOn" T="BillingRecordDTO">@_grid.GetDisplayName("BilledPaidOn")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="ProviderPaidOn" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderPaidOn" T="BillingRecordDTO">Provider Paid On</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderPaidOn" T="BillingRecordDTO">@_grid.GetDisplayName("ProviderPaidOn")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="BillingRate" IsHeader="true">
-            <MudTableSortLabel SortLabel="BillingRate" T="BillingRecordDTO">Billing Rate</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="BillingRate" T="BillingRecordDTO">@_grid.GetDisplayName("BillingRate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="ProviderRate" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderRate" T="BillingRecordDTO">Provider Rate</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderRate" T="BillingRecordDTO">@_grid.GetDisplayName("ProviderRate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="BillingAmount" IsHeader="true">
-            <MudTableSortLabel SortLabel="BillingAmount" T="BillingRecordDTO">Billing Amount</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="BillingAmount" T="BillingRecordDTO">@_grid.GetDisplayName("BillingAmount")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="ProviderAmount" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderAmount" T="BillingRecordDTO">Provider Amount</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderAmount" T="BillingRecordDTO">@_grid.GetDisplayName("ProviderAmount")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="AssignId" IsHeader="true">
-            <MudTableSortLabel SortLabel="AssignId" T="BillingRecordDTO">Assignment ID</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="AssignId" T="BillingRecordDTO">@_grid.GetDisplayName("AssignId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="EntryId" IsHeader="true">
-            <MudTableSortLabel SortLabel="EntryId" T="BillingRecordDTO">Approval ID</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="EntryId" T="BillingRecordDTO">@_grid.GetDisplayName("EntryId")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
