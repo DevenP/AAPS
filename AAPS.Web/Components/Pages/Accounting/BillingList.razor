@@ -186,27 +186,36 @@
     private bool _generating = false;
     private bool _generatingStatements = false;
 
+    private bool _isBusy => _generating || _generatingStatements;
+
     private RenderFragment ActionButtons =>
-        @<span style="display:inline-flex;gap:4px;align-items:center;">
-            @if (_generating)
+        @<span style="display:inline-flex;align-items:center;">
+            @if (_isBusy)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Warning" Style="margin:8px;" />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="true">
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    Generating…
+                </MudButton>
             }
             else
             {
-                <MudIconButton Icon="@Icons.Material.Filled.FileOpen"
-                    Color="Color.Warning" Title="Generate Billing Files"
-                    OnClick="GenerateFiles" />
-            }
-            @if (_generatingStatements)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Info" Style="margin:8px;" />
-            }
-            else
-            {
-                <MudIconButton Icon="@Icons.Material.Filled.Description"
-                    Color="Color.Info" Title="Generate Statements"
-                    OnClick="GenerateStatements" />
+                <MudMenu Label="Generate"
+                         Variant="Variant.Filled"
+                         Color="Color.Primary"
+                         EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                         Size="Size.Small">
+                    <MudMenuItem Icon="@Icons.Material.Filled.FileOpen"
+                                 OnClick="GenerateFiles">
+                        Billing Files
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Description"
+                                 OnClick="GenerateStatements">
+                        Statements
+                    </MudMenuItem>
+                </MudMenu>
             }
         </span>;
 
