@@ -1,12 +1,16 @@
 @page "/billing"
 @using AAPS.Application.Abstractions.Services
+@using Microsoft.AspNetCore.Hosting
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Accounting.Forms
 @using AAPS.Web.Components.Shared
 @inject IBillingService BillingService
+@inject IStatementService StatementService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@inject ILogger<BillingList> Logger
 
 <GenericGrid @ref="_grid" TItem="BillingRecordDTO"
              Title="Billing"
@@ -14,7 +18,7 @@
              GetData="BillingService.GetPagedAsync"
              ExportHeaders="@(new[] { "Sesis ID", "Service Date", "Start Time", "End Time", "Provider", "G. District", "Student ID", "Student", "Grade", "Service Type", "Group", "Duration", "Frequency", "Billed On", "Bill Paid On", "Provider Paid On", "Billing Rate", "Provider Rate", "Billing Amount", "Provider Amount", "Assignment ID", "Approval ID" })"
              DefaultSortLabel="DateOfService"
-             CustomActionContent="@GenerateFilesButton"
+             CustomActionContent="@ActionButtons"
              ExportMapper="@(r => new object?[] { r.SesisId, r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
 
     <HeaderContent>
@@ -180,11 +184,64 @@
 @code {
     private GenericGrid<BillingRecordDTO> _grid = default!;
     private bool _generating = false;
+    private bool _generatingStatements = false;
 
-    private RenderFragment GenerateFilesButton => @<MudIconButton Icon="@Icons.Material.Filled.FileOpen"
-        Color="Color.Warning" Title="Generate Billing Files"
-        Disabled="_generating"
-        OnClick="GenerateFiles" />;
+    private RenderFragment ActionButtons =>
+        @<span style="display:inline-flex;gap:4px;align-items:center;">
+            @if (_generating)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Warning" Style="margin:8px;" />
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.FileOpen"
+                    Color="Color.Warning" Title="Generate Billing Files"
+                    OnClick="GenerateFiles" />
+            }
+            @if (_generatingStatements)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Info" Style="margin:8px;" />
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Description"
+                    Color="Color.Info" Title="Generate Statements"
+                    OnClick="GenerateStatements" />
+            }
+        </span>;
+
+    private async Task GenerateStatements()
+    {
+        _generatingStatements = true;
+        try
+        {
+            var headerPath = Path.Combine(Env.WebRootPath, "images", "rs-header.jpg");
+            var footerPath = Path.Combine(Env.WebRootPath, "images", "rs-footer.jpg");
+            StatementService.SetLogoPaths(headerPath, footerPath);
+
+            var pdfBytes = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters);
+
+            if (pdfBytes.Length == 0)
+            {
+                Snackbar.Add("No records found to generate statements from.", Severity.Info);
+                return;
+            }
+
+            var fileName = $"Statements_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
+            await JS.InvokeVoidAsync("downloadFile", fileName, "application/pdf", pdfBytes);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error generating statements");
+            var msg = ex.Message.Split('\n')[0].Trim();
+            if (msg.Length > 120) msg = msg[..120] + "…";
+            Snackbar.Add($"Error generating statements: {msg}", Severity.Error);
+        }
+        finally
+        {
+            _generatingStatements = false;
+        }
+    }
 
     private async Task GenerateFiles()
     {
@@ -210,7 +267,10 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error generating files: {ex.Message}", Severity.Error);
+            Logger.LogError(ex, "Error generating billing files");
+            var msg = ex.Message.Split('\n')[0].Trim();
+            if (msg.Length > 120) msg = msg[..120] + "…";
+            Snackbar.Add($"Error generating files: {msg}", Severity.Error);
         }
         finally
         {
@@ -240,6 +300,7 @@
             }
             catch (Exception ex)
             {
+                Logger.LogError(ex, "Error updating billing dates for SesisId {SesisId}", record.SesisId);
                 Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
             }
         }

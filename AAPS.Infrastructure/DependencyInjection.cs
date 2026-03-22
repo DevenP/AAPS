@@ -43,6 +43,7 @@ namespace AAPS.Infrastructure
 
             // Reports — logo path resolved at registration time via IWebHostEnvironment
             services.AddScoped<IConsentReportService, ConsentReportService>();
+            services.AddScoped<IStatementService, StatementService>();
 
             return services;
         }

@@ -202,7 +202,7 @@ namespace AAPS.Web
                     return Results.NotFound($"Evaluation {id} not found.");
 
                 // Supply logo — wwwroot/images/doe-logo.png (replace with your real file)
-                var logoPath = Path.Combine(env.WebRootPath, "images", "nyc-doe-logo.jpg");
+                var logoPath = Path.Combine(env.WebRootPath, "images", "nyc-doe-logo.png");
                 reportService.SetLogoPath(logoPath);
 
                 var pdfBytes = reportService.GenerateConsentPdf(eval);

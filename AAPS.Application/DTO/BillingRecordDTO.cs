@@ -61,7 +61,7 @@ public class BillingRecordDTO
     [DisplayField("Billing Amount")]
     public decimal? BillingAmount { get; set; }
 
-    [DisplayField("Provider Amount")]
+    [DisplayField("Provider Paid")]
     public decimal? ProviderAmount { get; set; }
 
     [DisplayField("Assignment ID")]

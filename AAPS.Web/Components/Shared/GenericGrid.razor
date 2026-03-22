@@ -81,7 +81,14 @@
         </MudMenu>
 
         <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" OnClick="OpenFilter" Color="Color.Primary" Title="Advanced Search" />
-        <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" Title="Export CSV" />
+        @if (_exporting)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Success" Style="margin:8px;" />
+        }
+        else
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" Title="Export to Excel" />
+        }
     </ToolBarContent>
 
     <HeaderContent>
@@ -266,6 +273,8 @@
         }
     }
 
+    private bool _exporting = false;
+
     private async Task Export()
     {
         var parameters = new DialogParameters { ["DefaultName"] = Title };
@@ -275,27 +284,36 @@
 
         if (result is not null && !result.Canceled && result.Data is string chosenName)
         {
-            // Fetch all matching records
-            var request = new PagedRequest(_search, ColumnFilters, PageSize: -1);
-            var res = await GetData(request, default);
-
-            byte[] bytes;
-
-            // If the user provided a custom mapper, use it.
-            // Otherwise, automatically map EVERY property in the DTO.
-            if (ExportMapper != null && ExportHeaders != null)
+            _exporting = true;
+            StateHasChanged();
+            try
             {
-                bytes = ExcelExportHelper.ToExcel(res.Items, ExportHeaders, ExportMapper);
-            }
-            else
-            {
-                var props = typeof(TItem).GetProperties();
-                var headers = props.Select(p => p.Name).ToArray();
-                bytes = ExcelExportHelper.ToExcel(res.Items, headers, item => props.Select(p => p.GetValue(item)).ToArray());
-            }
+                // Fetch all matching records
+                var request = new PagedRequest(_search, ColumnFilters, PageSize: -1);
+                var res = await GetData(request, default);
 
-            var cleanName = chosenName.EndsWith(".xlsx") ? chosenName : $"{chosenName}.xlsx";
-            await JS.InvokeVoidAsync("downloadFile", cleanName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes);
+                byte[] bytes;
+
+                // If the user provided a custom mapper, use it.
+                // Otherwise, automatically map EVERY property in the DTO.
+                if (ExportMapper != null && ExportHeaders != null)
+                {
+                    bytes = ExcelExportHelper.ToExcel(res.Items, ExportHeaders, ExportMapper);
+                }
+                else
+                {
+                    var props = typeof(TItem).GetProperties();
+                    var headers = props.Select(p => p.Name).ToArray();
+                    bytes = ExcelExportHelper.ToExcel(res.Items, headers, item => props.Select(p => p.GetValue(item)).ToArray());
+                }
+
+                var cleanName = chosenName.EndsWith(".xlsx") ? chosenName : $"{chosenName}.xlsx";
+                await JS.InvokeVoidAsync("downloadFile", cleanName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes);
+            }
+            finally
+            {
+                _exporting = false;
+            }
         }
     }
 
@@ -305,15 +323,19 @@
         var prop = typeof(TItem).GetProperty(propertyName);
         if (prop == null) return propertyName;
 
-        // 2. Check for [Display(Name = "")] (from DataAnnotations)
+        // 2. Check for [DisplayField("")] (custom attribute)
+        var displayFieldAttr = prop.GetCustomAttribute<AAPS.Application.Common.Attributes.DisplayFieldAttribute>();
+        if (displayFieldAttr != null) return displayFieldAttr.DisplayName;
+
+        // 3. Check for [Display(Name = "")] (from DataAnnotations)
         var displayAttr = prop.GetCustomAttribute<DisplayAttribute>();
         if (displayAttr != null) return displayAttr.Name ?? propertyName;
 
-        // 3. Check for [DisplayName("")] (from ComponentModel)
+        // 4. Check for [DisplayName("")] (from ComponentModel)
         var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
         if (displayNameAttr != null) return displayNameAttr.DisplayName;
 
-        // 4. Fallback to the C# property name if no attribute exists
+        // 5. Fallback to the C# property name if no attribute exists
         return propertyName;
     }
 
