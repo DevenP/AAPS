@@ -2,9 +2,10 @@ namespace AAPS.Application.Abstractions.Services;
 
 public record DashboardStats
 {
-    public int TotalProviders { get; init; }
+    public int ActiveProviders { get; init; }
     public int OperationAlerts { get; init; }
     public int UnbilledSessions { get; init; }
+    public decimal UnbilledAmount { get; init; }
     public int ExpiringApprovals { get; init; }
     public int VendorPortalDiscrepancies { get; init; }
     public int EvalsPendingPayment { get; init; }

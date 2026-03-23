@@ -103,7 +103,12 @@ namespace AAPS.Infrastructure.Common.Extensions
                 }
                 else if (type == typeof(DateTime) || type == typeof(DateTime?))
                 {
-                    if (filter.Key.EndsWith("_From") && DateTime.TryParse(filter.Value, out var from))
+                    var val = filter.Value.ToLower();
+                    if (val == "null")
+                        source = source.Where(item => prop.GetValue(item) == null);
+                    else if (val == "notnull")
+                        source = source.Where(item => prop.GetValue(item) != null);
+                    else if (filter.Key.EndsWith("_From") && DateTime.TryParse(filter.Value, out var from))
                         source = source.Where(item => { var v = prop.GetValue(item) as DateTime?; return v.HasValue && v.Value >= from; });
                     else if (filter.Key.EndsWith("_To") && DateTime.TryParse(filter.Value, out var to))
                     {
@@ -203,7 +208,12 @@ namespace AAPS.Infrastructure.Common.Extensions
                 }
                 else if (type == typeof(DateTime) || type == typeof(DateTime?))
                 {
-                    if (filter.Key.EndsWith("_From") && DateTime.TryParse(filter.Value, out var fromDate))
+                    var val = filter.Value.ToLower();
+                    if (val == "null")
+                        query = query.Where($"{prop.Name} == null");
+                    else if (val == "notnull")
+                        query = query.Where($"{prop.Name} != null");
+                    else if (filter.Key.EndsWith("_From") && DateTime.TryParse(filter.Value, out var fromDate))
                         query = query.Where($"{prop.Name} != null && {prop.Name} >= @0", fromDate);
                     else if (filter.Key.EndsWith("_To") && DateTime.TryParse(filter.Value, out var toDate))
                     {

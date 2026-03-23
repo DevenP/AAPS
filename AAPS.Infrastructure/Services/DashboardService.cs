@@ -47,7 +47,7 @@ public class DashboardService : IDashboardService
 
         var today = DateTime.Today;
 
-        var totalProviders = await db.Providers.CountAsync(ct);
+        var totalProviders = await db.Providers.CountAsync(p => p.Status == "Active", ct);
 
         var discrepancies = await db.VendorPortals
             .CountAsync(v => v.Entry_Id == null, ct);
@@ -70,6 +70,10 @@ public class DashboardService : IDashboardService
         var unbilledSessions = await db.Seses.CountAsync(s =>
             s.bRate != null && s.Billed == null && s.bPaid == null, ct);
 
+        var unbilledAmount = await db.Seses
+            .Where(s => s.bRate != null && s.Billed == null && s.bPaid == null)
+            .SumAsync(s => (decimal?)s.bAmount, ct) ?? 0m;
+
         // Approvals expiring within the next 30 days
         var cutoff = today.AddDays(30);
         var expiringApprovals = await db.Mandates.CountAsync(m =>
@@ -83,11 +87,12 @@ public class DashboardService : IDashboardService
 
         var stats = new DashboardStats
         {
-            TotalProviders            = totalProviders,
+            ActiveProviders           = totalProviders,
             VendorPortalDiscrepancies = discrepancies,
             EvalsPendingPayment       = evalsPending,
             OperationAlerts           = operationAlerts,
             UnbilledSessions          = unbilledSessions,
+            UnbilledAmount            = unbilledAmount,
             ExpiringApprovals         = expiringApprovals,
             ExpiringLicenses          = expiringLicenses,
         };
