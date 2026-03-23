@@ -45,6 +45,8 @@ public class DashboardService : IDashboardService
     {
         await using var db = _factory.CreateDbContext();
 
+        var today = DateTime.Today;
+
         var totalProviders = await db.Providers.CountAsync(ct);
 
         var discrepancies = await db.VendorPortals
@@ -53,20 +55,46 @@ public class DashboardService : IDashboardService
         var evalsPending = await db.Evals
             .CountAsync(e => e.Billed != null && e.bPaid == null, ct);
 
-        var operationAlerts = await db.Seses
-            .CountAsync(s => s.Entry_Id == null || s.Provider_Id == null || s.bRate == null, ct);
+        // All 8 alert flag conditions — matches Operations page flags
+        var operationAlerts = await db.Seses.CountAsync(s =>
+            s.Entry_Id == null ||
+            s.Provider_Id == null ||
+            s.Overlap == true ||
+            s.OverMandate == true ||
+            s.OverDuration == true ||
+            s.UnderGroup == true ||
+            s.bRate == null ||
+            s.pRate == null, ct);
+
+        // Sessions with a billing rate set but not yet billed and not yet paid
+        var unbilledSessions = await db.Seses.CountAsync(s =>
+            s.bRate != null && s.Billed == null && s.bPaid == null, ct);
+
+        // Approvals expiring within the next 30 days
+        var cutoff = today.AddDays(30);
+        var expiringApprovals = await db.Mandates.CountAsync(m =>
+            m.MandateEnd != null && m.MandateEnd >= today && m.MandateEnd <= cutoff, ct);
+
+        // Providers with a license expiring within 60 days (or already expired)
+        var licenseCutoff = today.AddDays(60);
+        var expiringLicenses = await db.Providers.CountAsync(p =>
+            (p.License1Exp != null && p.License1Exp <= licenseCutoff) ||
+            (p.License2Exp != null && p.License2Exp <= licenseCutoff), ct);
 
         var stats = new DashboardStats
         {
-            TotalProviders = totalProviders,
+            TotalProviders            = totalProviders,
             VendorPortalDiscrepancies = discrepancies,
-            EvalsPendingPayment = evalsPending,
-            OperationAlerts = operationAlerts
+            EvalsPendingPayment       = evalsPending,
+            OperationAlerts           = operationAlerts,
+            UnbilledSessions          = unbilledSessions,
+            ExpiringApprovals         = expiringApprovals,
+            ExpiringLicenses          = expiringLicenses,
         };
 
-        if (operationAlerts > 0 || discrepancies > 0)
-            _logger.LogWarning("Dashboard: {OperationAlerts} operation alert(s), {Discrepancies} vendor portal discrepancy(ies), {EvalsPending} eval(s) pending payment",
-                operationAlerts, discrepancies, evalsPending);
+        _logger.LogInformation(
+            "Dashboard stats: {Alerts} alerts, {Unbilled} unbilled, {Expiring} expiring approvals, {Licenses} expiring licenses",
+            operationAlerts, unbilledSessions, expiringApprovals, expiringLicenses);
 
         return stats;
     }
@@ -77,23 +105,32 @@ public class DashboardService : IDashboardService
 
         return await db.Seses
             .AsNoTracking()
-            .Where(s => s.Entry_Id == null || s.Provider_Id == null || s.bRate == null)
+            .Where(s =>
+                s.Entry_Id == null ||
+                s.Provider_Id == null ||
+                s.Overlap == true ||
+                s.OverMandate == true ||
+                s.OverDuration == true ||
+                s.UnderGroup == true ||
+                s.bRate == null ||
+                s.pRate == null)
             .OrderByDescending(s => s.date_of_Service)
             .Take(limit)
             .Select(s => new OperationAlertItem
             {
-                StudentLastName = s.Last_Name,
+                StudentLastName  = s.Last_Name,
                 StudentFirstName = s.First_Name,
-                ServiceDate = s.date_of_Service,
-                ProviderLastName = s.Provider_Last_Name,
+                ServiceDate      = s.date_of_Service,
+                ProviderLastName  = s.Provider_Last_Name,
                 ProviderFirstName = s.Provider_First_Name,
-                Issue = s.Entry_Id == null && s.Provider_Id == null && s.bRate == null ? "No Entry / No Provider / No Rate"
-                      : s.Entry_Id == null && s.Provider_Id == null ? "No Entry / No Provider"
-                      : s.Entry_Id == null && s.bRate == null ? "No Entry / No Rate"
-                      : s.Provider_Id == null && s.bRate == null ? "No Provider / No Rate"
-                      : s.Entry_Id == null ? "No Entry"
-                      : s.Provider_Id == null ? "No Provider"
-                      : "No Rate"
+                MandateFlag  = s.Entry_Id == null,
+                ProviderFlag = s.Provider_Id == null,
+                IsOverlap    = s.Overlap == true,
+                IsOverMandate  = s.OverMandate == true,
+                IsOverDuration = s.OverDuration == true,
+                IsUnderGroup   = s.UnderGroup == true,
+                BRateFlag = s.bRate == null,
+                PRateFlag = s.pRate == null,
             })
             .ToListAsync(ct);
     }
@@ -112,8 +149,8 @@ public class DashboardService : IDashboardService
             .Take(limit)
             .Select(r => new DiscrepancyItem
             {
-                StudentLastName  = r.Last_Name,
-                StudentFirstName = r.First_Name,
+                StudentLastName   = r.Last_Name,
+                StudentFirstName  = r.First_Name,
                 ProviderLastName  = r.LastName,
                 ProviderFirstName = r.FirstName,
                 AssignId  = r.Assign_Id,
@@ -133,11 +170,73 @@ public class DashboardService : IDashboardService
             .Take(limit)
             .Select(e => new EvalPendingItem
             {
-                StudentLastName = e.StudentLast,
+                StudentLastName  = e.StudentLast,
                 StudentFirstName = e.StudentFirst,
                 ServiceType = e.ServiceType,
-                BilledDate = e.Billed
+                BilledDate  = e.Billed
             })
             .ToListAsync(ct);
+    }
+
+    public async Task<List<ExpiringApprovalItem>> GetExpiringApprovalsAsync(int daysAhead = 30, int limit = 15, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+
+        var today  = DateTime.Today;
+        var cutoff = today.AddDays(daysAhead);
+
+        return await db.Mandates
+            .AsNoTracking()
+            .Where(m => m.MandateEnd != null && m.MandateEnd >= today && m.MandateEnd <= cutoff)
+            .OrderBy(m => m.MandateEnd)
+            .Take(limit)
+            .Select(m => new ExpiringApprovalItem
+            {
+                StudentId        = m.Student_ID,
+                StudentLastName  = m.Last_Name,
+                StudentFirstName = m.First_Name,
+                ServiceType = m.Service_Type,
+                MandateEnd  = m.MandateEnd,
+                Provider    = m.Provider
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<ExpiringLicenseItem>> GetExpiringLicensesAsync(int daysAhead = 60, int limit = 15, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+
+        var cutoff = DateTime.Today.AddDays(daysAhead);
+
+        // Flatten License1 and License2 into one list, take the soonest per provider
+        var license1 = await db.Providers
+            .AsNoTracking()
+            .Where(p => p.License1Exp != null && p.License1Exp <= cutoff)
+            .Select(p => new ExpiringLicenseItem
+            {
+                LastName       = p.LastName,
+                FirstName      = p.FirstName,
+                LicenseNumber  = p.License1,
+                ExpirationDate = p.License1Exp!.Value
+            })
+            .ToListAsync(ct);
+
+        var license2 = await db.Providers
+            .AsNoTracking()
+            .Where(p => p.License2Exp != null && p.License2Exp <= cutoff)
+            .Select(p => new ExpiringLicenseItem
+            {
+                LastName       = p.LastName,
+                FirstName      = p.FirstName,
+                LicenseNumber  = p.License2,
+                ExpirationDate = p.License2Exp!.Value
+            })
+            .ToListAsync(ct);
+
+        return license1
+            .Concat(license2)
+            .OrderBy(x => x.ExpirationDate)
+            .Take(limit)
+            .ToList();
     }
 }

@@ -12,9 +12,9 @@
 @if (_stats == null)
 {
     <MudGrid Spacing="3" Class="mb-6">
-        @for (int i = 0; i < 4; i++)
+        @for (int i = 0; i < 7; i++)
         {
-            <MudItem xs="12" sm="6" md="3">
+            <MudItem xs="6" sm="4" md="3">
                 <MudPaper Class="pa-4" Elevation="1">
                     <MudSkeleton Width="60%" Height="20px" Class="mb-2" />
                     <MudSkeleton Width="40%" Height="36px" />
@@ -26,7 +26,8 @@
 else
 {
     <MudGrid Spacing="3" Class="mb-6">
-        <MudItem xs="12" sm="6" md="3">
+
+        <MudItem xs="6" sm="4" md="3">
             <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-primary);">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Total Providers</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
@@ -36,42 +37,85 @@ else
                 <MudLink Href="/providers" Typo="Typo.caption" Color="Color.Primary">View Providers</MudLink>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-error);">
+
+        <MudItem xs="6" sm="4" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.OperationAlerts > 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")};")">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Operation Alerts</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4" Color="@(_stats.OperationAlerts > 0 ? Color.Error : Color.Default)">
+                        <b>@_stats.OperationAlerts</b>
+                    </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="@(_stats.OperationAlerts > 0 ? Color.Error : Color.Success)" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/operations" Typo="Typo.caption" Color="Color.Primary">View Operations</MudLink>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="6" sm="4" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.UnbilledSessions > 0 ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Unbilled Sessions</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4" Color="@(_stats.UnbilledSessions > 0 ? Color.Warning : Color.Default)">
+                        <b>@_stats.UnbilledSessions</b>
+                    </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="@(_stats.UnbilledSessions > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/billing" Typo="Typo.caption" Color="Color.Primary">View Billing</MudLink>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="6" sm="4" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.ExpiringApprovals > 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")};")">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Approvals Expiring (30d)</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.h4" Color="@(_stats.ExpiringApprovals > 0 ? Color.Error : Color.Default)">
+                        <b>@_stats.ExpiringApprovals</b>
+                    </MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.EventBusy" Color="@(_stats.ExpiringApprovals > 0 ? Color.Error : Color.Success)" Style="font-size:2rem;" />
+                </div>
+                <MudLink Href="/approvals" Typo="Typo.caption" Color="Color.Primary">View Approvals</MudLink>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="6" sm="4" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.VendorPortalDiscrepancies > 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")};")">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Vendor Portal Discrepancies</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.VendorPortalDiscrepancies > 0 ? Color.Error : Color.Default)">
                         <b>@_stats.VendorPortalDiscrepancies</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" Style="font-size:2rem;" />
+                    <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="@(_stats.VendorPortalDiscrepancies > 0 ? Color.Error : Color.Success)" Style="font-size:2rem;" />
                 </div>
                 <MudLink Href="/vendorportal" Typo="Typo.caption" Color="Color.Primary">View Vendor Portal</MudLink>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-warning);">
+
+        <MudItem xs="6" sm="4" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.EvalsPendingPayment > 0 ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Evals Pending Payment</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.EvalsPendingPayment > 0 ? Color.Warning : Color.Default)">
                         <b>@_stats.EvalsPendingPayment</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.PendingActions" Color="Color.Warning" Style="font-size:2rem;" />
+                    <MudIcon Icon="@Icons.Material.Filled.PendingActions" Color="@(_stats.EvalsPendingPayment > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
                 </div>
                 <MudLink Href="/evaluations" Typo="Typo.caption" Color="Color.Primary">View Evaluations</MudLink>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-info);">
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">Operation Alerts</MudText>
+
+        <MudItem xs="6" sm="4" md="3">
+            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.ExpiringLicenses > 0 ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Expiring Licenses (60d)</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
-                    <MudText Typo="Typo.h4" Color="@(_stats.OperationAlerts > 0 ? Color.Info : Color.Default)">
-                        <b>@_stats.OperationAlerts</b>
+                    <MudText Typo="Typo.h4" Color="@(_stats.ExpiringLicenses > 0 ? Color.Warning : Color.Default)">
+                        <b>@_stats.ExpiringLicenses</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Info" Style="font-size:2rem;" />
+                    <MudIcon Icon="@Icons.Material.Filled.Badge" Color="@(_stats.ExpiringLicenses > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
                 </div>
-                <MudLink Href="/operations" Typo="Typo.caption" Color="Color.Primary">View Operations</MudLink>
+                <MudLink Href="/providers" Typo="Typo.caption" Color="Color.Primary">View Providers</MudLink>
             </MudPaper>
         </MudItem>
+
     </MudGrid>
 }
 
@@ -91,8 +135,20 @@ else
         </MudPaper>
     </MudItem>
     <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/billing")'>
+            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="Color.Warning" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Billing</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
+        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/approvals")'>
+            <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Info" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudText Typo="Typo.caption" Align="Align.Center">Approvals</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="6" sm="4" md="2">
         <MudPaper Class="pa-3 d-flex flex-column align-center justify-center mud-clickable" Elevation="1" Style="cursor:pointer; height:90px;" @onclick='() => Nav.NavigateTo("/evaluations")'>
-            <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Warning" Style="font-size:1.8rem;" Class="mb-1" />
+            <MudIcon Icon="@Icons.Material.Filled.MedicalServices" Color="Color.Error" Style="font-size:1.8rem;" Class="mb-1" />
             <MudText Typo="Typo.caption" Align="Align.Center">Evaluations</MudText>
         </MudPaper>
     </MudItem>
@@ -116,15 +172,15 @@ else
     </MudItem>
 </MudGrid>
 
-@* ── Bottom Section: Alerts + Discrepancies / Evals ──────── *@
+@* ── Detail Tables ────────────────────────────────────────── *@
 <MudGrid Spacing="3">
 
     @* Operation Alerts *@
-    <MudItem xs="12" md="4">
+    <MudItem xs="12" md="6">
         <MudText Typo="Typo.h6" Class="mb-2">Operation Alerts
             @if (_stats != null && _stats.OperationAlerts > 0)
             {
-                <MudChip T="string" Color="Color.Info" Size="Size.Small" Class="ml-2">@_stats.OperationAlerts total</MudChip>
+                <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="ml-2">@_stats.OperationAlerts total</MudChip>
             }
         </MudText>
         <MudPaper Elevation="1">
@@ -144,16 +200,79 @@ else
                     <HeaderContent>
                         <MudTh>Student</MudTh>
                         <MudTh>Date</MudTh>
-                        <MudTh>Issue</MudTh>
+                        <MudTh>Flags</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd Style="white-space:nowrap;">@context.StudentLastName, @context.StudentFirstName</MudTd>
                         <MudTd Style="white-space:nowrap;">@context.ServiceDate?.ToString("MM/dd/yyyy")</MudTd>
-                        <MudTd><MudChip T="string" Color="Color.Warning" Size="Size.Small">@context.Issue</MudChip></MudTd>
+                        <MudTd>
+                            <div class="d-flex gap-1 flex-wrap">
+                                @if (context.MandateFlag)    { <MudTooltip Text="Missing Approval"><MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error" Size="Size.Small" /></MudTooltip> }
+                                @if (context.ProviderFlag)   { <MudTooltip Text="Unassigned Provider"><MudIcon Icon="@Icons.Material.Filled.PersonOff" Color="Color.Error" Size="Size.Small" /></MudTooltip> }
+                                @if (context.IsOverlap)      { <MudTooltip Text="Overlap Service"><MudIcon Icon="@Icons.Material.Filled.EventRepeat" Color="Color.Error" Size="Size.Small" /></MudTooltip> }
+                                @if (context.IsOverMandate)  { <MudTooltip Text="Over Mandate"><MudIcon Icon="@Icons.Material.Filled.LibraryAddCheck" Color="Color.Error" Size="Size.Small" /></MudTooltip> }
+                                @if (context.IsOverDuration) { <MudTooltip Text="Over Duration"><MudIcon Icon="@Icons.Material.Filled.TimerOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
+                                @if (context.IsUnderGroup)   { <MudTooltip Text="Under Group Size"><MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Small" /></MudTooltip> }
+                                @if (context.BRateFlag)      { <MudTooltip Text="Missing Billing Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
+                                @if (context.PRateFlag)      { <MudTooltip Text="Missing Provider Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
+                            </div>
+                        </MudTd>
                     </RowTemplate>
                 </MudTable>
                 <div class="d-flex justify-end pa-2">
                     <MudLink Href="/operations" Typo="Typo.caption" Color="Color.Primary">View all operations</MudLink>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+    @* Expiring Approvals *@
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.h6" Class="mb-2">Expiring Approvals
+            @if (_stats != null && _stats.ExpiringApprovals > 0)
+            {
+                <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="ml-2">@_stats.ExpiringApprovals in 30 days</MudChip>
+            }
+        </MudText>
+        <MudPaper Elevation="1">
+            @if (_expiringApprovals == null)
+            {
+                <div class="pa-3">
+                    @for (int i = 0; i < 5; i++) { <MudSkeleton Width="100%" Height="28px" Class="mb-1" /> }
+                </div>
+            }
+            else if (_expiringApprovals.Count == 0)
+            {
+                <MudAlert Severity="Severity.Success" Class="ma-0">No approvals expiring in the next 30 days.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_expiringApprovals" Dense="true" Hover="true" Striped="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Student</MudTh>
+                        <MudTh>Service</MudTh>
+                        <MudTh>Expires</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="white-space:nowrap;">
+                            <MudTooltip Text="@context.StudentId">
+                                <span>@context.StudentLastName, @context.StudentFirstName</span>
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd>@context.ServiceType</MudTd>
+                        <MudTd Style="white-space:nowrap;">
+                            @{
+                                var daysLeft = (context.MandateEnd!.Value - DateTime.Today).Days;
+                                var color = daysLeft <= 7 ? Color.Error : Color.Warning;
+                            }
+                            <MudChip T="string" Color="@color" Size="Size.Small">
+                                @context.MandateEnd.Value.ToString("MM/dd/yyyy") (@daysLeft d)
+                            </MudChip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <div class="d-flex justify-end pa-2">
+                    <MudLink Href="/approvals" Typo="Typo.caption" Color="Color.Primary">View all approvals</MudLink>
                 </div>
             }
         </MudPaper>
@@ -239,13 +358,63 @@ else
         </MudPaper>
     </MudItem>
 
+    @* Expiring Licenses — top 5, link to providers *@
+    <MudItem xs="12" sm="6" md="4">
+        <MudText Typo="Typo.h6" Class="mb-2">Expiring Licenses
+            @if (_stats != null && _stats.ExpiringLicenses > 0)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ml-2">@_stats.ExpiringLicenses within 60 days</MudChip>
+            }
+        </MudText>
+        <MudPaper Elevation="1">
+            @if (_expiringLicenses == null)
+            {
+                <div class="pa-3">
+                    @for (int i = 0; i < 5; i++) { <MudSkeleton Width="100%" Height="28px" Class="mb-1" /> }
+                </div>
+            }
+            else if (_expiringLicenses.Count == 0)
+            {
+                <MudAlert Severity="Severity.Success" Class="ma-0">No licenses expiring within 60 days.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_expiringLicenses" Dense="true" Hover="true" Striped="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Provider</MudTh>
+                        <MudTh>License</MudTh>
+                        <MudTh>Expires</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="white-space:nowrap;">@context.LastName, @context.FirstName</MudTd>
+                        <MudTd>@context.LicenseNumber</MudTd>
+                        <MudTd Style="white-space:nowrap;">
+                            @{
+                                var expired = context.ExpirationDate < DateTime.Today;
+                                var daysLeft2 = (context.ExpirationDate - DateTime.Today).Days;
+                            }
+                            <MudChip T="string" Color="@(expired ? Color.Error : Color.Warning)" Size="Size.Small">
+                                @context.ExpirationDate.ToString("MM/dd/yyyy") @(expired ? "(Expired)" : $"({daysLeft2}d)")
+                            </MudChip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <div class="d-flex justify-end pa-2">
+                    <MudLink Href="/providers" Typo="Typo.caption" Color="Color.Primary">View all providers</MudLink>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+
 </MudGrid>
 
 @code {
-    private DashboardStats? _stats;
-    private List<OperationAlertItem>? _operationAlerts;
-    private List<DiscrepancyItem>? _discrepancies;
-    private List<EvalPendingItem>? _evalsPending;
+    private DashboardStats?            _stats;
+    private List<OperationAlertItem>?  _operationAlerts;
+    private List<DiscrepancyItem>?     _discrepancies;
+    private List<EvalPendingItem>?     _evalsPending;
+    private List<ExpiringApprovalItem>? _expiringApprovals;
+    private List<ExpiringLicenseItem>? _expiringLicenses;
 
     protected override async Task OnInitializedAsync()
     {
@@ -253,12 +422,16 @@ else
         var alertsTask       = DashboardService.GetOperationAlertsAsync(15);
         var discrepancyTask  = DashboardService.GetVendorPortalDiscrepanciesAsync(15);
         var evalsTask        = DashboardService.GetEvalsPendingPaymentAsync(15);
+        var expiringTask     = DashboardService.GetExpiringApprovalsAsync(30, 15);
+        var licensesTask     = DashboardService.GetExpiringLicensesAsync(60, 15);
 
-        await Task.WhenAll(statsTask, alertsTask, discrepancyTask, evalsTask);
+        await Task.WhenAll(statsTask, alertsTask, discrepancyTask, evalsTask, expiringTask, licensesTask);
 
-        _stats           = await statsTask;
-        _operationAlerts = await alertsTask;
-        _discrepancies   = await discrepancyTask;
-        _evalsPending    = await evalsTask;
+        _stats              = await statsTask;
+        _operationAlerts    = await alertsTask;
+        _discrepancies      = await discrepancyTask;
+        _evalsPending       = await evalsTask;
+        _expiringApprovals  = await expiringTask;
+        _expiringLicenses   = await licensesTask;
     }
 }
