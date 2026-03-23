@@ -57,6 +57,10 @@ public class BillingRateService : IBillingRateService
         _logger.LogInformation("Creating billing rate {District}/{ServiceType}/{Language} at {Rate:C2}",
             dto.District, dto.ServiceType, dto.Language, dto.Rate);
 
+        // Guard: rate must be >= 1 (proc: IF @Rate<1 RETURN)
+        if (dto.Rate < 1)
+            throw new InvalidOperationException("Rate must be at least $1.00.");
+
         // Guard: duplicate combo (any record — active or historical — for this combo blocks insert)
         var exists = await db.BillingRates.AnyAsync(b =>
             b.District == dto.District &&
@@ -88,7 +92,7 @@ public class BillingRateService : IBillingRateService
         _logger.LogInformation("Billing rate {Id} created for {District}/{ServiceType}/{Language} at {Rate:C2}",
             entity.BillingRate_Id, dto.District, dto.ServiceType, dto.Language, dto.Rate);
 
-        // Cascade bRate + bAmount to matching Sesis rows
+        // Cascade bRate + bAmount to matching unpaid Sesis rows (proc: bPaid IS NULL)
         // Duration and Actual_Size are varchar — must use raw SQL for the CONVERT
         var sesisCount = await db.Database.ExecuteSqlRawAsync(
             @"UPDATE Sesis
@@ -96,7 +100,8 @@ public class BillingRateService : IBillingRateService
                   bAmount = @rate * CONVERT(int, Duration) / 60.0 / CONVERT(int, Actual_Size)
               WHERE Service_Type       = @serviceType
                 AND GDistrict          = @district
-                AND Language_Provided  = @lang",
+                AND Language_Provided  = @lang
+                AND bPaid IS NULL",
             new SqlParameter("@rate",        dto.Rate        ?? 0m),
             new SqlParameter("@serviceType", dto.ServiceType ?? ""),
             new SqlParameter("@district",    dto.District    ?? ""),
@@ -104,13 +109,14 @@ public class BillingRateService : IBillingRateService
 
         _logger.LogInformation("Cascaded rate to {Count} Sesis records", sesisCount);
 
-        // Cascade bAmount to matching Evals rows (RTRIM matches proc behaviour)
+        // Cascade bAmount to matching unpaid Evals rows (proc: bPaid IS NULL)
         var evalsCount = await db.Database.ExecuteSqlRawAsync(
             @"UPDATE Evals
               SET bAmount = @rate
               WHERE RTRIM(ServiceType) = RTRIM(@serviceType)
                 AND RTRIM(District)   = RTRIM(@district)
-                AND RTRIM(Language)   = RTRIM(@lang)",
+                AND RTRIM(Language)   = RTRIM(@lang)
+                AND bPaid IS NULL",
             new SqlParameter("@rate",        dto.Rate        ?? 0m),
             new SqlParameter("@serviceType", dto.ServiceType ?? ""),
             new SqlParameter("@district",    dto.District    ?? ""),

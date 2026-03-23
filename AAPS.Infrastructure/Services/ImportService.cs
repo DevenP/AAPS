@@ -935,7 +935,8 @@ public class ImportService : IImportService
                 pAmount = pAmount,
                 Overlap = false,
                 OverMandate = false,
-                OverDuration = false
+                OverDuration = false,
+                UnderGroup = false
             });
 
             // Also add to local dup set so rows within this same import don't duplicate each other
@@ -1133,6 +1134,9 @@ public class ImportService : IImportService
         if (vpBackfillCount > 0)
             _logger.LogInformation("Backfilled Entry_Id onto {Count} vendor portal record(s)", vpBackfillCount);
 
+        // Recalculate overlap/mandate/group flags for all unpaid records
+        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+
         return new ImportCommitResult
         {
             Inserted = inserted,
@@ -1159,7 +1163,7 @@ public class ImportService : IImportService
 
         // ── Bulk lookups upfront (2 queries total instead of 2 per row) ──────
         // Collect the date range and student IDs from the file first
-        var rowData = new List<(int RowNumber, string Voucher, string StudentId, string? SsnLast4, string? Provider, DateTime DosDate, string StartTimeNormalized)>();
+        var rowData = new List<(int RowNumber, string Voucher, string StudentId, string? Ssn, string? SsnLast4, string? Provider, DateTime DosDate, string StartTimeNormalized)>();
 
         foreach (var row in preview.ValidRows)
         {
@@ -1195,7 +1199,7 @@ public class ImportService : IImportService
             }
 
             string? ssnLast4 = ssn?.Length >= 4 ? ssn.Substring(ssn.Length - 4) : ssn;
-            rowData.Add((i, voucher, studentId, ssnLast4, provider, dateOfService.Value.Date, startTimeNormalized));
+            rowData.Add((i, voucher, studentId, ssn, ssnLast4, provider, dateOfService.Value.Date, startTimeNormalized));
         }
 
         if (rowData.Count == 0)
@@ -1222,6 +1226,8 @@ public class ImportService : IImportService
         var providerById = allProviders.ToDictionary(p => p.Provider_Id);
 
         // ── In-memory matching loop ────────────────────────────────────────
+        var paymentRows = new List<Payment>();
+
         foreach (var r in rowData)
         {
             var candidates = allCandidateSesis
@@ -1249,6 +1255,19 @@ public class ImportService : IImportService
                 sesi.bPaid = DateTime.Now;
                 sesi.Voucher = r.Voucher;
                 matchCount++;
+
+                paymentRows.Add(new Payment
+                {
+                    Voucher         = r.Voucher,
+                    Student_ID      = r.StudentId,
+                    Ssn             = r.Ssn,
+                    Provider        = r.Provider,
+                    date_of_Service = r.DosDate,
+                    Start_Time      = r.StartTimeNormalized,
+                    FileName        = preview.FileName,
+                    RowNumber       = r.RowNumber,
+                    Sesis_Id        = sesi.Sesis_Id,
+                });
             }
 
             if (matchCount > 0)
@@ -1262,6 +1281,7 @@ public class ImportService : IImportService
         {
             try
             {
+                db.Payments.AddRange(paymentRows);
                 await db.SaveChangesAsync(ct);
             }
             catch (Exception ex)

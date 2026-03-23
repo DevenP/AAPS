@@ -27,6 +27,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<Mandate> Mandates { get; set; }
 
+    public virtual DbSet<Payment> Payments { get; set; }
+
     public virtual DbSet<Provider> Providers { get; set; }
 
     public virtual DbSet<ProviderRate> ProviderRates { get; set; }

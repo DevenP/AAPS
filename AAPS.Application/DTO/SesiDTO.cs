@@ -47,6 +47,9 @@ public record SesiDTO
     [DisplayField("Mandate Start")]
     public DateTime? MandateStart { get; set; }
 
+    [DisplayField("Mandate End")]
+    public DateTime? MandateEnd { get; set; }
+
     [DisplayField("Mandated Max Group")]
     public string? MandatedMaxGroup { get; set; }
 
@@ -130,6 +133,12 @@ public record SesiDTO
 
     [DisplayField("Voucher")]
     public string? Voucher { get; set; }
+
+    [DisplayField("Voucher Amount")]
+    public decimal? VoucherAmount { get; set; }
+
+    [DisplayField("Voucher Balance Paid")]
+    public DateTime? VoucherBalancePaid { get; set; }
 
     [DisplayField("Is Over Mandate")]
     public bool IsOverMandate { get; set; }

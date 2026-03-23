@@ -86,8 +86,24 @@ public class StatementService : IStatementService
     }
 
     // ── Same base query as BillingService (no unpaidOnly filter — statements show all filtered records) ──
+    // Uses MIN(VendorPortal_Id) per (Entry_Id, pSsn) to match Acounting_Select exactly.
     private static IQueryable<BillingRecordDTO> BuildBaseQuery(AppDbContext db)
     {
+        var topAssignByEntryAndSsn = db.VendorPortals.AsNoTracking()
+            .Where(v => v.Entry_Id != null && v.pSsn != null)
+            .GroupBy(v => new { v.Entry_Id, v.pSsn })
+            .Select(g => new
+            {
+                EntryId = g.Key.Entry_Id,
+                ProvSsn = g.Key.pSsn,
+                TopId   = g.Min(x => x.VendorPortal_Id)
+            });
+
+        var topAssignments =
+            from t in topAssignByEntryAndSsn
+            join v in db.VendorPortals.AsNoTracking() on t.TopId equals v.VendorPortal_Id
+            select new { t.EntryId, t.ProvSsn, v.Assign_Id };
+
         var sesis = db.Seses.AsNoTracking()
             .Where(s => s.Overlap != true
                      && s.OverMandate != true
@@ -97,46 +113,42 @@ public class StatementService : IStatementService
                      && s.bRate != null
                      && s.pRate != null);
 
-        return sesis
-            .Join(db.Providers,
-                s => s.Provider_Id,
-                p => p.Provider_Id,
-                (s, p) => new { s, p })
-            .Where(sp => db.VendorPortals.Any(v =>
-                v.Entry_Id == sp.s.Entry_Id &&
-                v.pSsn == sp.p.Ssn!.Substring(0, 3) + sp.p.Ssn.Substring(4, 2) + sp.p.Ssn.Substring(7, 4) &&
-                v.Assign_Id != null))
-            .Select(sp => new BillingRecordDTO
+        return
+            from s in sesis
+            join p in db.Providers.AsNoTracking() on s.Provider_Id equals p.Provider_Id
+            join va in topAssignments
+                on new
+                {
+                    EntryId = s.Entry_Id,
+                    ProvSsn = p.Ssn != null ? p.Ssn.Replace("-", "") : null
+                }
+                equals new { va.EntryId, va.ProvSsn }
+            where va.Assign_Id != null
+            select new BillingRecordDTO
             {
-                SesisId        = sp.s.Sesis_Id,
-                DateOfService  = sp.s.date_of_Service,
-                StartTime      = sp.s.Start_Time,
-                EndTime        = sp.s.End_Time,
-                Provider       = sp.s.Provider_Last_Name + ", " + sp.s.Provider_First_Name,
-                GDistrict      = sp.s.GDistrict,
-                StudentId      = sp.s.Student_ID,
-                Student        = sp.s.Last_Name + ", " + sp.s.First_Name,
-                Grade          = sp.s.Grade,
-                ServiceType    = sp.s.Service_Type,
-                ActualSize     = sp.s.Actual_Size,
-                Duration       = sp.s.Duration,
-                Frequency      = sp.s.Assignment_Claimed,
-                Billed         = sp.s.Billed,
-                BilledPaidOn   = sp.s.bPaid,
-                ProviderPaidOn = sp.s.pPaid,
-                BillingRate    = sp.s.bRate,
-                ProviderRate   = sp.s.pRate,
-                BillingAmount  = sp.s.bAmount,
-                ProviderAmount = sp.s.pAmount,
-                AssignId = db.VendorPortals
-                    .Where(v => v.Entry_Id == sp.s.Entry_Id &&
-                                v.pSsn == sp.p.Ssn!.Substring(0, 3) + sp.p.Ssn.Substring(4, 2) + sp.p.Ssn.Substring(7, 4) &&
-                                v.Assign_Id != null)
-                    .OrderBy(v => v.VendorPortal_Id)
-                    .Select(v => v.Assign_Id)
-                    .FirstOrDefault(),
-                EntryId = sp.s.Entry_Id,
-            });
+                SesisId        = s.Sesis_Id,
+                DateOfService  = s.date_of_Service,
+                StartTime      = s.Start_Time,
+                EndTime        = s.End_Time,
+                Provider       = s.Provider_Last_Name + ", " + s.Provider_First_Name,
+                GDistrict      = s.GDistrict,
+                StudentId      = s.Student_ID,
+                Student        = s.Last_Name + ", " + s.First_Name,
+                Grade          = s.Grade,
+                ServiceType    = s.Service_Type,
+                ActualSize     = s.Actual_Size,
+                Duration       = s.Duration,
+                Frequency      = s.Assignment_Claimed,
+                Billed         = s.Billed,
+                BilledPaidOn   = s.bPaid,
+                ProviderPaidOn = s.pPaid,
+                BillingRate    = s.bRate,
+                ProviderRate   = s.pRate,
+                BillingAmount  = s.bAmount,
+                ProviderAmount = s.pAmount,
+                AssignId       = va.Assign_Id,
+                EntryId        = s.Entry_Id,
+            };
     }
 
     private byte[] GeneratePdf(List<IGrouping<(string Last, string First), StatementRow>> providerGroups)

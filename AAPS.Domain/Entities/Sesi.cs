@@ -159,6 +159,12 @@ public partial class Sesi
     [Unicode(false)]
     public string? Voucher { get; set; }
 
+    [Column(TypeName = "decimal(6, 2)")]
+    public decimal? VoucherAmount { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? VoucherBalancePaid { get; set; }
+
     public bool? OverMandate { get; set; }
 
     public bool? OverDuration { get; set; }

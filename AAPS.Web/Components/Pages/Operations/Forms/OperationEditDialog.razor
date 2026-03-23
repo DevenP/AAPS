@@ -1,0 +1,197 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Paging
+@using AAPS.Application.DTO
+@inject IGDistrictService GDistrictService
+@inject ILanguageService LanguageService
+@inject IProviderService ProviderService
+
+<MudDialog>
+    <DialogContent>
+        @if (IsBulk)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-3" Dense="true">
+                Editing <strong>@SelectedCount</strong> records. Leave a field blank to leave it unchanged.
+            </MudAlert>
+        }
+        else if (_item != null)
+        {
+            <MudStack Spacing="0" Class="mb-3">
+                <MudText Typo="Typo.subtitle2">@_item.ProviderLastName, @_item.ProviderFirstName</MudText>
+                <MudText Typo="Typo.body2">
+                    @_item.StudentId &nbsp;|&nbsp; @_item.DateOfService?.ToString("MM/dd/yyyy") &nbsp;|&nbsp; @_item.ServiceType
+                </MudText>
+            </MudStack>
+        }
+
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_dateOfService"
+                               Label="Date of Service"
+                               Clearable="true"
+                               DateFormat="MM/dd/yyyy" />
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudTextField @bind-Value="_startTime" Label="Start Time" Clearable="true" />
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudTextField @bind-Value="_endTime" Label="End Time" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_actualSize" Label="Group Size" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int?" @bind-Value="_providerId" Label="Provider"
+                           Clearable="true" ToStringFunc="ProviderLabel">
+                    @foreach (var p in _providers)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)p.Id)">@p.LastName, @p.FirstName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string?" @bind-Value="_gDistrict" Label="G. District" Clearable="true">
+                    @foreach (var d in _gDistricts)
+                    {
+                        <MudSelectItem T="string?" Value="@d.DistrictCode">@d.DistrictCode</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string?" @bind-Value="_language" Label="Language" Clearable="true">
+                    @foreach (var l in _languages)
+                    {
+                        <MudSelectItem T="string?" Value="@l.Name">@l.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_mandateStart"
+                               Label="Approval Start Date"
+                               Clearable="true"
+                               DateFormat="MM/dd/yyyy" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_mandateEnd"
+                               Label="Approval End Date"
+                               Clearable="true"
+                               DateFormat="MM/dd/yyyy" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="int?" @bind-Value="_entryId" Label="Approval ID" Clearable="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        @if (_validationErrors.Count > 0)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="flex-grow-1 mr-2" Style="text-align:left;">
+                @foreach (var err in _validationErrors)
+                {
+                    <div>@err</div>
+                }
+            </MudAlert>
+        }
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    /// <summary>Single-row edit — pre-fills all fields.</summary>
+    [Parameter] public OperationsDTO? Item { get; set; }
+
+    /// <summary>True when editing multiple rows (blank = don't change).</summary>
+    [Parameter] public bool IsBulk { get; set; }
+
+    /// <summary>Number of selected rows shown in the bulk banner.</summary>
+    [Parameter] public int SelectedCount { get; set; }
+
+    private OperationsDTO? _item;
+
+    private DateTime? _dateOfService;
+    private string?   _startTime;
+    private string?   _endTime;
+    private string?   _actualSize;
+    private int?      _providerId;
+    private string?   _gDistrict;
+    private string?   _language;
+    private DateTime? _mandateStart;
+    private DateTime? _mandateEnd;
+    private int?      _entryId;
+
+    private List<ProviderDTO>  _providers  = [];
+    private List<GDistrictDTO> _gDistricts = [];
+    private List<LanguageDTO>  _languages  = [];
+
+    private readonly OperationEditValidator _validator = new();
+    private List<string> _validationErrors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _item = Item;
+
+        if (!IsBulk && _item != null)
+        {
+            _dateOfService = _item.DateOfService;
+            _startTime     = _item.StartTime;
+            _endTime       = _item.EndTime;
+            _actualSize    = _item.ActualSize;
+            _providerId    = _item.ProviderId;
+            _gDistrict     = _item.GDistrict;
+            _language      = _item.LanguageProvided;
+            _mandateStart  = _item.MandateStart;
+            _mandateEnd    = _item.MandateEnd;
+            _entryId       = _item.EntryId;
+        }
+
+        var allRequest = new PagedRequest("", [], PageSize: -1);
+        var provTask   = ProviderService.GetPagedAsync(allRequest);
+        var distTask   = GDistrictService.GetPagedAsync(allRequest);
+        var langTask   = LanguageService.GetPagedAsync(allRequest);
+
+        await Task.WhenAll(provTask, distTask, langTask);
+
+        _providers  = (await provTask).Items.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();
+        _gDistricts = (await distTask).Items.OrderBy(d => d.DistrictCode).ToList();
+        _languages  = (await langTask).Items.OrderBy(l => l.Name).ToList();
+    }
+
+    private string ProviderLabel(int? id)
+    {
+        if (id == null) return "";
+        var p = _providers.FirstOrDefault(x => x.Id == id);
+        return p == null ? id.ToString()! : $"{p.LastName}, {p.FirstName}";
+    }
+
+    private async Task Save()
+    {
+        var dto = new OperationEditDTO
+        {
+            DateOfService    = _dateOfService,
+            StartTime        = _startTime,
+            EndTime          = _endTime,
+            ActualSize       = _actualSize,
+            ProviderId       = _providerId,
+            GDistrict        = _gDistrict,
+            LanguageProvided = _language,
+            MandateStart     = _mandateStart,
+            MandateEnd       = _mandateEnd,
+            EntryId          = _entryId,
+            // Single-row: write ALL fields (null = clear). Bulk: only non-null fields applied.
+            ApplyAll = !IsBulk,
+        };
+
+        var result = await _validator.ValidateAsync(dto);
+        if (!result.IsValid)
+        {
+            _validationErrors = result.Errors.Select(e => e.ErrorMessage).ToList();
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(dto));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

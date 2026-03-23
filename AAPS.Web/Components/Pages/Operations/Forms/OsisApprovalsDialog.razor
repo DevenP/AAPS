@@ -1,0 +1,63 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+
+<MudDialog>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Class="mb-2" />
+        }
+        else if (_mandates.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">No mandates found for this student.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="_mandates" Dense="true" Striped="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Approval ID</MudTh>
+                    <MudTh>Service Type</MudTh>
+                    <MudTh>School</MudTh>
+                    <MudTh>Language</MudTh>
+                    <MudTh>Frequency</MudTh>
+                    <MudTh>Duration</MudTh>
+                    <MudTh>Group</MudTh>
+                    <MudTh>Start</MudTh>
+                    <MudTh>End</MudTh>
+                    <MudTh>Assignment IDs</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.EntryId</MudTd>
+                    <MudTd>@context.ServiceType</MudTd>
+                    <MudTd>@context.AdminDbn</MudTd>
+                    <MudTd>@context.Language</MudTd>
+                    <MudTd>@context.RemainingFrequency</MudTd>
+                    <MudTd>@context.Duration</MudTd>
+                    <MudTd>@context.GroupSize</MudTd>
+                    <MudTd>@context.MandateStart?.ToString("MM/dd/yyyy")</MudTd>
+                    <MudTd>@context.MandateEnd?.ToString("MM/dd/yyyy")</MudTd>
+                    <MudTd Style="max-width:300px; white-space:normal; word-break:break-word;">@context.AssignIds</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string StudentId { get; set; } = "";
+    [Parameter] public string StudentName { get; set; } = "";
+    [Inject] ISesiService SesiService { get; set; } = default!;
+
+    private List<OsisMandateDTO> _mandates = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _mandates = await SesiService.GetOsisMandatesAsync(StudentId);
+        _loading = false;
+    }
+}

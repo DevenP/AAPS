@@ -1,0 +1,59 @@
+@page "/voucherpayments"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IPaymentService PaymentService
+
+<GenericGrid TItem="PaymentDTO"
+             Title="Voucher Payments"
+             Columns="@(new[] { "VoucherId", "Voucher", "StudentId", "Ssn", "Provider", "DateOfService", "StartTime", "VoucherAmount", "SesisId" })"
+             GetData="PaymentService.GetPagedAsync"
+             DefaultSortLabel="DateOfService">
+
+    <HeaderContent>
+        <GridCell TItem="PaymentDTO" Column="VoucherId" IsHeader="true">
+            <MudTableSortLabel SortLabel="VoucherId" T="PaymentDTO">ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="Voucher" IsHeader="true">
+            <MudTableSortLabel SortLabel="Voucher" T="PaymentDTO">Voucher</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="PaymentDTO">Student ID</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="Ssn" IsHeader="true">SSN</GridCell>
+        <GridCell TItem="PaymentDTO" Column="Provider" IsHeader="true">
+            <MudTableSortLabel SortLabel="Provider" T="PaymentDTO">Provider</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="DateOfService" IsHeader="true">
+            <MudTableSortLabel SortLabel="DateOfService" T="PaymentDTO">Date of Service</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="StartTime" IsHeader="true">Start Time</GridCell>
+        <GridCell TItem="PaymentDTO" Column="VoucherAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="VoucherAmount" T="PaymentDTO">Amount</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="SesisId" IsHeader="true">
+            <MudTableSortLabel SortLabel="SesisId" T="PaymentDTO">Sesis ID</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="p">
+        <GridCell TItem="PaymentDTO" Column="VoucherId">@p.VoucherId</GridCell>
+        <GridCell TItem="PaymentDTO" Column="Voucher">
+            <span style="font-family:monospace;">@p.Voucher</span>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="StudentId">@p.StudentId</GridCell>
+        <GridCell TItem="PaymentDTO" Column="Ssn">@p.Ssn</GridCell>
+        <GridCell TItem="PaymentDTO" Column="Provider">
+            <MudTooltip Text="@p.Provider">@p.Provider</MudTooltip>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="DateOfService">
+            @p.DateOfService?.ToString("MM/dd/yyyy")
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="StartTime">@p.StartTime</GridCell>
+        <GridCell TItem="PaymentDTO" Column="VoucherAmount">
+            <MudText Color="Color.Success" Style="font-weight:600;">@p.VoucherAmount?.ToString("C2")</MudText>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="SesisId">@p.SesisId</GridCell>
+    </RowTemplate>
+
+</GenericGrid>

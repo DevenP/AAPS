@@ -183,6 +183,14 @@ public class ProviderService : IProviderService
             Pets = dto.HasPets
         };
 
+        // Duplicate SSN check (mirrors theProvider_Ssn proc: other providers with same SSN)
+        if (!string.IsNullOrWhiteSpace(entity.Ssn))
+        {
+            var duplicate = await db.Providers.AnyAsync(p => p.Ssn == entity.Ssn, ct);
+            if (duplicate)
+                throw new InvalidOperationException("Another provider already has this SSN.");
+        }
+
         db.Providers.Add(entity);
 
         await db.SaveChangesAsync(ct);
@@ -203,7 +211,15 @@ public class ProviderService : IProviderService
         // (In a bigger app, use AutoMapper, but manual is safer for now)
         provider.FirstName = dto.FirstName;
         provider.LastName = dto.LastName;
-        provider.Ssn = StripSsn(dto.Ssn);
+        var newSsn = StripSsn(dto.Ssn);
+        // Duplicate SSN check — excludes this provider (mirrors theProvider_Ssn proc)
+        if (!string.IsNullOrWhiteSpace(newSsn))
+        {
+            var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn == newSsn, ct);
+            if (duplicate)
+                throw new InvalidOperationException("Another provider already has this SSN.");
+        }
+        provider.Ssn = newSsn;
         provider.Email = dto.Email;
         provider.Phone = StripPhone(dto.Phone);
         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;

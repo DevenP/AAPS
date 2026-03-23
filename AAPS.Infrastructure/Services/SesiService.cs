@@ -122,6 +122,8 @@ public class SesiService : ISesiService
             pPaid = dto.ProviderPaidDate,
             Overlap = dto.IsOverlap,
             Voucher = dto.Voucher,
+            VoucherAmount = dto.VoucherAmount,
+            VoucherBalancePaid = dto.VoucherBalancePaid,
             OverMandate = dto.IsOverMandate,
             OverDuration = dto.IsOverDuration,
             UnderGroup = dto.IsUnderGroup
@@ -185,6 +187,8 @@ public class SesiService : ISesiService
         entity.pPaid = dto.ProviderPaidDate;
         entity.Overlap = dto.IsOverlap;
         entity.Voucher = dto.Voucher;
+        entity.VoucherAmount = dto.VoucherAmount;
+        entity.VoucherBalancePaid = dto.VoucherBalancePaid;
         entity.OverMandate = dto.IsOverMandate;
         entity.OverDuration = dto.IsOverDuration;
         entity.UnderGroup = dto.IsUnderGroup;
@@ -317,6 +321,7 @@ public class SesiService : ISesiService
                 ProviderFirstName = s.Provider_First_Name,
                 AssignId = va != null ? va.Assign_Id : null,
                 MandateStart = m != null ? m.MandateStart : null,
+                MandateEnd   = m != null ? m.MandateEnd   : null,
 
                 // Masked SSN
                 Ssn = (p != null && p.Ssn != null && p.Ssn.Length >= 4)
@@ -339,6 +344,311 @@ public class SesiService : ISesiService
 
         // performSearch: false — search was already applied above on the raw Seses entity
         return await query.ToPagedResultAsync(request, ct, performSearch: false);
+    }
+
+    public async Task BulkUpdateAsync(List<int> ids, OperationEditDTO dto, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var entities = await db.Seses.Where(s => ids.Contains(s.Sesis_Id)).ToListAsync(ct);
+        _logger.LogInformation("BulkUpdate: {Count} sesi records", entities.Count);
+
+        // Pre-fetch lookup data needed for rate recalculation
+        bool ratesNeeded    = dto.ApplyAll || dto.ProviderId.HasValue || dto.GDistrict != null || dto.LanguageProvided != null;
+        bool bRatesNeeded   = dto.ApplyAll || dto.GDistrict != null || dto.LanguageProvided != null;
+        bool providerNeeded = dto.ProviderId.HasValue;
+
+        var providerRates = ratesNeeded
+            ? await db.ProviderRates.AsNoTracking().Where(r => r.Active == true).ToListAsync(ct)
+            : [];
+
+        var billingRates = bRatesNeeded
+            ? await db.BillingRates.AsNoTracking().Where(r => r.Active == true).ToListAsync(ct)
+            : [];
+
+        Provider? newProvider = providerNeeded
+            ? await db.Providers.AsNoTracking().FirstOrDefaultAsync(p => p.Provider_Id == dto.ProviderId, ct)
+            : null;
+
+        foreach (var e in entities)
+        {
+            // CSE='2' — date only, no recalc
+            if (dto.ApplyAll || dto.DateOfService.HasValue)
+                e.date_of_Service = dto.DateOfService;
+
+            // CSE='3' — normalize time, recalc Duration + amounts
+            if (dto.ApplyAll || dto.StartTime != null)
+            {
+                e.Start_Time = NormalizeTime(dto.StartTime);
+                var dur = CalcDurationMinutes(e.date_of_Service, e.Start_Time, e.End_Time);
+                if (dur.HasValue) { e.Duration = dur.Value.ToString(); RecalcAmounts(e, dur.Value); }
+            }
+
+            // CSE='4' — normalize time, recalc Duration + amounts
+            if (dto.ApplyAll || dto.EndTime != null)
+            {
+                e.End_Time = NormalizeTime(dto.EndTime);
+                var dur = CalcDurationMinutes(e.date_of_Service, e.Start_Time, e.End_Time);
+                if (dur.HasValue) { e.Duration = dur.Value.ToString(); RecalcAmounts(e, dur.Value); }
+            }
+
+            // CSE='5' — recalc amounts using existing Duration
+            if (dto.ApplyAll || dto.ActualSize != null)
+            {
+                e.Actual_Size = dto.ActualSize;
+                if (int.TryParse(e.Duration, out var dur) && dur > 0)
+                    RecalcAmounts(e, dur);
+            }
+
+            // CSE='6' — denormalize name, lookup pRate, recalc pAmount
+            if (dto.ApplyAll || dto.ProviderId.HasValue)
+            {
+                e.Provider_Id = dto.ProviderId;
+                if (dto.ProviderId.HasValue)
+                {
+                    e.Provider_Last_Name  = newProvider?.LastName;
+                    e.Provider_First_Name = newProvider?.FirstName;
+                    var pr = providerRates.FirstOrDefault(r =>
+                        r.Provider_Id == dto.ProviderId &&
+                        r.ServiceType == e.Service_Type &&
+                        r.District    == e.GDistrict &&
+                        r.Lang        == e.Language_Provided);
+                    e.pRate = pr?.Rate;
+                    if (e.pRate.HasValue && int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
+                        e.pAmount = e.pRate.Value * dur / 60.0m / sz;
+                }
+                else
+                {
+                    // ApplyAll + null = clear provider billing
+                    e.Provider_Last_Name  = null;
+                    e.Provider_First_Name = null;
+                    e.pRate   = null;
+                    e.pAmount = null;
+                }
+            }
+
+            // CSE='10' — lookup pRate + bRate, recalc all amounts
+            if (dto.ApplyAll || dto.GDistrict != null)
+            {
+                e.GDistrict = dto.GDistrict;
+                var pr = providerRates.FirstOrDefault(r =>
+                    r.Provider_Id == e.Provider_Id &&
+                    r.ServiceType == e.Service_Type &&
+                    r.District    == dto.GDistrict &&
+                    r.Lang        == e.Language_Provided);
+                var br = billingRates.FirstOrDefault(r =>
+                    r.ServiceType == e.Service_Type &&
+                    r.District    == dto.GDistrict &&
+                    r.Lang        == e.Language_Provided);
+                e.pRate = pr?.Rate;
+                e.bRate = br?.Rate;
+                if (int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
+                {
+                    if (e.bRate.HasValue) e.bAmount = e.bRate.Value * dur / 60.0m / sz;
+                    if (e.pRate.HasValue) e.pAmount = e.pRate.Value * dur / 60.0m / sz;
+                }
+            }
+
+            // CSE='12' — lookup pRate + bRate, recalc all amounts
+            if (dto.ApplyAll || dto.LanguageProvided != null)
+            {
+                e.Language_Provided = dto.LanguageProvided;
+                var pr = providerRates.FirstOrDefault(r =>
+                    r.Provider_Id == e.Provider_Id &&
+                    r.ServiceType == e.Service_Type &&
+                    r.District    == e.GDistrict &&
+                    r.Lang        == dto.LanguageProvided);
+                var br = billingRates.FirstOrDefault(r =>
+                    r.ServiceType == e.Service_Type &&
+                    r.District    == e.GDistrict &&
+                    r.Lang        == dto.LanguageProvided);
+                e.pRate = pr?.Rate;
+                e.bRate = br?.Rate;
+                if (int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
+                {
+                    if (e.bRate.HasValue) e.bAmount = e.bRate.Value * dur / 60.0m / sz;
+                    if (e.pRate.HasValue) e.pAmount = e.pRate.Value * dur / 60.0m / sz;
+                }
+            }
+
+            // CSE='9' — link Entry_Id (simplified; proc validates student/group match)
+            if (dto.ApplyAll || dto.EntryId.HasValue)
+                e.Entry_Id = dto.EntryId;
+        }
+
+        // CSE='11' — update Mandates table for MandateStart (also sets First_Attend_Date)
+        // CSE='14' — update Mandates table for MandateEnd (normalized to 23:59)
+        if (dto.ApplyAll || dto.MandateStart.HasValue || dto.MandateEnd.HasValue)
+        {
+            var entryIds = entities
+                .Where(e => e.Entry_Id.HasValue)
+                .Select(e => e.Entry_Id!.Value)
+                .Distinct()
+                .ToList();
+
+            if (entryIds.Count > 0)
+            {
+                var mandates = await db.Mandates.Where(m => entryIds.Contains(m.Entry_Id)).ToListAsync(ct);
+                foreach (var m in mandates)
+                {
+                    if (dto.ApplyAll || dto.MandateStart.HasValue)
+                    {
+                        m.MandateStart      = dto.MandateStart;
+                        m.First_Attend_Date = dto.MandateStart;
+                    }
+                    if (dto.ApplyAll || dto.MandateEnd.HasValue)
+                    {
+                        // Proc normalizes: CONVERT(char(10),@MandateEnd,1) + ' 23:59'
+                        m.MandateEnd = dto.MandateEnd.HasValue
+                            ? dto.MandateEnd.Value.Date.AddHours(23).AddMinutes(59)
+                            : null;
+                    }
+                }
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        _logger.LogInformation("BulkUpdate complete");
+    }
+
+    // CSE='15' — set VoucherBalancePaid = now, only if currently null
+    public async Task BulkMarkVoucherBalancePaidAsync(List<int> ids, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var entities = await db.Seses
+            .Where(s => ids.Contains(s.Sesis_Id) && s.VoucherBalancePaid == null)
+            .ToListAsync(ct);
+        _logger.LogInformation("BulkMarkVoucherBalancePaid: {Count} sesi records", entities.Count);
+        var now = DateTime.Now;
+        foreach (var e in entities)
+            e.VoucherBalancePaid = now;
+        await db.SaveChangesAsync(ct);
+    }
+
+    // CSE='16' — clear VoucherBalancePaid, only where VoucherAmount <> bAmount and it is currently set
+    public async Task BulkUnmarkVoucherBalancePaidAsync(List<int> ids, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var entities = await db.Seses
+            .Where(s => ids.Contains(s.Sesis_Id) &&
+                        s.VoucherBalancePaid != null &&
+                        s.VoucherAmount != s.bAmount)
+            .ToListAsync(ct);
+        _logger.LogInformation("BulkUnmarkVoucherBalancePaid: {Count} sesi records", entities.Count);
+        foreach (var e in entities)
+            e.VoucherBalancePaid = null;
+        await db.SaveChangesAsync(ct);
+    }
+
+    // Pads single-digit hour: "9:30 AM" → "09:30 AM" (mirrors proc: IF SUBSTRING(@Time,2,1)=':')
+    private static string? NormalizeTime(string? time) =>
+        time != null && time.Length >= 2 && time[1] == ':' ? "0" + time : time;
+
+    // Minutes between start and end on the date of service
+    private static int? CalcDurationMinutes(DateTime? dos, string? startTime, string? endTime)
+    {
+        if (!dos.HasValue || string.IsNullOrEmpty(startTime) || string.IsNullOrEmpty(endTime))
+            return null;
+        var date = dos.Value.ToString("MM/dd/yyyy");
+        return DateTime.TryParse($"{date} {startTime}", out var s) &&
+               DateTime.TryParse($"{date} {endTime}",   out var e)
+            ? (int)(e - s).TotalMinutes
+            : null;
+    }
+
+    // Rate * Duration(min) / 60 / GroupSize — matches proc formula for bAmount/pAmount
+    private static void RecalcAmounts(Sesi e, int durationMinutes)
+    {
+        if (!int.TryParse(e.Actual_Size, out var size) || size <= 0) return;
+        if (e.bRate.HasValue) e.bAmount = e.bRate.Value * durationMinutes / 60.0m / size;
+        if (e.pRate.HasValue) e.pAmount = e.pRate.Value * durationMinutes / 60.0m / size;
+    }
+
+    public async Task BulkUnlinkApprovalIdAsync(List<int> ids, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var entities = await db.Seses.Where(s => ids.Contains(s.Sesis_Id)).ToListAsync(ct);
+        _logger.LogInformation("BulkUnlinkApprovalId: {Count} sesi records", entities.Count);
+
+        foreach (var e in entities)
+            e.Entry_Id = null;
+
+        await db.SaveChangesAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        _logger.LogInformation("BulkUnlinkApprovalId complete");
+    }
+
+    public async Task<int> BulkDeleteProviderBillingAsync(List<int> ids, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        // Only delete rows with no approval linked (Entry_Id IS NULL) — mirrors WinForms behaviour
+        var entities = await db.Seses
+            .Where(s => ids.Contains(s.Sesis_Id) && s.Entry_Id == null)
+            .ToListAsync(ct);
+        _logger.LogInformation("BulkDeleteProviderBilling: {Count} records eligible (Entry_Id IS NULL)", entities.Count);
+
+        db.Seses.RemoveRange(entities);
+        await db.SaveChangesAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        _logger.LogInformation("BulkDeleteProviderBilling complete");
+        return entities.Count;
+    }
+
+    // Mirrors Mandates_By_Osis:
+    // Returns all mandates for a student with STRING_AGG of "Provider: AssignId" pairs per mandate.
+    // The STRING_AGG is replicated in-memory after two small bulk queries.
+    public async Task<List<OsisMandateDTO>> GetOsisMandatesAsync(string studentId, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+
+        var mandates = await db.Mandates.AsNoTracking()
+            .Where(m => m.Student_ID == studentId)
+            .OrderBy(m => m.Entry_Id)
+            .ToListAsync(ct);
+
+        if (mandates.Count == 0)
+            return [];
+
+        // Fetch all VendorPortal rows with a non-null pSsn and Assign_Id
+        var vpRaw = await db.VendorPortals.AsNoTracking()
+            .Where(v => v.Entry_Id != null && v.pSsn != null && v.Assign_Id != null)
+            .Select(v => new { v.Entry_Id, v.pSsn, AssignId = v.Assign_Id!.Trim() })
+            .ToListAsync(ct);
+
+        // Fetch all providers with an SSN (strip dashes to match pSsn format)
+        var provRaw = await db.Providers.AsNoTracking()
+            .Where(p => p.Ssn != null)
+            .Select(p => new { p.LastName, p.FirstName, SsnStripped = p.Ssn!.Replace("-", "") })
+            .ToListAsync(ct);
+
+        var provBySsn = provRaw
+            .GroupBy(p => p.SsnStripped)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Group by Entry_Id and build the aggregated string (mirrors STRING_AGG)
+        var vpByEntry = vpRaw
+            .Where(v => provBySsn.ContainsKey(v.pSsn!))
+            .GroupBy(v => v.Entry_Id!.Value)
+            .ToDictionary(g => g.Key, g =>
+                string.Join("; ", g.Select(v =>
+                {
+                    var p = provBySsn[v.pSsn!];
+                    return $"{p.LastName}, {p.FirstName}: {v.AssignId}";
+                })));
+
+        return mandates.Select(m => new OsisMandateDTO
+        {
+            EntryId          = m.Entry_Id,
+            ServiceType      = m.Service_Type,
+            AdminDbn         = m.Admin_DBN,
+            Language         = m.Lang,
+            RemainingFrequency = m.Remaining_Freq,
+            Duration         = m.Dur,
+            GroupSize        = m.Grp_Size,
+            MandateStart     = m.MandateStart,
+            MandateEnd       = m.MandateEnd,
+            AssignIds        = vpByEntry.TryGetValue(m.Entry_Id, out var agg) ? agg : null
+        }).ToList();
     }
 
     private static readonly Expression<Func<Sesi, SesiDTO>> ToDTO = s => new SesiDTO
@@ -385,6 +695,8 @@ public class SesiService : ISesiService
         ProviderPaidDate = s.pPaid,
         IsOverlap = s.Overlap ?? false,
         Voucher = s.Voucher,
+        VoucherAmount = s.VoucherAmount,
+        VoucherBalancePaid = s.VoucherBalancePaid,
         IsOverMandate = s.OverMandate ?? false,
         IsOverDuration = s.OverDuration ?? false,
         IsUnderGroup = s.UnderGroup ?? false

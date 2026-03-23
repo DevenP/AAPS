@@ -1,15 +1,82 @@
-﻿@page "/operations"
+@page "/operations"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Paging
 @using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Operations.Forms
 @using AAPS.Web.Components.Shared
 @inject ISesiService SesiService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject ILogger<OperationsList> Logger
 
 <GenericGrid TItem="OperationsDTO"
+             @ref="_grid"
              Title="Operations Registry"
-             Columns="@(new[] { "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
-             GetData="SesiService.GetOperationsPagedAsync">
+             Columns="@(new[] { "Checkbox", "Actions", "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
+             GetData="SesiService.GetOperationsPagedAsync"
+             OnFilterRemoved="OnFilterRemoved">
+
+    <CustomActionContent>
+        @if (_selectedIds.Count > 0)
+        {
+            <MudText Typo="Typo.caption" Class="mr-2 align-self-center">
+                @_selectedIds.Count selected
+            </MudText>
+
+            @if (_busy)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+
+            <MudMenu Label="Actions"
+                     Variant="Variant.Filled"
+                     Color="Color.Primary"
+                     EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                     Size="Size.Small"
+                     Class="mr-2"
+                     Disabled="_busy">
+                <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                             OnClick="OpenBulkEditDialog">
+                    Edit Fields
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.LinkOff"
+                             OnClick="ConfirmUnlinkApprovalId">
+                    Unlink Approval ID
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.PersonOff"
+                             IconColor="Color.Error"
+                             OnClick="ConfirmDeleteProviderBilling">
+                    <MudText Color="Color.Error">Delete Provider Billing</MudText>
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.CheckCircle"
+                             OnClick="ConfirmMarkVoucherBalancePaid">
+                    Mark Voucher Balance Paid
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                             OnClick="ConfirmUnmarkVoucherBalancePaid">
+                    Unmark Voucher Balance Paid
+                </MudMenuItem>
+            </MudMenu>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Deselect"
+                           Title="Clear selection"
+                           Size="Size.Small"
+                           OnClick="ClearSelection" />
+        }
+    </CustomActionContent>
 
     <HeaderContent>
+        <MudTh Style="width:40px; padding: 0 8px;">
+            <MudCheckBox T="bool"
+                         Value="_allSelected"
+                         ValueChanged="ToggleSelectAll"
+                         Color="Color.Primary"
+                         Size="Size.Small" />
+        </MudTh>
+        <MudTh Style="width:40px; padding: 0 8px;"></MudTh>
+
         <GridCell TItem="OperationsDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="OperationsDTO">ID</MudTableSortLabel>
         </GridCell>
@@ -41,6 +108,27 @@
     </HeaderContent>
 
     <RowTemplate Context="op">
+        <MudTd Style="width:40px; padding: 0 8px;">
+            <MudCheckBox T="bool"
+                         Value="_selectedIds.Contains(op.Id)"
+                         ValueChanged="@(v => ToggleRow(op.Id, v))"
+                         Color="Color.Primary"
+                         Size="Size.Small" />
+        </MudTd>
+
+        <MudTd Style="width:80px; padding: 0 4px;">
+            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           Title="Edit Record"
+                           OnClick="@(() => OpenSingleEditDialog(op))" />
+            <MudIconButton Icon="@Icons.Material.Filled.AssignmentInd"
+                           Size="Size.Small"
+                           Color="Color.Secondary"
+                           Title="OSIS Approvals"
+                           OnClick="@(() => OpenOsisDialog(op))" />
+        </MudTd>
+
         <GridCell TItem="OperationsDTO" Column="Id">@op.Id</GridCell>
 
         @* Combined Alert Icons Column *@
@@ -114,3 +202,260 @@
         <GridCell TItem="OperationsDTO" Column="Duration">@op.Duration</GridCell>
     </RowTemplate>
 </GenericGrid>
+
+@code {
+    private GenericGrid<OperationsDTO> _grid = default!;
+
+    // ── Busy state ────────────────────────────────────────────────────────────
+    private bool _busy = false;
+
+    // ── Selection state ──────────────────────────────────────────────────────
+    private HashSet<int> _selectedIds = new();
+    private bool _allSelected = false;
+
+    private void ToggleRow(int id, bool selected)
+    {
+        if (selected) _selectedIds.Add(id);
+        else _selectedIds.Remove(id);
+        _allSelected = false;
+    }
+
+    private async Task ToggleSelectAll(bool selected)
+    {
+        _allSelected = selected;
+        if (!selected)
+        {
+            _selectedIds.Clear();
+            return;
+        }
+
+        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters, PageSize: -1);
+        var result = await SesiService.GetOperationsPagedAsync(request);
+        _selectedIds = result.Items.Select(i => i.Id).ToHashSet();
+    }
+
+    private void ClearSelection()
+    {
+        _selectedIds.Clear();
+        _allSelected = false;
+    }
+
+    private Task OnFilterRemoved(string key)
+    {
+        ClearSelection();
+        return Task.CompletedTask;
+    }
+
+    // ── OSIS Approvals ───────────────────────────────────────────────────────
+    private async Task OpenOsisDialog(OperationsDTO op)
+    {
+        var parameters = new DialogParameters<OsisApprovalsDialog>
+        {
+            { x => x.StudentId,   op.StudentId ?? "" },
+            { x => x.StudentName, $"{op.StudentLastName}, {op.StudentFirstName}" }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true };
+        await DialogService.ShowAsync<OsisApprovalsDialog>(
+            $"OSIS Approvals — {op.StudentId} · {op.StudentLastName}, {op.StudentFirstName}",
+            parameters, options);
+    }
+
+    // ── Single-row edit ──────────────────────────────────────────────────────
+    private async Task OpenSingleEditDialog(OperationsDTO item)
+    {
+        var parameters = new DialogParameters<OperationEditDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsBulk, false },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<OperationEditDialog>("Edit Record", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled) return;
+        if (result.Data is OperationEditDTO dto)
+            await ApplyEdit([item.Id], dto);
+    }
+
+    // ── Bulk edit ────────────────────────────────────────────────────────────
+    private async Task OpenBulkEditDialog()
+    {
+        var ids = _selectedIds.ToList();
+        var parameters = new DialogParameters<OperationEditDialog>
+        {
+            { x => x.IsBulk, true },
+            { x => x.SelectedCount, ids.Count },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<OperationEditDialog>("Edit Fields", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled) return;
+        if (result.Data is OperationEditDTO dto)
+            await ApplyEdit(ids, dto);
+    }
+
+    private async Task ApplyEdit(List<int> ids, OperationEditDTO dto)
+    {
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await SesiService.BulkUpdateAsync(ids, dto);
+            Snackbar.Add($"{ids.Count} record(s) updated.", Severity.Success);
+            ClearSelection();
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error bulk-updating operations records");
+            Snackbar.Add($"Error saving: {ex.Message.Split('\n')[0].Trim()}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // ── Unlink Approval ID ───────────────────────────────────────────────────
+    private async Task ConfirmUnlinkApprovalId()
+    {
+        var ids = _selectedIds.ToList();
+        var count = ids.Count;
+
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "CONFIRMATION DIALOG.",
+            $"PLEASE CONFIRM TO PROCEED — this will unlink the Approval ID on {count} record{(count == 1 ? "" : "s")}.",
+            yesText: "Yes, Unlink",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await SesiService.BulkUnlinkApprovalIdAsync(ids);
+            ClearSelection();
+            Snackbar.Add($"Approval ID unlinked on {count} record(s).", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error unlinking approval IDs");
+            Snackbar.Add($"Error: {ex.Message.Split('\n')[0].Trim()}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // ── Mark / Unmark Voucher Balance Paid ───────────────────────────────────
+    private async Task ConfirmMarkVoucherBalancePaid()
+    {
+        var ids = _selectedIds.ToList();
+        var count = ids.Count;
+
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "CONFIRMATION DIALOG.",
+            $"PLEASE CONFIRM TO PROCEED — this will mark Voucher Balance Paid on {count} record{(count == 1 ? "" : "s")} (only where not already set).",
+            yesText: "Yes, Mark",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await SesiService.BulkMarkVoucherBalancePaidAsync(ids);
+            ClearSelection();
+            Snackbar.Add($"Voucher Balance Paid marked on {count} record(s).", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error marking voucher balance paid");
+            Snackbar.Add($"Error: {ex.Message.Split('\n')[0].Trim()}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ConfirmUnmarkVoucherBalancePaid()
+    {
+        var ids = _selectedIds.ToList();
+        var count = ids.Count;
+
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "CONFIRMATION DIALOG.",
+            $"PLEASE CONFIRM TO PROCEED — this will clear Voucher Balance Paid on {count} record{(count == 1 ? "" : "s")} (only where VoucherAmount differs from billed amount).",
+            yesText: "Yes, Unmark",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await SesiService.BulkUnmarkVoucherBalancePaidAsync(ids);
+            ClearSelection();
+            Snackbar.Add($"Voucher Balance Paid cleared on {count} record(s).", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error unmarking voucher balance paid");
+            Snackbar.Add($"Error: {ex.Message.Split('\n')[0].Trim()}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // ── Delete Provider Billing ──────────────────────────────────────────────
+    private async Task ConfirmDeleteProviderBilling()
+    {
+        var ids = _selectedIds.ToList();
+        var count = ids.Count;
+
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "CONFIRMATION DIALOG.",
+            $"PLEASE CONFIRM TO PROCEED — this will permanently delete {count} selected record{(count == 1 ? "" : "s")} that have no Approval ID linked. Records with an Approval ID will be skipped.",
+            yesText: "Yes, Delete",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            var deleted = await SesiService.BulkDeleteProviderBillingAsync(ids);
+            ClearSelection();
+            var skipped = count - deleted;
+
+            if (deleted > 0)
+                Snackbar.Add($"{deleted} record{(deleted == 1 ? "" : "s")} deleted.", Severity.Success);
+
+            if (skipped > 0)
+                Snackbar.Add($"{skipped} record{(skipped == 1 ? " was" : "s were")} skipped — records with an Approval ID cannot be deleted.", Severity.Warning);
+
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting provider billing");
+            Snackbar.Add($"Error: {ex.Message.Split('\n')[0].Trim()}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

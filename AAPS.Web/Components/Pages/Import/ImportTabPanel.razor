@@ -97,8 +97,14 @@
         @* Preview tabs: Valid / Skipped *@
         <MudTabs Elevation="0" Rounded="false" @bind-ActivePanelIndex="_previewTab" Style="flex:1; min-height:0; display:flex; flex-direction:column;">
             <MudTabPanel Text="@($"Valid Rows ({_preview.ValidRows.Count})")" Style="flex:1; min-height:0;">
+                @if (_preview.ValidRows.Count > PreviewLimit)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                        Preview limited to the first @PreviewLimit rows. All @_preview.ValidRows.Count rows will be imported.
+                    </MudAlert>
+                }
                 <div style="flex:1; min-height:0; overflow:auto; height:calc(100vh - 380px);">
-                    <MudTable Items="@_preview.ValidRows"
+                    <MudTable Items="@_preview.ValidRows.Take(PreviewLimit).ToList()"
                               Dense="true"
                               Hover="true"
                               Striped="true"
@@ -129,7 +135,17 @@
             </MudTabPanel>
 
             <MudTabPanel Text="@($"Skipped Rows ({_preview.SkippedRows.Count})")" Style="flex:1; min-height:0;">
-                <div class="d-flex justify-end mb-2">
+                <div class="d-flex align-center justify-space-between mb-2">
+                    @if (_preview.SkippedRows.Count > PreviewLimit)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Style="flex:1; margin-right:8px;">
+                            Preview limited to the first @PreviewLimit skipped rows. Export to see all @_preview.SkippedRows.Count.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <span></span>
+                    }
                     <MudButton StartIcon="@Icons.Material.Filled.Download"
                                Variant="Variant.Outlined"
                                Color="Color.Warning"
@@ -140,7 +156,7 @@
                     </MudButton>
                 </div>
                 <div style="flex:1; min-height:0; overflow:auto; height:calc(100vh - 415px);">
-                    <MudTable Items="@_preview.SkippedRows"
+                    <MudTable Items="@_preview.SkippedRows.Take(PreviewLimit).ToList()"
                               Dense="true"
                               Hover="true"
                               Striped="true"
@@ -250,6 +266,8 @@
 </style>
 
 @code {
+    private const int PreviewLimit = 500;
+
     [Parameter] public ImportType ImportType { get; set; }
     [Parameter] public string Description { get; set; } = "";
     [Parameter] public string[] PreviewColumns { get; set; } = [];
