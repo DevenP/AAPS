@@ -128,7 +128,12 @@ namespace AAPS.Infrastructure.Common.Extensions
                 }
                 else if (IsNumericType(type))
                 {
-                    if (filter.Key.EndsWith("_From") && decimal.TryParse(filter.Value, out var fromNum))
+                    var val = filter.Value.ToLower();
+                    if (val == "null")
+                        source = source.Where(item => prop.GetValue(item) == null);
+                    else if (val == "notnull")
+                        source = source.Where(item => prop.GetValue(item) != null);
+                    else if (filter.Key.EndsWith("_From") && decimal.TryParse(filter.Value, out var fromNum))
                         source = source.Where(item => { var v = prop.GetValue(item); return v != null && Convert.ToDecimal(v) >= fromNum; });
                     else if (filter.Key.EndsWith("_To") && decimal.TryParse(filter.Value, out var toNum))
                         source = source.Where(item => { var v = prop.GetValue(item); return v != null && Convert.ToDecimal(v) <= toNum; });
@@ -233,7 +238,12 @@ namespace AAPS.Infrastructure.Common.Extensions
                 }
                 else if (IsNumericType(type))
                 {
-                    if (filter.Key.EndsWith("_From") && decimal.TryParse(filter.Value, out var fromNum))
+                    var val = filter.Value.ToLower();
+                    if (val == "null")
+                        query = query.Where($"{prop.Name} == null");
+                    else if (val == "notnull")
+                        query = query.Where($"{prop.Name} != null");
+                    else if (filter.Key.EndsWith("_From") && decimal.TryParse(filter.Value, out var fromNum))
                         query = query.Where($"{prop.Name} != null && {prop.Name} >= @0", fromNum);
                     else if (filter.Key.EndsWith("_To") && decimal.TryParse(filter.Value, out var toNum))
                         query = query.Where($"{prop.Name} != null && {prop.Name} <= @0", toNum);

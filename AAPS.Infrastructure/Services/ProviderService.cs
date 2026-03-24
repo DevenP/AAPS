@@ -162,7 +162,7 @@ public class ProviderService : IProviderService
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<int> AddAsync(ProviderDTO dto, CancellationToken ct = default)
+    public async Task<int> CreateAsync(ProviderDTO dto, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
         var entity = new Provider
@@ -235,7 +235,7 @@ public class ProviderService : IProviderService
         return await db.SaveChangesAsync(ct) > 0;
     }
 
-    public async Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts)
+    public async Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
         // EnableRetryOnFailure requires all transactions to go through CreateExecutionStrategy

@@ -41,7 +41,7 @@
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudSelect T="int?" @bind-Value="_providerId" Label="Provider"
-                           Clearable="true" ToStringFunc="ProviderLabel">
+                           Clearable="true" ToStringFunc="@ProviderLabel">
                     @foreach (var p in _providers)
                     {
                         <MudSelectItem T="int?" Value="@((int?)p.Id)">@p.LastName, @p.FirstName</MudSelectItem>

@@ -9,11 +9,11 @@ public interface IProviderService
 
     Task<ProviderDTO?> GetByIdAsync(int id, CancellationToken ct = default);
 
-    Task<int> AddAsync(ProviderDTO dto, CancellationToken ct = default);
+    Task<int> CreateAsync(ProviderDTO dto, CancellationToken ct = default);
 
     Task<bool> UpdateAsync(ProviderDTO dto, CancellationToken ct = default);
 
-    Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts);
+    Task<int> UpdateWithContactsAsync(ProviderDTO dto, List<ProviderContactDTO> contacts, CancellationToken ct = default);
 
     Task<bool> DeleteAsync(int id, CancellationToken ct = default);
 }

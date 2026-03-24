@@ -68,7 +68,7 @@ else
                     </div>
                     <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="@(_stats.UnbilledSessions > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
                 </div>
-                <MudLink Href="/billing" Typo="Typo.caption" Color="Color.Primary">View Billing</MudLink>
+                <MudLink Href="/billing?col_Billed=null&col_BillingRate=notnull&col_BilledPaidOn=null" Typo="Typo.caption" Color="Color.Primary">View Billing</MudLink>
             </MudPaper>
         </MudItem>
 
