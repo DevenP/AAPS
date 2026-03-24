@@ -1,0 +1,292 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+
+@inject IProviderService ProviderService
+@inject IServiceTypeService ServiceTypeService
+@inject IGDistrictService GDistrictService
+@inject ILanguageService LanguageService
+
+@if (Model != null)
+{
+    <div style="min-height: 470px;">
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+
+        @* Tab 1: General *@
+        <MudTabPanel Text="General" Icon="@Icons.Material.Filled.Assignment">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.StudentLastName"
+                                  Label="Student Last Name"
+                                  Validation="@Validator"
+                                  For="@(() => Model.StudentLastName)"
+                                  Required />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.StudentFirstName"
+                                  Label="Student First Name"
+                                  Validation="@Validator"
+                                  For="@(() => Model.StudentFirstName)"
+                                  Required />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.StudentId"
+                                  Label="Student ID (OSIS)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string?" @bind-Value="Model.Status"
+                               Label="Status"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="string?" Value="@("Open")">Open</MudSelectItem>
+                        <MudSelectItem T="string?" Value="@("Canceled")">Canceled</MudSelectItem>
+                        <MudSelectItem T="string?" Value="@("Completed")">Completed</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="ProviderDTO"
+                                     Value="_selectedProvider"
+                                     SearchFunc="@SearchProviders"
+                                     Label="Provider"
+                                     ToStringFunc="@(e => e == null ? null : $"{e.FirstName} {e.LastName}")"
+                                     Variant="Variant.Outlined"
+                                     ResetValueOnEmptyText="true"
+                                     CoerceText="true"
+                                     CoerceValue="false"
+                                     Clearable="true"
+                                     MaxItems="null"
+                                     ValueChanged="@OnProviderSelected"
+                                     Dense="true">
+                        <ItemTemplate Context="provider">
+                            @provider.LastName, @provider.FirstName
+                        </ItemTemplate>
+                    </MudAutocomplete>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string?" @bind-Value="Model.ServiceType"
+                               Label="Service Type"
+                               Clearable="true">
+                        @foreach (var st in _serviceTypes)
+                        {
+                            <MudSelectItem T="string?" Value="@st.Name">@st.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string?" @bind-Value="Model.District"
+                               Label="District"
+                               Clearable="true">
+                        @foreach (var d in _gDistricts)
+                        {
+                            <MudSelectItem T="string?" Value="@d.DistrictCode">@d.DistrictCode</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string?" @bind-Value="Model.Language"
+                               Label="Language"
+                               Clearable="true">
+                        @foreach (var l in _languages)
+                        {
+                            <MudSelectItem T="string?" Value="@l.Name">@l.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Model.Contact"
+                                  Label="Contact"
+                                  Clearable="true" />
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Tab 2: Student Info *@
+        <MudTabPanel Text="Student Info" Icon="@Icons.Material.Filled.Person">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.Phone"
+                                  Label="Phone"
+                                  Mask="@(new PatternMask("(000) 000-0000"))" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.Email" Label="Email" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.ParentLastName" Label="Parent Last Name" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.ParentFirstName" Label="Parent First Name" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Model.Memo"
+                                  Label="Memo"
+                                  Lines="3"
+                                  AutoGrow="true" />
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Tab 3: Dates *@
+        <MudTabPanel Text="Dates" Icon="@Icons.Material.Filled.CalendarMonth">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.EvalReceivedDate"
+                                   Label="Referral Received"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.AssignedDate"
+                                   Label="Assigned"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.AppointmentDate"
+                                   Label="Appointment"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.EvalDate"
+                                   Label="Eval Date"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.ReportReceivedDate"
+                                   Label="Report Received"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.ReportSubmittedDate"
+                                   Label="Report Submitted"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        @* Tab 4: Billing *@
+        <MudTabPanel Text="Billing" Icon="@Icons.Material.Filled.AttachMoney">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal?" @bind-Value="Model.BillingAmount"
+                                     Label="Billing Amount"
+                                     Validation="@Validator"
+                                     For="@(() => Model.BillingAmount)"
+                                     Format="C2"
+                                     Min="0m"
+                                     Step="0.01m" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.BilledDate"
+                                   Label="Billed Date"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Date="Model.BillPaidDate"
+                                   DateChanged="@OnBillPaidDateChanged"
+                                   Label="Bill Paid Date"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal?" @bind-Value="Model.ProviderPaidAmount"
+                                     Label="Provider Paid Amount"
+                                     Validation="@Validator"
+                                     For="@(() => Model.ProviderPaidAmount)"
+                                     Format="C2"
+                                     Min="0m"
+                                     Step="0.01m" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.ProviderPaidDate"
+                                   Label="Provider Paid Date"
+                                   Clearable="true"
+                                   DateFormat="MM/dd/yyyy" />
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+    </MudTabs>
+    </div>
+}
+
+@code {
+    [Parameter] public EvalDTO Model { get; set; } = default!;
+
+    [CascadingParameter]
+    public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; } = default!;
+
+    private ProviderDTO? _selectedProvider;
+    private List<ProviderDTO>    _providers    = [];
+    private List<ServiceTypeDTO> _serviceTypes = [];
+    private List<GDistrictDTO>   _gDistricts   = [];
+    private List<LanguageDTO>    _languages    = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Model == null) return;
+
+        try
+        {
+            var allRequest = new AAPS.Application.Common.Paging.PagedRequest(PageSize: -1);
+            var provTask = ProviderService.GetPagedAsync(allRequest);
+            var stTask   = ServiceTypeService.GetPagedAsync(allRequest);
+            var distTask = GDistrictService.GetPagedAsync(allRequest);
+            var langTask = LanguageService.GetPagedAsync(allRequest);
+
+            await Task.WhenAll(provTask, stTask, distTask, langTask);
+
+            _providers    = (await provTask).Items.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();
+            _serviceTypes = (await stTask).Items.OrderBy(s => s.Name).ToList();
+            _gDistricts   = (await distTask).Items.OrderBy(d => d.DistrictCode).ToList();
+            _languages    = (await langTask).Items.OrderBy(l => l.Name).ToList();
+        }
+        catch
+        {
+            // Lookup tables failed — selects will be empty but form still opens
+        }
+
+        // Pre-select the current provider when editing
+        if (Model.ProviderId.HasValue)
+            _selectedProvider = _providers.FirstOrDefault(p => p.Id == Model.ProviderId.Value);
+    }
+
+    private async Task<IEnumerable<ProviderDTO>> SearchProviders(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return _providers;
+
+        return _providers.Where(p =>
+            (p.FirstName ?? "").Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            (p.LastName  ?? "").Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            p.Id.ToString().Contains(value));
+    }
+
+    private void OnProviderSelected(ProviderDTO provider)
+    {
+        if (provider == null)
+        {
+            Model.ProviderId       = null;
+            Model.ProviderFirstName = null;
+            Model.ProviderLastName  = null;
+            _selectedProvider = null;
+            return;
+        }
+
+        Model.ProviderId        = provider.Id;
+        Model.ProviderFirstName = provider.FirstName;
+        Model.ProviderLastName  = provider.LastName;
+        _selectedProvider = provider;
+    }
+
+    // When BillPaidDate is set, auto-set Status to "Completed" (matching WinForms behavior)
+    private void OnBillPaidDateChanged(DateTime? date)
+    {
+        Model.BillPaidDate = date;
+        if (date.HasValue)
+            Model.Status = "Completed";
+    }
+}

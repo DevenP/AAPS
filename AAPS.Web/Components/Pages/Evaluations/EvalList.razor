@@ -1,21 +1,33 @@
-﻿@page "/evaluations"
+@page "/evaluations"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Evaluations.Forms
 @using AAPS.Web.Components.Shared
 @inject IEvalService EvalService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
-<GenericGrid TItem="EvalDTO"
+<GenericGrid @ref="_grid" TItem="EvalDTO"
              Title="Evaluations"
-             Columns="@(new[] { "Print", "Id", "Status", "StudentLastName", "StudentFirstName", "ProviderLastName", "ServiceType", "EvalDate", "BillingAmount", "BilledDate", "BillPaidDate", "ProviderPaidAmount", "ProviderPaidDate", "District", "Language" })"
+             Columns="@(new[] { "Actions", "Id", "Status", "StudentLastName", "StudentFirstName", "ProviderLastName", "ServiceType", "EvalDate", "BillingAmount", "BilledDate", "BillPaidDate", "ProviderPaidAmount", "ProviderPaidDate", "District", "Language" })"
              GetData="EvalService.GetPagedAsync"
              ExportHeaders="@(new[] { "ID", "Status", "Student Last", "Student First", "Provider", "Service", "Eval Date", "Bill Amt", "Billed Date", "Paid Date", "Memo" })"
              ExportMapper="@(e => new object?[] { e.Id, e.Status, e.StudentLastName, e.StudentFirstName, $"{e.ProviderFirstName} {e.ProviderLastName}", e.ServiceType, e.EvalDate?.ToShortDateString(), e.BillingAmount, e.BilledDate?.ToShortDateString(), e.BillPaidDate?.ToShortDateString(), e.Memo })">
 
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add Evaluation
+        </MudButton>
+    </CustomActionContent>
+
     <HeaderContent>
-        <GridCell TItem="EvalDTO" Column="Print" IsHeader="true">
-            <span style="width:36px;display:inline-block;"></span>
-        </GridCell>
+        <GridCell TItem="EvalDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="EvalDTO" Column="Id" IsHeader="true">
             <MudTableSortLabel SortLabel="Id" T="EvalDTO">ID</MudTableSortLabel>
         </GridCell>
@@ -61,15 +73,30 @@
     </HeaderContent>
 
     <RowTemplate Context="eval">
-        <GridCell TItem="EvalDTO" Column="Print">
-            <MudTooltip Text="Print Consent Letter">
-                <MudIconButton Icon="@Icons.Material.Filled.Print"
-                               Size="Size.Small"
-                               Color="Color.Primary"
-                               OnClick="@(() => PrintConsent(eval.Id))"
-                               aria-label="Print consent letter" />
-            </MudTooltip>
+        @* Row Actions *@
+        <GridCell TItem="EvalDTO" Column="Actions">
+            <div class="d-flex gap-1">
+                <MudTooltip Text="Print Consent Letter">
+                    <MudIconButton Icon="@Icons.Material.Filled.Print"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => PrintConsent(eval.Id))" />
+                </MudTooltip>
+                <MudTooltip Text="Edit Evaluation">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Default"
+                                   OnClick="@(() => OpenEditDialog(eval))" />
+                </MudTooltip>
+                <MudTooltip Text="Delete Evaluation">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   OnClick="@(() => OnDeleteClicked(eval))" />
+                </MudTooltip>
+            </div>
         </GridCell>
+
         <GridCell TItem="EvalDTO" Column="Id">@eval.Id</GridCell>
         <GridCell TItem="EvalDTO" Column="Status">
             <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
@@ -117,8 +144,89 @@
 </GenericGrid>
 
 @code {
+    private GenericGrid<EvalDTO> _grid = default!;
+    private EvalValidator _validator = new();
+
     private async Task PrintConsent(int evalId)
     {
         await JS.InvokeVoidAsync("open", $"/reports/consent/{evalId}", "_blank");
+    }
+
+    private async Task OpenEditDialog(EvalDTO? eval = null)
+    {
+        EvalDTO model;
+
+        if (eval == null)
+        {
+            model = new EvalDTO { Status = "Open" };
+        }
+        else
+        {
+            var fetched = await EvalService.GetByIdAsync(eval.Id);
+            if (fetched == null) return;
+            model = fetched;
+        }
+
+        var isNew = eval == null;
+        var parameters = new DialogParameters<EntityDialog<EvalDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, isNew ? "Add Evaluation" : "Edit Evaluation");
+        parameters.Add(x => x.IsNew, isNew);
+        parameters.Add(x => x.ValidateModel, async (EvalDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ChildContent, (EvalDTO context) =>
+            @<EvalForm Model="context" />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<EvalDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is EvalDTO savedDto)
+        {
+            try
+            {
+                if (isNew)
+                {
+                    await EvalService.CreateAsync(savedDto);
+                    Snackbar.Add("Evaluation added successfully!", Severity.Success);
+                }
+                else
+                {
+                    await EvalService.UpdateAsync(savedDto.Id, savedDto);
+                    Snackbar.Add("Evaluation updated successfully!", Severity.Success);
+                }
+
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving evaluation: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDeleteClicked(EvalDTO eval)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Confirm Delete",
+            $"Delete evaluation for {eval.StudentFirstName} {eval.StudentLastName}?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        try
+        {
+            await EvalService.DeleteAsync(eval.Id);
+            Snackbar.Add("Evaluation deleted.", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting evaluation: {ex.Message}", Severity.Error);
+        }
     }
 }
