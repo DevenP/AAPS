@@ -56,15 +56,9 @@
     <RowTemplate Context="rate">
         @* Action Buttons *@
         <GridCell TItem="ProviderRateDTO" Column="Actions">
-            <div class="d-flex">
-                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                               Size="Size.Small" Color="Color.Primary"
-                               OnClick="@(() => OpenEditDialog(rate))" />
-
-                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                               Size="Size.Small" Color="Color.Error"
-                               OnClick="@(() => OnDeleteClicked(rate))" />
-            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                           Size="Size.Small" Color="Color.Primary"
+                           OnClick="@(() => OpenEditDialog(rate))" />
         </GridCell>
 
         <GridCell TItem="ProviderRateDTO" Column="ProviderFirstName">@rate.ProviderFirstName</GridCell>

@@ -2,12 +2,15 @@
 @using AAPS.Application.DTO
 
 @inject IProviderService ProviderService
+@inject IServiceTypeService ServiceTypeService
+@inject IGDistrictService GDistrictService
+@inject ILanguageService LanguageService
 
 @if (Model != null)
 {
     <MudGrid>
 
-        @if(IsAdd)
+        @if (IsAdd)
         {
             <MudItem xs="12">
                 <MudAutocomplete T="ProviderDTO"
@@ -28,62 +31,85 @@
                     </ItemTemplate>
                 </MudAutocomplete>
             </MudItem>
-        }
-        @* Add this right after the MudAutocomplete MudItem, always visible *@
-        @if (IsAdd)
-        {
+
+            @* Hidden field so FluentValidation can surface a ProviderId error *@
             <MudItem xs="12">
                 <MudTextField T="int?" Value="Model.ProviderId"
-                              Label="Provider (hidden validation)"
                               Validation="@Validator"
                               For="@(() => Model.ProviderId)"
                               Style="display:none" />
             </MudItem>
         }
+        else
+        {
+            @* Edit mode — show current provider as read-only info *@
+            <MudItem xs="12">
+                <MudTextField Value="@($"{Model.ProviderFirstName} {Model.ProviderLastName}".Trim())"
+                              Label="Provider"
+                              ReadOnly="true"
+                              Disabled="true" />
+            </MudItem>
+        }
 
         <MudItem xs="12" sm="6">
-            <MudTextField @bind-Value="Model.ProviderId"
-                          Label="Provider ID"
-                          ReadOnly="true" 
-                          Disabled="true" />
+            @if (IsAdd)
+            {
+                <MudSelect T="string?" @bind-Value="Model.ServiceType"
+                           Label="Service Type"
+                           Clearable="true"
+                           Validation="@Validator"
+                           For="@(() => Model.ServiceType)"
+                           Required>
+                    @foreach (var st in _serviceTypes)
+                    {
+                        <MudSelectItem T="string?" Value="@st.Name">@st.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudTextField Value="@Model.ServiceType" Label="Service Type" ReadOnly="true" Disabled="true" />
+            }
         </MudItem>
 
         <MudItem xs="12" sm="6">
-            <MudTextField @bind-Value="Model.ProviderFirstName"
-                          Label="Provider First Name"
-                          ReadOnly="true"
-                          Disabled="true" 
-                          Required/>
+            @if (IsAdd)
+            {
+                <MudSelect T="string?" @bind-Value="Model.District"
+                           Label="District"
+                           Clearable="true"
+                           Validation="@Validator"
+                           For="@(() => Model.District)">
+                    @foreach (var d in _gDistricts)
+                    {
+                        <MudSelectItem T="string?" Value="@d.DistrictCode">@d.DistrictCode</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudTextField Value="@Model.District" Label="District" ReadOnly="true" Disabled="true" />
+            }
         </MudItem>
 
         <MudItem xs="12" sm="6">
-            <MudTextField @bind-Value="Model.ProviderLastName"
-                          Label="Provider Last Name"
-                          ReadOnly="true"
-                          Disabled="true" 
-                          Required />
-        </MudItem>
-
-        <MudItem xs="12" sm="6">
-            <MudTextField @bind-Value="Model.ServiceType"
-                          Label="Service Type"
-                          Validation="@Validator"
-                          For="@(() => Model.ServiceType)" 
-                          Required />
-        </MudItem>
-
-        <MudItem xs="12" sm="6">
-            <MudTextField @bind-Value="Model.District"
-                          Label="District"
-                          Validation="@Validator"
-                          For="@(() => Model.District)" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6">
-            <MudTextField @bind-Value="Model.Language"
-                          Label="Language"
-                          Validation="@Validator"
-                          For="@(() => Model.Language)" />
+            @if (IsAdd)
+            {
+                <MudSelect T="string?" @bind-Value="Model.Language"
+                           Label="Language"
+                           Clearable="true"
+                           Validation="@Validator"
+                           For="@(() => Model.Language)">
+                    @foreach (var l in _languages)
+                    {
+                        <MudSelectItem T="string?" Value="@l.Name">@l.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudTextField Value="@Model.Language" Label="Language" ReadOnly="true" Disabled="true" />
+            }
         </MudItem>
 
         <MudItem xs="12" sm="6">
@@ -97,11 +123,18 @@
         </MudItem>
 
         <MudItem xs="12" sm="6">
-            <MudDatePicker Date="_effectiveDate"
-                           DateChanged="@(d => { _effectiveDate = d; Model.EffectiveDate = d; })"
-                           Label="Effective Date"
-                           Validation="@Validator"
-                           For="@(() => Model.EffectiveDate)" />
+            @if (IsAdd)
+            {
+                <MudDatePicker Date="_effectiveDate"
+                               DateChanged="@(d => { _effectiveDate = d; Model.EffectiveDate = d; })"
+                               Label="Effective Date"
+                               Validation="@Validator"
+                               For="@(() => Model.EffectiveDate)" />
+            }
+            else
+            {
+                <MudTextField Value="@Model.EffectiveDate?.ToString("MM/dd/yyyy")" Label="Effective Date" ReadOnly="true" Disabled="true" />
+            }
         </MudItem>
 
         <MudItem xs="12">
@@ -109,51 +142,51 @@
                          Label="Is Active"
                          Color="Color.Primary" />
         </MudItem>
+
     </MudGrid>
 }
 
 @code {
-    [Parameter]
-    public ProviderRateDTO Model { get; set; } = default!;
-
-    [Parameter]
-    public bool IsAdd { get; set; }
+    [Parameter] public ProviderRateDTO Model { get; set; } = default!;
+    [Parameter] public bool IsAdd { get; set; }
 
     [CascadingParameter]
     public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; } = default!;
 
     private DateTime? _effectiveDate;
     private ProviderDTO? _selectedProvider;
-    private List<ProviderDTO> _providers = new();
+    private List<ProviderDTO>    _providers    = [];
+    private List<ServiceTypeDTO> _serviceTypes = [];
+    private List<GDistrictDTO>   _gDistricts   = [];
+    private List<LanguageDTO>    _languages    = [];
 
     protected override async Task OnInitializedAsync()
     {
-        if (Model != null)
-        {
-            _effectiveDate = Model.EffectiveDate;
+        if (Model == null) return;
 
-            // If editing, load the provider to pre-select it
-            if (Model.ProviderId.HasValue)
-            {
-                _selectedProvider = await ProviderService.GetByIdAsync(Model.ProviderId.Value) ?? null;
-            }
+        _effectiveDate = Model.EffectiveDate;
 
-            // Load all providers for autocomplete
-            await LoadProviders();
-        }
-    }
+        if (!IsAdd && Model.ProviderId.HasValue)
+            _selectedProvider = await ProviderService.GetByIdAsync(Model.ProviderId.Value);
 
-    private async Task LoadProviders()
-    {
         try
         {
-            var request = new AAPS.Application.Common.Paging.PagedRequest(PageSize: -1); // Load all
-            var result = await ProviderService.GetPagedAsync(request);
-            _providers = result.Items.OrderBy(p => p.FirstName).ToList();
+            var allRequest = new AAPS.Application.Common.Paging.PagedRequest(PageSize: -1);
+            var provTask = ProviderService.GetPagedAsync(allRequest);
+            var stTask   = ServiceTypeService.GetPagedAsync(allRequest);
+            var distTask = GDistrictService.GetPagedAsync(allRequest);
+            var langTask = LanguageService.GetPagedAsync(allRequest);
+
+            await Task.WhenAll(provTask, stTask, distTask, langTask);
+
+            _providers    = (await provTask).Items.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();
+            _serviceTypes = (await stTask).Items.OrderBy(s => s.Name).ToList();
+            _gDistricts   = (await distTask).Items.OrderBy(d => d.DistrictCode).ToList();
+            _languages    = (await langTask).Items.OrderBy(l => l.Name).ToList();
         }
         catch
         {
-            _providers = new();
+            // Lookup tables failed — selects will be empty but the form still opens
         }
     }
 
@@ -162,21 +195,18 @@
         if (string.IsNullOrWhiteSpace(value))
             return _providers;
 
-        var searchTerm = value.ToLower();
         return _providers.Where(p =>
-            (p.FirstName ?? "").Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-            (p.LastName ?? "").Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-            p.Id.ToString().Contains(searchTerm)).ToList();
+            (p.FirstName ?? "").Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            (p.LastName  ?? "").Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            p.Id.ToString().Contains(value)).ToList();
     }
 
     private void OnProviderSelected(ProviderDTO provider)
     {
-        if (provider != null)
-        {
-            Model.ProviderId = provider.Id;
-            Model.ProviderFirstName = provider.FirstName;
-            Model.ProviderLastName = provider.LastName;
-            _selectedProvider = provider;
-        }
+        if (provider == null) return;
+        Model.ProviderId      = provider.Id;
+        Model.ProviderFirstName = provider.FirstName;
+        Model.ProviderLastName  = provider.LastName;
+        _selectedProvider = provider;
     }
 }
