@@ -333,6 +333,8 @@ public class SesiService : ISesiService
                 FullAddress = p != null
                     ? (p.City != null ? p.City.Trim() : "") + ", " + (p.State ?? "") + " " + (p.Zipcode ?? "")
                     : null,
+
+                VoucherBalancePaid = s.VoucherBalancePaid,
             };
 
         // Default sort matches the proc: date_of_Service + Start_Time as datetime, then provider name.

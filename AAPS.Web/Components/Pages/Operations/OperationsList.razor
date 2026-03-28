@@ -12,7 +12,7 @@
 <GenericGrid TItem="OperationsDTO"
              @ref="_grid"
              Title="Operations Registry"
-             Columns="@(new[] { "Checkbox", "Actions", "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration" })"
+             Columns="@(new[] { "Checkbox", "Actions", "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration", "VoucherBalancePaid" })"
              GetData="SesiService.GetOperationsPagedAsync"
              OnFilterRemoved="OnFilterRemoved">
 
@@ -104,6 +104,9 @@
         </GridCell>
         <GridCell TItem="OperationsDTO" Column="Duration" IsHeader="true">
             <MudTableSortLabel SortLabel="Duration" T="OperationsDTO">Min</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="VoucherBalancePaid" IsHeader="true">
+            <MudTableSortLabel SortLabel="VoucherBalancePaid" T="OperationsDTO">Vchr Bal Paid</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
@@ -200,6 +203,7 @@
 
         <GridCell TItem="OperationsDTO" Column="BilledRate">@op.BilledRate?.ToString("C2")</GridCell>
         <GridCell TItem="OperationsDTO" Column="Duration">@op.Duration</GridCell>
+        <GridCell TItem="OperationsDTO" Column="VoucherBalancePaid">@op.VoucherBalancePaid?.ToString("MM/dd/yyyy")</GridCell>
     </RowTemplate>
 </GenericGrid>
 
