@@ -71,7 +71,7 @@
         if (firstRender)
         {
             // Check cookie on load/navigation
-            var isDark = await JS.InvokeAsync<bool>("eval", "document.cookie.includes('theme=dark')");
+            var isDark = await JS.InvokeAsync<bool>("getThemeCookie");
             if (isDark != _isDarkMode)
             {
                 _isDarkMode = isDark;

@@ -13,3 +13,8 @@ window.setThemeCookie = (isDarkMode) => {
     const mode = isDarkMode ? "dark" : "light";
     document.cookie = `theme=${mode}; path=/; max-age=31536000; SameSite=Lax`;
 };
+
+window.getThemeCookie = () => {
+    const entry = document.cookie.split('; ').find(r => r.startsWith('theme='));
+    return entry ? entry.split('=')[1] === 'dark' : false;
+};

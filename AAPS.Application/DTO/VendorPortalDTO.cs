@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO
 {
@@ -79,6 +80,7 @@ namespace AAPS.Application.DTO
 
         [Browsable(true)]
         [Display(Name = "Mismatch")]
+        [FilterOptions("Approval", "Provider")]
         public string? Mismatch { get; set; } // 'Approval' or 'Provider'
 
         [Browsable(false)]

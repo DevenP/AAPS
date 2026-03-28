@@ -4,6 +4,7 @@
 @using System.ComponentModel
 @using System.ComponentModel.DataAnnotations
 @using AAPS.Application.Common.Extensions
+@using AAPS.Application.Common.Attributes
 
 <MudDialog>
     <DialogContent>
@@ -59,15 +60,36 @@
                     }
                     else
                     {
-                        <MudItem xs="12">
-                            <MudTextField T="string"
-                                          Label="@displayName"
-                                          Value="@GetFilterValue(propName)"
-                                          ValueChanged="@(s => SetFilterValue(propName, s))"
-                                          Margin="Margin.Dense"
-                                          Variant="Variant.Outlined"
-                                          Clearable="true" />
-                        </MudItem>
+                        var filterOptions = prop.GetCustomAttribute<FilterOptionsAttribute>();
+                        @if (filterOptions != null)
+                        {
+                            <MudItem xs="12">
+                                <MudSelect T="string"
+                                           Label="@displayName"
+                                           Value="@GetFilterValue(propName)"
+                                           ValueChanged="@(s => SetFilterValue(propName, s))"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Clearable="true">
+                                    @foreach (var option in filterOptions.Options)
+                                    {
+                                        <MudSelectItem Value="@option">@option</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        }
+                        else
+                        {
+                            <MudItem xs="12">
+                                <MudTextField T="string"
+                                              Label="@displayName"
+                                              Value="@GetFilterValue(propName)"
+                                              ValueChanged="@(s => SetFilterValue(propName, s))"
+                                              Margin="Margin.Dense"
+                                              Variant="Variant.Outlined"
+                                              Clearable="true" />
+                            </MudItem>
+                        }
                     }
                 }
             </MudGrid>
