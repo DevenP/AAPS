@@ -168,17 +168,20 @@ namespace AAPS.Infrastructure.Common.Extensions
             if (request.ColumnFilters != null && request.ColumnFilters.Count > 0)
                 query = ApplyColumnFilters(query, request.ColumnFilters);
 
-            // Sorting — always apply to guarantee stable pagination
-            query = ApplySort(query, request.SortBy, request.SortDir);
-
             // Export — return everything without a separate COUNT query
             if (request.PageSize == -1)
             {
+                query = ApplySort(query, request.SortBy, request.SortDir);
                 var allItems = await query.ToListAsync(ct);
                 return new AAPS.Application.Common.Paging.PagedResult<T>(allItems, 1, allItems.Count, allItems.Count);
             }
 
+            // Count before sorting — ORDER BY is meaningless for COUNT(*) and causes
+            // EF Core to expand complex DTO projections into the sort key, breaking translation.
             var totalCount = await query.CountAsync(ct);
+
+            // Sorting — apply after count for stable pagination
+            query = ApplySort(query, request.SortBy, request.SortDir);
 
             var page = request.Page < 1 ? 1 : request.Page;
             var pageSize = request.PageSize <= 0 ? 25 : request.PageSize;
