@@ -1,10 +1,15 @@
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Files
 
 @inject IProviderService ProviderService
 @inject IServiceTypeService ServiceTypeService
 @inject IGDistrictService GDistrictService
 @inject ILanguageService LanguageService
+@inject IServiceProvider ServiceProvider
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject IDialogService DialogService
 
 @if (Model != null)
 {
@@ -208,6 +213,109 @@
             </MudGrid>
         </MudTabPanel>
 
+        @* Tab 5: Eval Files *@
+        <MudTabPanel Text="Files" Icon="@Icons.Material.Filled.Folder">
+            @if (Model.Id == 0)
+            {
+                <MudAlert Severity="Severity.Info" Class="ma-4">
+                    Save the evaluation first before uploading files.
+                </MudAlert>
+            }
+            else
+            {
+                <div class="d-flex align-center justify-space-between mb-3">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        @_files.Count file(s)
+                    </MudText>
+                    <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFilesUploaded">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Upload"
+                                       Size="Size.Small"
+                                       Disabled="_filesLoading">
+                                Upload Files
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                </div>
+
+                <div style="height:320px; overflow-y:auto; border:1px solid var(--mud-palette-divider); border-radius:4px;">
+                    @if (_filesLoading)
+                    {
+                        <div class="d-flex justify-center pa-4">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
+                        </div>
+                    }
+                    else if (_filesError != null)
+                    {
+                        <MudAlert Severity="Severity.Warning">@_filesError</MudAlert>
+                    }
+                    else if (_files.Count == 0)
+                    {
+                        <MudText Class="mud-text-secondary pa-4 d-flex justify-center" Typo="Typo.body2">
+                            No files found for this evaluation.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudTable Items="_files" Dense="true" Hover="true" Elevation="0" T="FileExplorerItem">
+                            <HeaderContent>
+                                <MudTh Style="width:36px; position:sticky; top:0; z-index:1; background:var(--mud-palette-surface);"></MudTh>
+                                <MudTh Style="position:sticky; top:0; z-index:1; background:var(--mud-palette-surface);">File Name</MudTh>
+                                <MudTh Style="width:160px; position:sticky; top:0; z-index:1; background:var(--mud-palette-surface);">Modified</MudTh>
+                                <MudTh Style="width:80px; position:sticky; top:0; z-index:1; background:var(--mud-palette-surface);">Size</MudTh>
+                                <MudTh Style="width:130px; position:sticky; top:0; z-index:1; background:var(--mud-palette-surface);"></MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudIcon Icon="@context.Icon" Size="Size.Small" Color="Color.Default" />
+                                </MudTd>
+                                <MudTd>@context.Name</MudTd>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                                        @context.LastModified.ToString("MM/dd/yyyy hh:mm tt")
+                                    </MudText>
+                                </MudTd>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                                        @context.SizeDisplay
+                                    </MudText>
+                                </MudTd>
+                                <MudTd>
+                                    <div class="d-flex gap-1">
+                                        @if (context.IsPreviewable)
+                                        {
+                                            <MudTooltip Text="Preview">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                               Size="Size.Small" Color="Color.Info"
+                                                               OnClick="@(() => OpenPreview(context))" />
+                                            </MudTooltip>
+                                            <MudTooltip Text="Open in New Window">
+                                                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew"
+                                                               Size="Size.Small" Color="Color.Secondary"
+                                                               OnClick="@(() => OpenInNewWindow(context))" />
+                                            </MudTooltip>
+                                        }
+                                        <MudTooltip Text="Download">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Download"
+                                                           Size="Size.Small" Color="Color.Primary"
+                                                           OnClick="@(() => DownloadFile(context))" />
+                                        </MudTooltip>
+                                        <MudTooltip Text="Delete">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Size="Size.Small" Color="Color.Error"
+                                                           OnClick="@(() => DeleteFile(context))" />
+                                        </MudTooltip>
+                                    </div>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </div>
+            }
+        </MudTabPanel>
+
     </MudTabs>
     </div>
 }
@@ -224,9 +332,19 @@
     private List<GDistrictDTO>   _gDistricts   = [];
     private List<LanguageDTO>    _languages    = [];
 
+    // ── Eval Files ─────────────────────────────────────────
+    private IFileExplorerService _fileExplorerService = default!;
+    private List<FileExplorerItem> _files = new();
+    private bool _filesLoading = false;
+    private string? _filesError;
+
+    private string EvalFolderPath => Model.Id.ToString();
+
     protected override async Task OnInitializedAsync()
     {
         if (Model == null) return;
+
+        _fileExplorerService = ServiceProvider.GetRequiredKeyedService<IFileExplorerService>("EvalFiles");
 
         try
         {
@@ -251,6 +369,111 @@
         // Pre-select the current provider when editing
         if (Model.ProviderId.HasValue)
             _selectedProvider = _providers.FirstOrDefault(p => p.Id == Model.ProviderId.Value);
+
+        if (Model.Id > 0)
+            await LoadEvalFiles();
+    }
+
+    private async Task LoadEvalFiles()
+    {
+        _filesLoading = true;
+        _filesError = null;
+        StateHasChanged();
+        await Task.Delay(1);
+
+        try
+        {
+            var result = _fileExplorerService.GetContents(EvalFolderPath);
+            _files = result.Items.Where(i => !i.IsFolder).ToList();
+        }
+        catch (DirectoryNotFoundException)
+        {
+            _files = new();
+        }
+        catch (Exception ex)
+        {
+            _filesError = $"Could not load files: {ex.Message}";
+        }
+        finally
+        {
+            _filesLoading = false;
+        }
+    }
+
+    private async Task OnFilesUploaded(IReadOnlyList<IBrowserFile> files)
+    {
+        if (files == null || files.Count == 0) return;
+
+        var folderPath = _fileExplorerService.GetAbsolutePath(EvalFolderPath);
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        const long maxFileSizeBytes = 100 * 1024 * 1024;
+        var uploaded = 0;
+
+        foreach (var file in files)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream(maxFileSizeBytes);
+                await _fileExplorerService.SaveUploadedFileAsync(EvalFolderPath, file.Name, stream);
+                uploaded++;
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed: {file.Name} — {ex.Message}", Severity.Error);
+            }
+        }
+
+        if (uploaded > 0)
+            Snackbar.Add($"{uploaded} file(s) uploaded.", Severity.Success);
+
+        await LoadEvalFiles();
+    }
+
+    private async Task OpenPreview(FileExplorerItem item)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Item", item },
+            { "FileExplorerService", _fileExplorerService },
+            { "BaseUrl", "/eval-files" }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        await DialogService.ShowAsync<FilePreviewDialog>(item.Name, parameters, options);
+    }
+
+    private async Task OpenInNewWindow(FileExplorerItem item)
+    {
+        var url = $"/eval-files/preview?path={Uri.EscapeDataString(item.RelativePath)}";
+        await JS.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private async Task DownloadFile(FileExplorerItem item)
+    {
+        var url = $"/eval-files/download?path={Uri.EscapeDataString(item.RelativePath)}";
+        await JS.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private async Task DeleteFile(FileExplorerItem item)
+    {
+        try
+        {
+            _fileExplorerService.DeleteFile(item.RelativePath);
+            Snackbar.Add($"Deleted \"{item.Name}\".", Severity.Success);
+            await LoadEvalFiles();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Delete failed: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task<IEnumerable<ProviderDTO>> SearchProviders(string value, CancellationToken cancellationToken)

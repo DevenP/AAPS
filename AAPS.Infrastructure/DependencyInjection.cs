@@ -39,6 +39,13 @@ namespace AAPS.Infrastructure
                     configuration["ProviderFiles:RootPath"]
                     ?? throw new InvalidOperationException("ProviderFiles:RootPath is not configured in appsettings.json")));
 
+            // Eval files — C:\AAPS\Evaluation Documents\{evalId}\
+            services.AddKeyedScoped<IFileExplorerService, FileExplorerService>(
+                "EvalFiles",
+                (sp, _) => new FileExplorerService(
+                    configuration["EvalFiles:RootPath"]
+                    ?? throw new InvalidOperationException("EvalFiles:RootPath is not configured in appsettings.json")));
+
             services.AddScoped<IImportService, ImportService>();
             services.AddScoped<IDashboardService, DashboardService>();
 

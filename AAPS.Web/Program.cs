@@ -183,6 +183,40 @@ namespace AAPS.Web
 
                 return Results.File(stream, contentType, enableRangeProcessing: true);
             });
+
+            // Eval files download — uses the EvalFiles keyed service (C:\AAPS\Evaluation Documents)
+            app.MapGet("/eval-files/download", (string path, [FromKeyedServices("EvalFiles")] IFileExplorerService fileService) =>
+            {
+                if (!fileService.IsPathSafe(path))
+                    return Results.Forbid();
+
+                var absolute = fileService.GetAbsolutePath(path);
+                if (!File.Exists(absolute))
+                    return Results.NotFound();
+
+                var fileName = System.IO.Path.GetFileName(absolute);
+                var contentType = GetContentType(fileName);
+                var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                return Results.File(stream, contentType, fileName);
+            });
+
+            // Eval files preview — serves inline for iframe/img/new window
+            app.MapGet("/eval-files/preview", (string path, [FromKeyedServices("EvalFiles")] IFileExplorerService fileService) =>
+            {
+                if (!fileService.IsPathSafe(path))
+                    return Results.Forbid();
+
+                var absolute = fileService.GetAbsolutePath(path);
+                if (!File.Exists(absolute))
+                    return Results.NotFound();
+
+                var fileName = System.IO.Path.GetFileName(absolute);
+                var contentType = GetContentType(fileName);
+                var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                return Results.File(stream, contentType, enableRangeProcessing: true);
+            });
         }
 
         // ── NEW: Consent report endpoint ──────────────────────────────────────────
