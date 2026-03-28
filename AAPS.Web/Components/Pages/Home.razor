@@ -28,33 +28,37 @@ else
 
         @* Urgent first *@
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.OperationAlerts > 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")};")">
+            <MudPaper Class="pa-4" Elevation="1" Style="@ErrorCardStyle(_stats.OperationAlerts > 0)">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Operation Alerts</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.OperationAlerts > 0 ? Color.Error : Color.Default)">
                         <b>@_stats.OperationAlerts</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="@(_stats.OperationAlerts > 0 ? Color.Error : Color.Success)" Style="font-size:2rem;" />
+                    <div style="@ErrorBadge(_stats.OperationAlerts > 0)">
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" Color="@(_stats.OperationAlerts > 0 ? Color.Error : Color.Success)" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="/operations" Typo="Typo.caption" Color="Color.Primary">View Operations</MudLink>
             </MudPaper>
         </MudItem>
 
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.ExpiringApprovals > 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")};")">
+            <MudPaper Class="pa-4" Elevation="1" Style="@ErrorCardStyle(_stats.ExpiringApprovals > 0)">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Approvals Expiring (30d)</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.ExpiringApprovals > 0 ? Color.Error : Color.Default)">
                         <b>@_stats.ExpiringApprovals</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.EventBusy" Color="@(_stats.ExpiringApprovals > 0 ? Color.Error : Color.Success)" Style="font-size:2rem;" />
+                    <div style="@ErrorBadge(_stats.ExpiringApprovals > 0)">
+                        <MudIcon Icon="@Icons.Material.Filled.EventBusy" Color="@(_stats.ExpiringApprovals > 0 ? Color.Error : Color.Success)" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="@_expiringApprovalsUrl" Typo="Typo.caption" Color="Color.Primary">View Approvals</MudLink>
             </MudPaper>
         </MudItem>
 
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.UnbilledSessions > 0 ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
+            <MudPaper Class="pa-4" Elevation="1" Style="@WarningCardStyle(_stats.UnbilledSessions > 0)">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Unbilled Sessions</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <div>
@@ -66,46 +70,54 @@ else
                             <MudText Typo="Typo.caption" Color="Color.Warning">@_stats.UnbilledAmount.ToString("C0")</MudText>
                         }
                     </div>
-                    <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="@(_stats.UnbilledSessions > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
+                    <div style="@WarningBadge(_stats.UnbilledSessions > 0)">
+                        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="@(_stats.UnbilledSessions > 0 ? Color.Warning : Color.Success)" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="/billing?col_Billed=null&col_BillingRate=notnull&col_BilledPaidOn=null" Typo="Typo.caption" Color="Color.Primary">View Billing</MudLink>
             </MudPaper>
         </MudItem>
 
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.EvalsPendingPayment > 0 ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
+            <MudPaper Class="pa-4" Elevation="1" Style="@WarningCardStyle(_stats.EvalsPendingPayment > 0)">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Evals Pending Payment</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.EvalsPendingPayment > 0 ? Color.Warning : Color.Default)">
                         <b>@_stats.EvalsPendingPayment</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.PendingActions" Color="@(_stats.EvalsPendingPayment > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
+                    <div style="@WarningBadge(_stats.EvalsPendingPayment > 0)">
+                        <MudIcon Icon="@Icons.Material.Filled.PendingActions" Color="@(_stats.EvalsPendingPayment > 0 ? Color.Warning : Color.Success)" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="/evaluations?col_BilledDate=notnull&col_BillPaidDate=null" Typo="Typo.caption" Color="Color.Primary">View Evaluations</MudLink>
             </MudPaper>
         </MudItem>
 
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.VendorPortalDiscrepancies > 0 ? "var(--mud-palette-error)" : "var(--mud-palette-success)")};")">
+            <MudPaper Class="pa-4" Elevation="1" Style="@ErrorCardStyle(_stats.VendorPortalDiscrepancies > 0)">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Vendor Portal Discrepancies</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.VendorPortalDiscrepancies > 0 ? Color.Error : Color.Default)">
                         <b>@_stats.VendorPortalDiscrepancies</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="@(_stats.VendorPortalDiscrepancies > 0 ? Color.Error : Color.Success)" Style="font-size:2rem;" />
+                    <div style="@ErrorBadge(_stats.VendorPortalDiscrepancies > 0)">
+                        <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="@(_stats.VendorPortalDiscrepancies > 0 ? Color.Error : Color.Success)" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="/vendorportal?col_MismatchedVendorPortal=true" Typo="Typo.caption" Color="Color.Primary">View Vendor Portal</MudLink>
             </MudPaper>
         </MudItem>
 
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="@($"border-left: 4px solid {(_stats.ExpiringLicenses > 0 ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
+            <MudPaper Class="pa-4" Elevation="1" Style="@WarningCardStyle(_stats.ExpiringLicenses > 0)">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Expiring Licenses (60d)</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.ExpiringLicenses > 0 ? Color.Warning : Color.Default)">
                         <b>@_stats.ExpiringLicenses</b>
                     </MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.Badge" Color="@(_stats.ExpiringLicenses > 0 ? Color.Warning : Color.Success)" Style="font-size:2rem;" />
+                    <div style="@WarningBadge(_stats.ExpiringLicenses > 0)">
+                        <MudIcon Icon="@Icons.Material.Filled.Badge" Color="@(_stats.ExpiringLicenses > 0 ? Color.Warning : Color.Success)" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="/providers" Typo="Typo.caption" Color="Color.Primary">View Providers</MudLink>
             </MudPaper>
@@ -113,11 +125,13 @@ else
 
         @* Informational last *@
         <MudItem xs="6" sm="4" md="3">
-            <MudPaper Class="pa-4" Elevation="1" Style="border-left: 4px solid var(--mud-palette-primary);">
+            <MudPaper Class="pa-4" Elevation="1" Style="@PrimaryCardStyle()">
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Active Providers</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4"><b>@_stats.ActiveProviders</b></MudText>
-                    <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Style="font-size:2rem;" />
+                    <div style="@PrimaryBadge()">
+                        <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Style="font-size:1.5rem;" />
+                    </div>
                 </div>
                 <MudLink Href="/providers?col_IsActive=true" Typo="Typo.caption" Color="Color.Primary">View Providers</MudLink>
             </MudPaper>
@@ -326,6 +340,23 @@ else
 }
 
 @code {
+    // ── Card styling helpers ──────────────────────────────────────────────────
+    private static string Badge(string rgba) =>
+        $"width:40px;height:40px;border-radius:8px;background:{rgba};display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+
+    private static string ErrorBadge(bool active)   => Badge(active ? "rgba(244,67,54,0.14)"  : "rgba(76,175,80,0.14)");
+    private static string WarningBadge(bool active) => Badge(active ? "rgba(255,152,0,0.14)"  : "rgba(76,175,80,0.14)");
+    private static string PrimaryBadge()            => Badge("rgba(63,81,181,0.14)");
+
+    private static string ErrorCardStyle(bool active) =>
+        $"border-left:4px solid {(active ? "var(--mud-palette-error)" : "var(--mud-palette-success)")}; background-color:{(active ? "rgba(244,67,54,0.05)" : "transparent")};";
+
+    private static string WarningCardStyle(bool active) =>
+        $"border-left:4px solid {(active ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")}; background-color:{(active ? "rgba(255,152,0,0.05)" : "transparent")};";
+
+    private static string PrimaryCardStyle() =>
+        "border-left:4px solid var(--mud-palette-primary);";
+
     private string _expiringApprovalsUrl =>
         $"/approvals?col_MandateEnd_From={DateTime.Today:yyyy-MM-dd}&col_MandateEnd_To={DateTime.Today.AddDays(30):yyyy-MM-dd}";
 
