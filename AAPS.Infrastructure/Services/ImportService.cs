@@ -36,11 +36,11 @@ public class ImportService : IImportService
     {
         [ImportType.Mandates] = new()
         {
-            [5] = "Student ID",
-            [6] = "Last Name",
-            [7] = "First Name",
-            [19] = "Service Type",
-            [39] = "Mandate ID",
+            [6] = "Student ID",
+            [7] = "Last Name",
+            [8] = "First Name",
+            [21] = "Service Type",
+            [43] = "Mandate ID",
         },
         [ImportType.Sesis] = new()
         {
@@ -159,7 +159,7 @@ public class ImportService : IImportService
     // ─────────────────────────────────────────────
     // MANDATES PARSE
     // Data starts row 4, headers on row 3
-    // Skip if any required col is null: 5,6,7,12,19,21,23,25,27,29,37,39
+    // Skip if any required col is null: 6,7,8,13,21,23,25,27,29,32,41,43
     // Row display number = i - 3
     // ─────────────────────────────────────────────
     private static ImportPreviewResult ParseMandates(IXLWorksheet ws, string fileName, byte[] fileBytes)
@@ -178,28 +178,33 @@ public class ImportService : IImportService
             {
                 var cell = ws.Cell(i, col);
                 if (cell.IsEmpty()) return null;
+                if (cell.Value.IsText)
+                {
+                    if (DateTime.TryParse(cell.GetValue<string>(), out var dt)) return dt;
+                    return null;
+                }
                 try { return cell.GetDateTime(); } catch { return null; }
             }
 
             // Required columns
-            var required = new[] { 5, 6, 7, 12, 19, 21, 23, 25, 27, 29, 37, 39 };
+            var required = new[] { 6, 7, 8, 13, 21, 23, 25, 27, 29, 32, 41, 43 };
             bool anyNull = required.Any(col => ws.Cell(i, col).IsEmpty());
 
             var preview = new Dictionary<string, string?>
             {
                 ["Row #"] = displayRow.ToString(),
-                ["Student ID"] = Get(5),
-                ["Last Name"] = Get(6),
-                ["First Name"] = Get(7),
-                ["DOB"] = GetDate(12)?.ToString("MM/dd/yyyy"),
-                ["Service Type"] = Get(19),
-                ["Language"] = Get(21),
-                ["Grp Size"] = Get(23),
-                ["Duration"] = Get(25),
-                ["Remaining Freq"] = Get(27),
-                ["Provider"] = Get(29),
-                ["First Attend Date"] = GetDate(37)?.ToString("MM/dd/yyyy"),
-                ["Mandate ID"] = Get(39),
+                ["Student ID"] = Get(6),
+                ["Last Name"] = Get(7),
+                ["First Name"] = Get(8),
+                ["DOB"] = GetDate(13)?.ToString("MM/dd/yyyy"),
+                ["Service Type"] = Get(21),
+                ["Language"] = Get(23),
+                ["Grp Size"] = Get(25),
+                ["Duration"] = Get(27),
+                ["Remaining Freq"] = Get(29),
+                ["Provider"] = Get(32),
+                ["First Attend Date"] = GetDate(41)?.ToString("MM/dd/yyyy"),
+                ["Mandate ID"] = Get(43),
             };
 
             // Collect all skip reasons for this row
@@ -209,19 +214,19 @@ public class ImportService : IImportService
                 reasons.Add("Missing required field(s)");
 
             // DOB must parse as a real date
-            if (!ws.Cell(i, 12).IsEmpty() && GetDate(12) == null)
+            if (!ws.Cell(i, 13).IsEmpty() && GetDate(13) == null)
                 reasons.Add("Date of Birth is not a valid date");
 
             // First Attend Date must parse as a real date
-            if (!ws.Cell(i, 37).IsEmpty() && GetDate(37) == null)
+            if (!ws.Cell(i, 41).IsEmpty() && GetDate(41) == null)
                 reasons.Add("First Attend Date is not a valid date");
 
             // Grp Size must be numeric
-            if (!ws.Cell(i, 23).IsEmpty() && !int.TryParse(Get(23), out _))
-                reasons.Add($"Grp Size \"{Get(23)}\" is not a number");
+            if (!ws.Cell(i, 25).IsEmpty() && !int.TryParse(Get(25), out _))
+                reasons.Add($"Grp Size \"{Get(25)}\" is not a number");
 
             // Student ID max 25 chars
-            var studentId = Get(5);
+            var studentId = Get(6);
             if (studentId?.Length > 25)
                 reasons.Add($"Student ID exceeds 25 characters ({studentId.Length})");
 
@@ -578,15 +583,20 @@ public class ImportService : IImportService
                 {
                     var cell = ws.Cell(i, col);
                     if (cell.IsEmpty()) return null;
+                    if (cell.Value.IsText)
+                    {
+                        if (DateTime.TryParse(cell.GetValue<string>(), out var dt)) return dt;
+                        return null;
+                    }
                     try { return cell.GetDateTime(); } catch { return null; }
                 }
 
-                string studentId = Get(5)!;
-                string serviceType = Get(19)!;
-                string remainingFreq = Get(27)!;
-                string dur = Get(25)!;
-                string grpSize = Get(23)!;
-                string mandateId = Get(39)!;
+                string studentId = Get(6)!;
+                string serviceType = Get(21)!;
+                string remainingFreq = Get(29)!;
+                string dur = Get(27)!;
+                string grpSize = Get(25)!;
+                string mandateId = Get(43)!;
 
                 // Duplicate check
                 bool exists = await db.Mandates.AnyAsync(m =>
@@ -604,7 +614,7 @@ public class ImportService : IImportService
                 }
 
                 // Calculate MandateStart / MandateEnd
-                DateTime? firstAttendDate = GetDate(37) ?? DateTime.Now;
+                DateTime? firstAttendDate = GetDate(41) ?? DateTime.Now;
                 DateTime mandateStart = firstAttendDate.Value.Date;
                 DateTime mandateEnd;
                 int month = mandateStart.Month;
@@ -617,29 +627,37 @@ public class ImportService : IImportService
 
                 var entity = new Mandate
                 {
-                    Conf_Date = GetDate(3),
+                    Conf_Date = GetDate(5),
                     Student_ID = studentId,
-                    Last_Name = Get(6),
-                    First_Name = Get(7),
-                    Home_District = Get(8)?.ToString(),
-                    CSE = Get(9),
-                    CSE_District = Get(10)?.ToString(),
-                    Grade = Get(11),
-                    Date_of_Birth = GetDate(12),
-                    Admin_DBN = Get(13),
-                    D75 = Get(17),
+                    Last_Name = Get(7),
+                    First_Name = Get(8),
+                    Home_District = Get(9)?.ToString(),
+                    CSE = Get(10),
+                    CSE_District = Get(11)?.ToString(),
+                    Grade = Get(12),
+                    Date_of_Birth = GetDate(13),
+                    Admin_DBN = Get(14),
+                    D75 = Get(19),
                     Service_Type = serviceType,
-                    Lang = Get(21),
+                    Lang = Get(23),
                     Grp_Size = grpSize,
                     Dur = dur,
-                    Service_Location = Get(26),
+                    Service_Location = Get(28),
                     Remaining_Freq = remainingFreq,
-                    Provider = Get(29),
-                    Service_Start_Date = GetDate(35),
+                    Provider = Get(32),
+                    Service_Start_Date = GetDate(39),
                     First_Attend_Date = firstAttendDate,
                     Mandate_ID = mandateId,
-                    Primary_Contact_Phone_1 = Get(42),
-                    Primary_Contact_Phone_2 = Get(43),
+                    Primary_Contact_Phone_1 = Get(50),
+                    Primary_Contact_Phone_2 = Get(51),
+                    IEP_Type = Get(3),
+                    School_Name = Get(16),
+                    Agency_Name = Get(31),
+                    Auth_Physical_DBN = Get(36),
+                    Assignment_ID = Get(44),
+                    Parent_First_Name = Get(47),
+                    Parent_Last_Name = Get(48),
+                    Parent_Email = Get(49),
                     MandateStart = mandateStart,
                     MandateEnd = mandateEnd,
                     FileName = preview.FileName,

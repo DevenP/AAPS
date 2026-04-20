@@ -100,6 +100,38 @@ public partial class Mandate
     [Unicode(false)]
     public string? Primary_Contact_Phone_2 { get; set; }
 
+    [StringLength(25)]
+    [Unicode(false)]
+    public string? IEP_Type { get; set; }
+
+    [StringLength(100)]
+    [Unicode(false)]
+    public string? School_Name { get; set; }
+
+    [StringLength(100)]
+    [Unicode(false)]
+    public string? Agency_Name { get; set; }
+
+    [StringLength(20)]
+    [Unicode(false)]
+    public string? Auth_Physical_DBN { get; set; }
+
+    [StringLength(25)]
+    [Unicode(false)]
+    public string? Assignment_ID { get; set; }
+
+    [StringLength(50)]
+    [Unicode(false)]
+    public string? Parent_First_Name { get; set; }
+
+    [StringLength(50)]
+    [Unicode(false)]
+    public string? Parent_Last_Name { get; set; }
+
+    [StringLength(100)]
+    [Unicode(false)]
+    public string? Parent_Email { get; set; }
+
     [Column(TypeName = "datetime")]
     public DateTime? MandateStart { get; set; }
 
