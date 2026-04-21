@@ -7,8 +7,6 @@
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Reflection
-@using System.ComponentModel.DataAnnotations
-@using System.ComponentModel
 @inject NavigationManager Nav
 @inject ILogger<GenericGrid<TItem>> Logger
 
@@ -237,20 +235,26 @@
             ColumnFilters[key.Replace("col_", "")] = query[key].ToString() ?? string.Empty;
         }
 
-        // 3. BUILD THE VISIBILITY DICTIONARY (The Correct Way)
-        _columnVisibility.Clear(); // Ensure it's empty
+        // 3. BUILD THE VISIBILITY DICTIONARY — Columns order first, then remaining browsable props
+        _columnVisibility.Clear();
         var allProps = typeof(TItem).GetProperties();
 
+        // First pass: add props in Columns order (these are visible by default)
+        if (Columns != null)
+        {
+            foreach (var col in Columns)
+            {
+                var prop = allProps.FirstOrDefault(p => p.Name == col);
+                if (prop == null || !prop.IsBrowsable()) continue;
+                _columnVisibility[col] = true;
+            }
+        }
+
+        // Second pass: append any remaining browsable props not in Columns (hidden by default)
         foreach (var prop in allProps)
         {
-            // Skip properties marked with [DisplayField(..., browsable: false)]
-            if (!prop.IsBrowsable()) continue;
-
-            // Determine if it should be visible:
-            // Either it was passed in the 'Columns' parameter OR it's currently being filtered in the URL
-            bool isVisible = Columns != null && Columns.Contains(prop.Name);
-
-            _columnVisibility[prop.Name] = isVisible;
+            if (!prop.IsBrowsable() || _columnVisibility.ContainsKey(prop.Name)) continue;
+            _columnVisibility[prop.Name] = false;
         }
     }
 
@@ -265,7 +269,11 @@
 
     private async Task OpenFilter()
     {
-        var parameters = new DialogParameters { ["InitialFilters"] = new Dictionary<string, string>(ColumnFilters) };
+        var parameters = new DialogParameters
+        {
+            ["InitialFilters"] = new Dictionary<string, string>(ColumnFilters),
+            ["ColumnOrder"]    = Columns ?? Array.Empty<string>()
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<FilterDialog<TItem>>("Advanced Search", parameters, options);
         var result = await dialog.Result;
@@ -323,24 +331,9 @@
 
     public string GetDisplayName(string propertyName)
     {
-        // 1. Get the property from the DTO type (TItem)
         var prop = typeof(TItem).GetProperty(propertyName);
         if (prop == null) return propertyName;
-
-        // 2. Check for [DisplayField("")] (custom attribute)
-        var displayFieldAttr = prop.GetCustomAttribute<AAPS.Application.Common.Attributes.DisplayFieldAttribute>();
-        if (displayFieldAttr != null) return displayFieldAttr.DisplayName;
-
-        // 3. Check for [Display(Name = "")] (from DataAnnotations)
-        var displayAttr = prop.GetCustomAttribute<DisplayAttribute>();
-        if (displayAttr != null) return displayAttr.Name ?? propertyName;
-
-        // 4. Check for [DisplayName("")] (from ComponentModel)
-        var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
-        if (displayNameAttr != null) return displayNameAttr.DisplayName;
-
-        // 5. Fallback to the C# property name if no attribute exists
-        return propertyName;
+        return prop.GetDisplayName() ?? propertyName;
     }
 
     private async Task OnSearch(string text)

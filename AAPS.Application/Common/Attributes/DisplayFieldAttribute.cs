@@ -17,6 +17,7 @@ public sealed class DisplayFieldAttribute : Attribute
 
     public string DisplayName { get; }
     public bool Browsable { get; }
+    public bool IsReadOnly { get; set; }
     public string? Description { get; set; }
     public int Order { get; set; } = -1;
     public string? GroupName { get; set; }

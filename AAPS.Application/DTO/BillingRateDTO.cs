@@ -1,35 +1,27 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record BillingRateDTO
 {
-    [Browsable(true)]
-    [Display(Name = "Id")]
+    [DisplayField("Id")]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "District")]
+    [DisplayField("District")]
     public string? District { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "ServiceType")]
+    [DisplayField("Service Type")]
     public string? ServiceType { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Rate")]
+    [DisplayField("Rate")]
     public decimal? Rate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "EffectiveDate")]
+    [DisplayField("Effective Date")]
     public DateTime? EffectiveDate { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "IsActive")]
+    [DisplayField("Is Active")]
     public bool IsActive { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Language")]
+    [DisplayField("Language")]
     public string? Language { get; set; }
 }

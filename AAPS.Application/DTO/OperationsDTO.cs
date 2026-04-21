@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using AAPS.Application.Common.Attributes;
+﻿using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO
 {

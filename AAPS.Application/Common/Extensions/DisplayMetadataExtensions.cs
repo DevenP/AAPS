@@ -31,8 +31,15 @@ public static class DisplayMetadataExtensions
         if (displayField != null)
             return displayField.Browsable;
 
-        // Default to true if no attribute is found
         return true;
+    }
+
+    /// <summary>
+    /// Gets whether a property is read-only.
+    /// </summary>
+    public static bool IsReadOnly(this PropertyInfo property)
+    {
+        return property.GetCustomAttribute<DisplayFieldAttribute>()?.IsReadOnly ?? false;
     }
 
     /// <summary>

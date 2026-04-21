@@ -1,19 +1,15 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record ServiceTypeDTO
 {
-    [Browsable(true)]
-    [Display(Name = "Id")]
+    [DisplayField("Id")]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Name")]
+    [DisplayField("Name")]
     public string? Name { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "IsEvaluation")]
+    [DisplayField("Is Evaluation")]
     public bool IsEvaluation { get; set; }
 }

@@ -23,6 +23,9 @@ public class ProviderService : IProviderService
 
     public async Task<PagedResult<ProviderDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        if (string.IsNullOrEmpty(request.SortBy))
+            request = request with { SortBy = "LastName" };
+
         await using var db = _factory.CreateDbContext();
         // 1. Apply global search on the raw entity BEFORE any joins/projections
         //    so EF translates it against real indexed columns.

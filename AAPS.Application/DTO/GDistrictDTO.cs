@@ -1,15 +1,12 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record GDistrictDTO
 {
-    [Browsable(true)]
-    [Display(Name = "Id")]
+    [DisplayField("Id")]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "DistrictCode")]
+    [DisplayField("District Code")]
     public string? DistrictCode { get; set; }
 }

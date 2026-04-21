@@ -1,28 +1,18 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record ProviderContactDTO
 {
-
-    [ReadOnly(true)]
-    [Browsable(false)]
-    [Display(Name = "Id")]
+    [DisplayField("Id", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
-    [ReadOnly(false)]
-    [Browsable(true)]
-    [Display(Name = "ProviderId")]
+    [DisplayField("Provider ID")]
     public int? ProviderId { get; set; }
 
-    [ReadOnly(true)]
-    [Browsable(true)]
-    [Display(Name = "ContactDate")]
+    [DisplayField("Contact Date", IsReadOnly = true)]
     public DateTime? ContactDate { get; set; }
 
-    [ReadOnly(false)]
-    [Browsable(true)]
-    [Display(Name = "Notes")]
+    [DisplayField("Notes")]
     public string? Notes { get; set; }
 }

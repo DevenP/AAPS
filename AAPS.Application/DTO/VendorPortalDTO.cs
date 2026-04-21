@@ -1,90 +1,68 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO
 {
     public record VendorPortalDTO
     {
-        [Browsable(true)]
-        [Display(Name = "Id")]
+        [DisplayField("Id")]
         public int Id { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Provider SSN")]
+        [DisplayField("Provider SSN")]
         public string? ProviderSSN { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Boro")]
+        [DisplayField("Boro")]
         public string? Boro { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "District")]
+        [DisplayField("District")]
         public string? District { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "School")]
+        [DisplayField("School")]
         public string? School { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Fund")]
+        [DisplayField("Fund")]
         public string? Fund { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "StudentId")]
+        [DisplayField("Student ID")]
         public string? StudentId { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Duration")]
+        [DisplayField("Duration")]
         public string? Duration { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Frequency")]
+        [DisplayField("Frequency")]
         public string? Frequency { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "GroupSize")]
+        [DisplayField("Group Size")]
         public string? GroupSize { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "ApprovalStartDate")]
+        [DisplayField("Approval Start Date")]
         public DateTime? ApprovalStartDate { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "AssignmentId")]
+        [DisplayField("Assignment ID")]
         public string? AssignmentId { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "FileName")]
+        [DisplayField("File Name")]
         public string? VenderPortalFile { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "EntryId")]
+        [DisplayField("Entry ID")]
         public int? EntryId { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "StudentFirstName")]
+        [DisplayField("Student First Name")]
         public string? StudentFirstName { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "StudentLastName")]
+        [DisplayField("Student Last Name")]
         public string? StudentLastName { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "ProviderFirstName")]
+        [DisplayField("Provider First Name")]
         public string? ProviderFirstName { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "ProviderLastName")]
+        [DisplayField("Provider Last Name")]
         public string? ProviderLastName { get; set; }
 
-        [Browsable(true)]
-        [Display(Name = "Mismatch")]
+        [DisplayField("Mismatch")]
         [FilterOptions("Approval", "Provider")]
-        public string? Mismatch { get; set; } // 'Approval' or 'Provider'
+        public string? Mismatch { get; set; }
 
-        [Browsable(false)]
-        [Display(Name = "Mismatched Vendor Portal")]
-        public bool MismatchedVendorPortal { get; set; } // true when Entry_Id IS NULL (unlinked VP record)
+        [DisplayField("Mismatched Vendor Portal", browsable: false)]
+        public bool MismatchedVendorPortal { get; set; }
     }
 }

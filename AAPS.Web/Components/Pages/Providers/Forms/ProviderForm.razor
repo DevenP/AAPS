@@ -3,7 +3,8 @@
 @using AAPS.Web.Components.Pages.Files
 @using MudBlazor.Extensions
 @using System.Reflection
-@using System.ComponentModel
+@using AAPS.Application.Common.Attributes
+@using AAPS.Application.Common.Extensions
 @inject IProviderContactService ContactService
 @inject IServiceProvider ServiceProvider
 @inject ISnackbar Snackbar
@@ -31,8 +32,7 @@
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="Model.FirstName"
                                   Label="First Name"
-                                  Required
-                                  ReadOnly="@IsLocked(nameof(Model.FirstName))" />
+                                  Required />
                 </MudItem>
             }
 
@@ -408,15 +408,10 @@
     {
         if (string.IsNullOrEmpty(propName)) return true;
         var prop = typeof(ProviderDTO).GetProperty(propName);
-        var attr = prop?.GetCustomAttribute<BrowsableAttribute>();
-        return attr?.Browsable ?? true;
+        return prop?.IsBrowsable() ?? true;
     }
-    private bool IsLocked(string propName)
-    {
-        var prop = typeof(ProviderDTO).GetProperty(propName);
-        var attr = prop?.GetCustomAttribute<ReadOnlyAttribute>();
-        return attr?.IsReadOnly ?? false;
-    }
+    private bool IsLocked(string propName) =>
+        typeof(ProviderDTO).GetProperty(propName)?.IsReadOnly() ?? false;
 
     public List<ProviderContactDTO> GetUpdatedContacts() => contacts;
 }

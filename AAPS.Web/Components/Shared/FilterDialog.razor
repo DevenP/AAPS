@@ -104,6 +104,7 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public Dictionary<string, string> InitialFilters { get; set; } = new();
+    [Parameter] public string[] ColumnOrder { get; set; } = Array.Empty<string>();
 
     private Dictionary<string, string> _localFilters = new();
 
@@ -120,19 +121,25 @@
 
     private IEnumerable<PropertyInfo> GetFilteredProperties()
     {
-        return typeof(TItem).GetProperties()
+        var all = typeof(TItem).GetProperties()
             .Where(p =>
             {
-                // Check if DisplayField(..., browsable: false) is present
                 if (!p.IsBrowsable()) return false;
-
-                // Otherwise, keep our existing type checks
                 return p.PropertyType == typeof(string) ||
                        Nullable.GetUnderlyingType(p.PropertyType) == typeof(DateTime) ||
                        p.PropertyType == typeof(DateTime) ||
                        Nullable.GetUnderlyingType(p.PropertyType) == typeof(bool) ||
                        p.PropertyType == typeof(bool);
-            });
+            })
+            .ToList();
+
+        if (ColumnOrder.Length == 0) return all;
+
+        // Return in Columns order first, then any remaining browsable props
+        return ColumnOrder
+            .Select(col => all.FirstOrDefault(p => p.Name == col))
+            .Where(p => p != null)
+            .Concat(all.Where(p => !ColumnOrder.Contains(p.Name)))!;
     }
 
     private string GetDisplayName(string propertyName)

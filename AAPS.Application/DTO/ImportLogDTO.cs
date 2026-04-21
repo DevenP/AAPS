@@ -1,23 +1,18 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record ImportLogDTO
 {
-    [Browsable(false)]
-    [Display(Name = "Id")]
+    [DisplayField("Id", browsable: false)]
     public int Id { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Import Record")]
+    [DisplayField("Import Record")]
     public string? ImportRecord { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "File Name")]
+    [DisplayField("File Name")]
     public string? FileName { get; set; }
 
-    [Browsable(true)]
-    [Display(Name = "Import Date")]
+    [DisplayField("Import Date")]
     public DateTime? ImportDate { get; set; }
 }

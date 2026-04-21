@@ -1,18 +1,21 @@
 ﻿@page "/providers"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
+@using AAPS.Application.Common.Extensions
 @using AAPS.Web.Components.Pages.Providers.Forms
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject IProviderService ProviderService
 @inject ISnackbar Snackbar
 
 <GenericGrid @ref="_grid" TItem="ProviderDTO"
              Title="Providers"
              RowStyleFunc="RowStyle"
-             Columns="@(new[] { "Actions","Id", "IsActive", "FirstName", "LastName", "AssignedCount", "Email", "Phone", "Ssn", "TaxId", "NpiNumber", "Birthdate", "CorporationName", "ServiceType", "City", "State", "HasPets" })"
+             DefaultSortLabel="LastName"
+             Columns="@(new[] { "Actions", "IsActive", "LastName", "FirstName", "Phone", "Email", "NpiNumber", "License1", "CorporationName", "AssignedCount", "Ssn", "ServiceType" })"
              GetData="ProviderService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Id", "IsActive", "FirstName", "LastName", "Students", "Email", "Phone", "SSN", "TaxId", "NPI", "DOB", "CorpName", "Service", "City", "State" })"
-             ExportMapper="@(p => new object?[] { p.Id, p.IsActive, p.FirstName, p.LastName, p.AssignedCount, p.Email, p.Phone, p.Ssn, p.TaxId, p.NpiNumber, p.Birthdate, p.CorporationName, p.ServiceType, p.City, p.State })">
+             ExportHeaders="@(new[] { DN(nameof(ProviderDTO.IsActive)), DN(nameof(ProviderDTO.LastName)), DN(nameof(ProviderDTO.FirstName)), DN(nameof(ProviderDTO.Phone)), DN(nameof(ProviderDTO.Email)), DN(nameof(ProviderDTO.NpiNumber)), DN(nameof(ProviderDTO.License1)), DN(nameof(ProviderDTO.CorporationName)), DN(nameof(ProviderDTO.AssignedCount)), DN(nameof(ProviderDTO.Ssn)), DN(nameof(ProviderDTO.ServiceType)) })"
+             ExportMapper="@(p => new object?[] { p.IsActive, p.LastName, p.FirstName, p.Phone, p.Email, p.NpiNumber, p.License1, p.CorporationName, p.AssignedCount, p.Ssn, p.ServiceType })">
 
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
@@ -27,73 +30,52 @@
 
     <HeaderContent>
         <GridCell TItem="ProviderDTO" Column="Actions" IsHeader="true">Actions</GridCell>
-        <GridCell TItem="ProviderDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="ProviderDTO">ID</MudTableSortLabel>
-        </GridCell>
         <GridCell TItem="ProviderDTO" Column="IsActive" IsHeader="true">
-            <MudTableSortLabel SortLabel="IsActive" T="ProviderDTO">IsActive</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="ProviderDTO" Column="FirstName" IsHeader="true">
-            <MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">First Name</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="IsActive" T="ProviderDTO">@_grid?.GetDisplayName("IsActive")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="LastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="LastName" T="ProviderDTO">Last Name</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="LastName" T="ProviderDTO">@_grid?.GetDisplayName("LastName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="AssignedCount" IsHeader="true">
-            <MudTableSortLabel SortLabel="AssignedCount" T="ProviderDTO">Students</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="ProviderDTO" Column="Email" IsHeader="true">
-            <MudTableSortLabel SortLabel="Email" T="ProviderDTO">Email</MudTableSortLabel>
+        <GridCell TItem="ProviderDTO" Column="FirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="FirstName" T="ProviderDTO">@_grid?.GetDisplayName("FirstName")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="Phone" IsHeader="true">
-            <MudTableSortLabel SortLabel="Phone" T="ProviderDTO">Phone</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Phone" T="ProviderDTO">@_grid?.GetDisplayName("Phone")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="Ssn" IsHeader="true">
-            <MudTableSortLabel SortLabel="Ssn" T="ProviderDTO">
-                @_grid?.GetDisplayName("Ssn")  @* EXAMPLE FOR DISPLAY NAME *@
-            </MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="ProviderDTO" Column="TaxId" IsHeader="true">
-            <MudTableSortLabel SortLabel="TaxId" T="ProviderDTO">Tax ID</MudTableSortLabel>
+        <GridCell TItem="ProviderDTO" Column="Email" IsHeader="true">
+            <MudTableSortLabel SortLabel="Email" T="ProviderDTO">@_grid?.GetDisplayName("Email")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="NpiNumber" IsHeader="true">
-            <MudTableSortLabel SortLabel="NpiNumber" T="ProviderDTO">NPI</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="NpiNumber" T="ProviderDTO">@_grid?.GetDisplayName("NpiNumber")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="Birthdate" IsHeader="true">
-            <MudTableSortLabel SortLabel="Birthdate" T="ProviderDTO">DOB</MudTableSortLabel>
+        <GridCell TItem="ProviderDTO" Column="License1" IsHeader="true">
+            <MudTableSortLabel SortLabel="License1" T="ProviderDTO">@_grid?.GetDisplayName("License1")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="CorporationName" IsHeader="true">
-            <MudTableSortLabel SortLabel="CorporationName" T="ProviderDTO">Corp Name</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="CorporationName" T="ProviderDTO">@_grid?.GetDisplayName("CorporationName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="AssignedCount" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignedCount" T="ProviderDTO">@_grid?.GetDisplayName("AssignedCount")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderDTO" Column="Ssn" IsHeader="true">
+            <MudTableSortLabel SortLabel="Ssn" T="ProviderDTO">@_grid?.GetDisplayName("Ssn")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderDTO" Column="ServiceType" IsHeader="true">
-            <MudTableSortLabel SortLabel="ServiceType" T="ProviderDTO">Service</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="ProviderDTO" Column="City" IsHeader="true">
-            <MudTableSortLabel SortLabel="City" T="ProviderDTO">City</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="ProviderDTO" Column="State" IsHeader="true">
-            <MudTableSortLabel SortLabel="State" T="ProviderDTO">ST</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="ProviderDTO" Column="HasPets" IsHeader="true">
-            <MudTableSortLabel SortLabel="HasPets" T="ProviderDTO">Pets</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ServiceType" T="ProviderDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="provider">
-        @* Action Button *@
         <GridCell TItem="ProviderDTO" Column="Actions">
             <div class="d-flex">
                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                Size="Size.Small" Color="Color.Primary"
                                OnClick="@(() => OpenEditDialog(provider))" />
-
                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                Size="Size.Small" Color="Color.Error"
                                OnClick="@(() => OnDeleteClicked(provider))" />
             </div>
         </GridCell>
-
-        <GridCell TItem="ProviderDTO" Column="Id">@provider.Id</GridCell>
 
         <GridCell TItem="ProviderDTO" Column="IsActive">
             <MudChip T="string"
@@ -104,51 +86,52 @@
             </MudChip>
         </GridCell>
 
-        <GridCell TItem="ProviderDTO" Column="FirstName">
-            <MudTooltip Text="@provider.FirstName">@provider.FirstName</MudTooltip>
-        </GridCell>
-
         <GridCell TItem="ProviderDTO" Column="LastName">
             @if (provider.IsDuplicateName)
             {
                 <MudTooltip Text="Possible Duplicate Name Found">
                     <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" Class="mr-1" />
                 </MudTooltip>
-
             }
-
             <MudTooltip Text="@provider.LastName">@provider.LastName</MudTooltip>
+        </GridCell>
 
+        <GridCell TItem="ProviderDTO" Column="FirstName">
+            <MudTooltip Text="@provider.FirstName">@provider.FirstName</MudTooltip>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="AssignedCount">
-            <MudChip T="int" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">@provider.AssignedCount</MudChip>
-        </GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="Phone">@provider.Phone</GridCell>
+
         <GridCell TItem="ProviderDTO" Column="Email">
             <MudTooltip Text="@provider.Email">
                 <MudLink href="@($"mailto:{provider.Email}")" Underline="Underline.Hover">@provider.Email</MudLink>
             </MudTooltip>
         </GridCell>
-        <GridCell TItem="ProviderDTO" Column="Phone">@provider.Phone</GridCell>
-        <GridCell TItem="ProviderDTO" Column="Ssn">@provider.Ssn</GridCell>
-        <GridCell TItem="ProviderDTO" Column="TaxId">@provider.TaxId</GridCell>
+
         <GridCell TItem="ProviderDTO" Column="NpiNumber">@provider.NpiNumber</GridCell>
-        <GridCell TItem="ProviderDTO" Column="Birthdate">@provider.Birthdate?.ToString("MM/dd/yyyy")</GridCell>
-        <GridCell TItem="ProviderDTO" Column="CorporationName"><MudTooltip Text="@provider.CorporationName">@provider.CorporationName</MudTooltip></GridCell>
-        <GridCell TItem="ProviderDTO" Column="ServiceType">@provider.ServiceType</GridCell>
-        <GridCell TItem="ProviderDTO" Column="City">@provider.City</GridCell>
-        <GridCell TItem="ProviderDTO" Column="State">@provider.State</GridCell>
-        <GridCell TItem="ProviderDTO" Column="HasPets">
-            @if (provider.HasPets)
-            {
-                <MudIcon Icon="@Icons.Material.Filled.Pets" Size="Size.Small" Color="Color.Info" />
-            }
+
+        <GridCell TItem="ProviderDTO" Column="License1">@provider.License1</GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="CorporationName">
+            <MudTooltip Text="@provider.CorporationName">@provider.CorporationName</MudTooltip>
         </GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="AssignedCount">
+            <MudChip T="int" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">@provider.AssignedCount</MudChip>
+        </GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="Ssn">@provider.Ssn</GridCell>
+
+        <GridCell TItem="ProviderDTO" Column="ServiceType">@provider.ServiceType</GridCell>
     </RowTemplate>
 </GenericGrid>
 
 @code {
 
     private GenericGrid<ProviderDTO> _grid = default!;
+
+    private static string DN(string prop) =>
+        typeof(ProviderDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
 
     [Inject] IDialogService DialogService { get; set; } = default!;
 

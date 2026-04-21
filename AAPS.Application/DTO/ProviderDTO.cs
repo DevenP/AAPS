@@ -1,16 +1,13 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using AAPS.Application.Common.Attributes;
+﻿using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
 public record ProviderDTO
 {
-    [ReadOnly(true)]
-    [DisplayField("Id", browsable:true)]
+    [DisplayField("Id", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
-    [DisplayField("Social")]
+    [DisplayField("SSN")]
     public string? Ssn { get; set; }
 
     [DisplayField("Last Name")]
@@ -25,67 +22,67 @@ public record ProviderDTO
     [DisplayField("Email")]
     public string? Email { get; set; }
 
-    [DisplayField("Tax ID")]
+    [DisplayField("Tax ID", browsable: false)]
     public string? TaxId { get; set; }
 
-    [DisplayField("Birthdate")]
+    [DisplayField("Birthdate", browsable: false)]
     public DateTime? Birthdate { get; set; }
 
-    [DisplayField("NPI Number")]
+    [DisplayField("NPI")]
     public string? NpiNumber { get; set; }
 
-    [DisplayField("Liability Insurance Date")]
+    [DisplayField("Liability Insurance Date", browsable: false)]
     public DateTime? LiabilityInsuranceDate { get; set; }
 
-    [DisplayField("License 1")]
+    [DisplayField("License")]
     public string? License1 { get; set; }
 
-    [DisplayField("License 1 Expiration")]
+    [DisplayField("License 1 Expiration", browsable: false)]
     public DateTime? License1Expiration { get; set; }
 
-    [DisplayField("License 2")]
+    [DisplayField("License 2", browsable: false)]
     public string? License2 { get; set; }
 
-    [DisplayField("License 2 Expiration")]
+    [DisplayField("License 2 Expiration", browsable: false)]
     public DateTime? License2Expiration { get; set; }
 
-    [DisplayField("Medical Date")]
+    [DisplayField("Medical Date", browsable: false)]
     public DateTime? MedicalDate { get; set; }
 
-    [DisplayField("Has Pets")]
+    [DisplayField("Has Pets", browsable: false)]
     public bool HasPets { get; set; }
 
-    [DisplayField("W9 Date")]
+    [DisplayField("W9 Date", browsable: false)]
     public DateTime? W9Date { get; set; }
 
-    [DisplayField("Direct Deposit Date")]
+    [DisplayField("Direct Deposit Date", browsable: false)]
     public DateTime? DirectDepositDate { get; set; }
 
-    [DisplayField("Contract Date")]
+    [DisplayField("Contract Date", browsable: false)]
     public DateTime? ContractDate { get; set; }
 
-    [DisplayField("Photo ID Date")]
+    [DisplayField("Photo ID Date", browsable: false)]
     public DateTime? PhotoIdDate { get; set; }
 
-    [DisplayField("Resume Date")]
+    [DisplayField("Resume Date", browsable: false)]
     public DateTime? ResumeDate { get; set; }
 
-    [DisplayField("HR Bundle Date")]
+    [DisplayField("HR Bundle Date", browsable: false)]
     public DateTime? HrBundleDate { get; set; }
 
-    [DisplayField("Proof of Corp Date")]
+    [DisplayField("Proof of Corp Date", browsable: false)]
     public DateTime? ProofOfCorpDate { get; set; }
 
-    [DisplayField("Policies Date")]
+    [DisplayField("Policies Date", browsable: false)]
     public DateTime? PoliciesDate { get; set; }
 
-    [DisplayField("Medicaid Date")]
+    [DisplayField("Medicaid Date", browsable: false)]
     public DateTime? MedicaidDate { get; set; }
 
-    [DisplayField("Sexual Harassment Training Date")]
+    [DisplayField("Sexual Harassment Training Date", browsable: false)]
     public DateTime? SexualHarassmentTrainingDate { get; set; }
 
-    [DisplayField("Corporation Name")]
+    [DisplayField("Corp Name")]
     public string? CorporationName { get; set; }
 
     [DisplayField("Service Type")]
@@ -94,30 +91,30 @@ public record ProviderDTO
     [DisplayField("Is Active")]
     public bool? IsActive { get; set; }
 
-    [DisplayField("Address")]
+    [DisplayField("Address", browsable: false)]
     public string? Address { get; set; }
 
-    [DisplayField("City")]
+    [DisplayField("City", browsable: false)]
     public string? City { get; set; }
 
-    [DisplayField("State")]
+    [DisplayField("State", browsable: false)]
     public string? State { get; set; }
 
-    [DisplayField("Zipcode")]
+    [DisplayField("Zipcode", browsable: false)]
     public string? Zipcode { get; set; }
 
-    [DisplayField("BL Ext Date")]
+    [DisplayField("BL Ext Date", browsable: false)]
     public DateTime? BlExtDate { get; set; }
 
-    [DisplayField("Languages")]
+    [DisplayField("Languages", browsable: false)]
     public string? Languages { get; set; }
 
-    [DisplayField("Direct Deposit Info")]
+    [DisplayField("Direct Deposit Info", browsable: false)]
     public string? DirectDepositInfo { get; set; }
 
-    [DisplayField("Is Duplicate Name")]
+    [DisplayField("Is Duplicate Name", browsable: false)]
     public bool IsDuplicateName { get; set; }
 
-    [DisplayField("Assigned Count")]
+    [DisplayField("Students")]
     public int AssignedCount { get; set; }
 }
