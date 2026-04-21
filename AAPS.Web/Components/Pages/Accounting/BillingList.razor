@@ -1,5 +1,6 @@
 @page "/billing"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Paging
 @using Microsoft.AspNetCore.Hosting
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Accounting.Forms
@@ -14,14 +15,26 @@
 
 <GenericGrid @ref="_grid" TItem="BillingRecordDTO"
              Title="Billing"
-             Columns="@(new[] { "Actions", "SesisId", "DateOfService", "StartTime", "EndTime", "Provider", "GDistrict", "StudentId", "Student", "Grade", "ServiceType", "ActualSize", "Duration", "Frequency", "Billed", "BilledPaidOn", "ProviderPaidOn", "BillingRate", "ProviderRate", "BillingAmount", "ProviderAmount", "AssignId", "EntryId" })"
+             Columns="@(new[] { "Checkbox", "Actions", "SesisId", "DateOfService", "StartTime", "EndTime", "Provider", "GDistrict", "StudentId", "Student", "Grade", "ServiceType", "ActualSize", "Duration", "Frequency", "Billed", "BilledPaidOn", "ProviderPaidOn", "BillingRate", "ProviderRate", "BillingAmount", "ProviderAmount", "AssignId", "EntryId" })"
              GetData="BillingService.GetPagedAsync"
              DefaultSortLabel="DateOfService"
              OnDataLoaded="RefreshSummary"
-             CustomActionContent="@ActionButtons"
+             OnFilterRemoved="@(_ => { ClearSelection(); return Task.CompletedTask; })"
              ExportMapper="@(r => new object?[] { r.SesisId, r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
 
+    <CustomActionContent>
+        @if (_selectedIds.Count > 0)
+        {
+            <MudText Typo="Typo.caption" Class="mr-2 align-self-center">@_selectedIds.Count selected</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Deselect" Title="Clear selection" Size="Size.Small" OnClick="ClearSelection" Class="mr-1" />
+        }
+        @ActionButtons
+    </CustomActionContent>
+
     <HeaderContent>
+        <MudTh Style="width:40px; padding: 0 8px;">
+            <MudCheckBox T="bool" Value="_allSelected" ValueChanged="ToggleSelectAll" Color="Color.Primary" Size="Size.Small" />
+        </MudTh>
         <GridCell TItem="BillingRecordDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="BillingRecordDTO" Column="SesisId" IsHeader="true">
             <MudTableSortLabel SortLabel="SesisId" T="BillingRecordDTO">@_grid.GetDisplayName("SesisId")</MudTableSortLabel>
@@ -84,6 +97,13 @@
     </HeaderContent>
 
     <RowTemplate Context="record">
+        <MudTd Style="width:40px; padding: 0 8px;">
+            <MudCheckBox T="bool"
+                         Value="_selectedIds.Contains(record.SesisId)"
+                         ValueChanged="@(v => ToggleRow(record.SesisId, v))"
+                         Color="Color.Primary"
+                         Size="Size.Small" />
+        </MudTd>
         <GridCell TItem="BillingRecordDTO" Column="Actions">
             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                            Size="Size.Small" Color="Color.Primary"
@@ -186,8 +206,76 @@
     private bool _generating = false;
     private bool _generatingStatements = false;
     private BillingSummary? _summary;
+    private HashSet<int> _selectedIds = [];
+    private bool _allSelected = false;
+    private bool _busy = false;
 
     private bool _isBusy => _generating || _generatingStatements;
+
+    // ── Selection ────────────────────────────────────────────────────────────
+    private void ToggleRow(int id, bool selected)
+    {
+        if (selected) _selectedIds.Add(id);
+        else _selectedIds.Remove(id);
+        _allSelected = false;
+    }
+
+    private async Task ToggleSelectAll(bool selected)
+    {
+        _allSelected = selected;
+        if (!selected) { _selectedIds.Clear(); return; }
+        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters, PageSize: -1);
+        var result = await BillingService.GetPagedAsync(request);
+        _selectedIds = result.Items.Select(i => i.SesisId).ToHashSet();
+    }
+
+    private void ClearSelection()
+    {
+        _selectedIds.Clear();
+        _allSelected = false;
+    }
+
+    // ── Bulk edit ────────────────────────────────────────────────────────────
+    private async Task OpenBulkEditDialog()
+    {
+        var parameters = new DialogParameters<BillingEditDialog>
+        {
+            { x => x.Item, new BillingRecordDTO() },
+            { x => x.IsBulk, true },
+            { x => x.SelectedCount, _selectedIds.Count }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<BillingEditDialog>("Edit Fields", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled) return;
+
+        if (result.Data is ValueTuple<DateTime?, DateTime?, DateTime?> bulk)
+            await RunBulkUpdate(bulk.Item1 != null, bulk.Item1, bulk.Item2 != null, bulk.Item2, bulk.Item3 != null, bulk.Item3);
+    }
+
+    private async Task RunBulkUpdate(bool applyBilled, DateTime? billed, bool applyBilledPaid, DateTime? billedPaid, bool applyProviderPaid, DateTime? providerPaid)
+    {
+        var ids = _selectedIds.ToList();
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await BillingService.BulkUpdateBillingDatesAsync(ids, applyBilled, billed, applyBilledPaid, billedPaid, applyProviderPaid, providerPaid);
+            Snackbar.Add($"{ids.Count} record(s) updated.", Severity.Success);
+            ClearSelection();
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Bulk billing date update failed");
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     private async Task RefreshSummary()
     {
@@ -205,30 +293,45 @@
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary">Providers Paid @_summary.TotalProvider.ToString("C2")</MudChip>
                 </span>
             }
-            @if (_isBusy)
+            @if (_isBusy || _busy)
             {
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            Size="Size.Small"
                            Disabled="true">
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    Generating…
+                    Working…
                 </MudButton>
             }
             else
             {
-                <MudMenu Label="Generate"
+                <MudMenu Label="Actions"
                          Variant="Variant.Filled"
                          Color="Color.Primary"
                          EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
                          Size="Size.Small">
+                    @if (_selectedIds.Count == 0)
+                    {
+                        <MudTooltip Text="Select rows to enable bulk editing">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" Disabled="true">
+                                Edit Fields
+                            </MudMenuItem>
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="OpenBulkEditDialog">
+                            Edit Fields
+                        </MudMenuItem>
+                    }
+                    <MudDivider />
                     <MudMenuItem Icon="@Icons.Material.Filled.FileOpen"
                                  OnClick="GenerateFiles">
-                        Billing Files
+                        Generate Billing Files
                     </MudMenuItem>
                     <MudMenuItem Icon="@Icons.Material.Filled.Description"
                                  OnClick="GenerateStatements">
-                        Statements
+                        Generate Statements
                     </MudMenuItem>
                 </MudMenu>
             }

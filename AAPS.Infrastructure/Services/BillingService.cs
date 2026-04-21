@@ -116,6 +116,19 @@ public class BillingService : IBillingService
         return result == null ? new BillingSummary(0, 0, 0) : new BillingSummary(result.Count, result.TotalBilling, result.TotalProvider);
     }
 
+    public async Task BulkUpdateBillingDatesAsync(List<int> sesisIds, bool applyBilled, DateTime? billed, bool applyBilledPaid, DateTime? billedPaid, bool applyProviderPaid, DateTime? providerPaid, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var records = await db.Seses.Where(s => sesisIds.Contains(s.Sesis_Id)).ToListAsync(ct);
+        foreach (var s in records)
+        {
+            if (applyBilled) s.Billed = billed;
+            if (applyBilledPaid) s.bPaid = billedPaid;
+            if (applyProviderPaid) s.pPaid = providerPaid;
+        }
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task UpdateBillingDatesAsync(int sesisId, DateTime? billed, DateTime? billedPaidOn, DateTime? providerPaidOn, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();

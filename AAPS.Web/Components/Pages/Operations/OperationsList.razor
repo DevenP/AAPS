@@ -9,6 +9,19 @@
 @inject ISnackbar Snackbar
 @inject ILogger<OperationsList> Logger
 
+<div style="position:sticky;top:0;z-index:200;background:var(--mud-palette-surface);border-bottom:1px solid var(--mud-palette-divider);padding:5px 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+    <MudText Typo="Typo.caption" Style="font-weight:700;opacity:0.5;letter-spacing:.05em;">ALERT LEGEND</MudText>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error"   Size="Size.Small" /><MudText Typo="Typo.caption">Missing Approval</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.PersonOff"       Color="Color.Error"   Size="Size.Small" /><MudText Typo="Typo.caption">Unassigned Provider</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.EventRepeat"     Color="Color.Error"   Size="Size.Small" /><MudText Typo="Typo.caption">Overlap Service</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.LibraryAddCheck" Color="Color.Error"   Size="Size.Small" /><MudText Typo="Typo.caption">Over Mandate</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.TimerOff"        Color="Color.Warning" Size="Size.Small" /><MudText Typo="Typo.caption">Over Duration</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.Groups"          Color="Color.Info"    Size="Size.Small" /><MudText Typo="Typo.caption">Under Group Size</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.MoneyOff"        Color="Color.Warning" Size="Size.Small" /><MudText Typo="Typo.caption">Missing Billing Rate</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.MoneyOff"        Color="Color.Warning" Size="Size.Small" /><MudText Typo="Typo.caption">Missing Provider Rate</MudText></span>
+    <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.LinkOff"         Color="Color.Info"    Size="Size.Small" /><MudText Typo="Typo.caption">Missing Assignment ID</MudText></span>
+</div>
+
 <GenericGrid TItem="OperationsDTO"
              @ref="_grid"
              Title="Operations Registry"
@@ -137,42 +150,15 @@
         @* Combined Alert Icons Column *@
         <GridCell TItem="OperationsDTO" Column="Alerts">
             <div class="d-flex gap-1">
-                @if (op.MandateFlag)
-                {
-                    <MudTooltip Text="Missing Approval"><MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.ProviderFlag)
-                {
-                    <MudTooltip Text="Unassigned Provider"><MudIcon Icon="@Icons.Material.Filled.PersonOff" Color="Color.Error" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.IsOverlap)
-                {
-                    <MudTooltip Text="Overlap Service"><MudIcon Icon="@Icons.Material.Filled.EventRepeat" Color="Color.Error" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.IsOverMandate)
-                {
-                    <MudTooltip Text="Over Mandate Service"><MudIcon Icon="@Icons.Material.Filled.LibraryAddCheck" Color="Color.Error" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.IsOverDuration)
-                {
-                    <MudTooltip Text="Over Duration"><MudIcon Icon="@Icons.Material.Filled.TimerOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.IsUnderGroup)
-                {
-                    <MudTooltip Text="Under Group Size"><MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.BRateFlag)
-                {
-                    <MudTooltip Text="Missing Billing Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.PRateFlag)
-                {
-                    <MudTooltip Text="Missing Provider Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip>
-                }
-                @if (op.AssignFlag)
-                {
-                    <MudTooltip Text="Missing Assignment Id"><MudIcon Icon="@Icons.Material.Filled.LinkOff" Color="Color.Info" Size="Size.Small" /></MudTooltip>
-                }
+                @if (op.MandateFlag)   { <MudTooltip Text="Missing Approval">      <MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error"   Size="Size.Small" /></MudTooltip> }
+                @if (op.ProviderFlag)  { <MudTooltip Text="Unassigned Provider">   <MudIcon Icon="@Icons.Material.Filled.PersonOff"       Color="Color.Error"   Size="Size.Small" /></MudTooltip> }
+                @if (op.IsOverlap)     { <MudTooltip Text="Overlap Service">       <MudIcon Icon="@Icons.Material.Filled.EventRepeat"     Color="Color.Error"   Size="Size.Small" /></MudTooltip> }
+                @if (op.IsOverMandate) { <MudTooltip Text="Over Mandate Service">  <MudIcon Icon="@Icons.Material.Filled.LibraryAddCheck" Color="Color.Error"   Size="Size.Small" /></MudTooltip> }
+                @if (op.IsOverDuration){ <MudTooltip Text="Over Duration">         <MudIcon Icon="@Icons.Material.Filled.TimerOff"        Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
+                @if (op.IsUnderGroup)  { <MudTooltip Text="Under Group Size">      <MudIcon Icon="@Icons.Material.Filled.Groups"          Color="Color.Info"    Size="Size.Small" /></MudTooltip> }
+                @if (op.BRateFlag)     { <MudTooltip Text="Missing Billing Rate">  <MudIcon Icon="@Icons.Material.Filled.MoneyOff"        Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
+                @if (op.PRateFlag)     { <MudTooltip Text="Missing Provider Rate"> <MudIcon Icon="@Icons.Material.Filled.MoneyOff"        Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
+                @if (op.AssignFlag)    { <MudTooltip Text="Missing Assignment Id"> <MudIcon Icon="@Icons.Material.Filled.LinkOff"         Color="Color.Info"    Size="Size.Small" /></MudTooltip> }
             </div>
         </GridCell>
 

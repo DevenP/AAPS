@@ -76,12 +76,6 @@
         @* Row Actions *@
         <GridCell TItem="EvalDTO" Column="Actions">
             <div class="d-flex gap-1">
-                <MudTooltip Text="Print Consent Letter">
-                    <MudIconButton Icon="@Icons.Material.Filled.Print"
-                                   Size="Size.Small"
-                                   Color="Color.Primary"
-                                   OnClick="@(() => PrintConsent(eval.Id))" />
-                </MudTooltip>
                 <MudTooltip Text="Edit Evaluation">
                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                    Size="Size.Small"

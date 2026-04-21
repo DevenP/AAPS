@@ -80,7 +80,7 @@ namespace AAPS.Web
                 .AddInteractiveServerRenderMode();
 
             CreateFileExplorerEndpoints(app);
-            CreateReportEndpoints(app);       // ← NEW
+            CreateReportEndpoints(app);
 
             app.Run();
         }

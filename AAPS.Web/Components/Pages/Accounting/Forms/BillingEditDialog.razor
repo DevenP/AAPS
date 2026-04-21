@@ -2,27 +2,23 @@
 
 <MudDialog>
     <DialogContent>
-        <MudStack Spacing="1" Class="mb-4">
-            <MudText Typo="Typo.subtitle2">@_dto.Provider</MudText>
-            <MudText Typo="Typo.body2">@_dto.Student &nbsp;|&nbsp; @_dto.DateOfService?.ToString("MM/dd/yyyy") &nbsp;|&nbsp; @_dto.ServiceType</MudText>
-        </MudStack>
+        @if (IsBulk)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-3" Dense="true">
+                Editing <strong>@SelectedCount</strong> record(s). Leave a field blank to leave it unchanged.
+            </MudAlert>
+        }
+        else
+        {
+            <MudStack Spacing="1" Class="mb-4">
+                <MudText Typo="Typo.subtitle2">@_dto.Provider</MudText>
+                <MudText Typo="Typo.body2">@_dto.Student &nbsp;|&nbsp; @_dto.DateOfService?.ToString("MM/dd/yyyy") &nbsp;|&nbsp; @_dto.ServiceType</MudText>
+            </MudStack>
+        }
 
-        <MudDatePicker @bind-Date="_billed"
-                       Label="Billed On"
-                       Clearable="true"
-                       DateFormat="MM/dd/yyyy"
-                       Class="mb-2" />
-
-        <MudDatePicker @bind-Date="_billedPaidOn"
-                       Label="Bill Paid On"
-                       Clearable="true"
-                       DateFormat="MM/dd/yyyy"
-                       Class="mb-2" />
-
-        <MudDatePicker @bind-Date="_providerPaidOn"
-                       Label="Provider Paid On"
-                       Clearable="true"
-                       DateFormat="MM/dd/yyyy" />
+        <MudDatePicker @bind-Date="_billed" Label="Billed On" Clearable="true" DateFormat="MM/dd/yyyy" Class="mb-2" />
+        <MudDatePicker @bind-Date="_billedPaidOn" Label="Bill Paid On" Clearable="true" DateFormat="MM/dd/yyyy" Class="mb-2" />
+        <MudDatePicker @bind-Date="_providerPaidOn" Label="Provider Paid On" Clearable="true" DateFormat="MM/dd/yyyy" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
@@ -33,6 +29,8 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public BillingRecordDTO Item { get; set; } = default!;
+    [Parameter] public bool IsBulk { get; set; } = false;
+    [Parameter] public int SelectedCount { get; set; } = 0;
 
     private BillingRecordDTO _dto = default!;
     private DateTime? _billed;
@@ -41,10 +39,13 @@
 
     protected override void OnInitialized()
     {
-        _dto = Item;
-        _billed        = Item.Billed;
-        _billedPaidOn  = Item.BilledPaidOn;
-        _providerPaidOn = Item.ProviderPaidOn;
+        _dto = Item ?? new BillingRecordDTO();
+        if (!IsBulk)
+        {
+            _billed         = Item.Billed;
+            _billedPaidOn   = Item.BilledPaidOn;
+            _providerPaidOn = Item.ProviderPaidOn;
+        }
     }
 
     private void Save() =>
