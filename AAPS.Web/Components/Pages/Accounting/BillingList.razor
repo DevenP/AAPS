@@ -17,6 +17,7 @@
              Columns="@(new[] { "Actions", "SesisId", "DateOfService", "StartTime", "EndTime", "Provider", "GDistrict", "StudentId", "Student", "Grade", "ServiceType", "ActualSize", "Duration", "Frequency", "Billed", "BilledPaidOn", "ProviderPaidOn", "BillingRate", "ProviderRate", "BillingAmount", "ProviderAmount", "AssignId", "EntryId" })"
              GetData="BillingService.GetPagedAsync"
              DefaultSortLabel="DateOfService"
+             OnDataLoaded="RefreshSummary"
              CustomActionContent="@ActionButtons"
              ExportMapper="@(r => new object?[] { r.SesisId, r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
 
@@ -184,11 +185,26 @@
     private GenericGrid<BillingRecordDTO> _grid = default!;
     private bool _generating = false;
     private bool _generatingStatements = false;
+    private BillingSummary? _summary;
 
     private bool _isBusy => _generating || _generatingStatements;
 
+    private async Task RefreshSummary()
+    {
+        _summary = await BillingService.GetSummaryAsync(_grid.Search, _grid.ColumnFilters);
+        StateHasChanged();
+    }
+
     private RenderFragment ActionButtons =>
-        @<span style="display:inline-flex;align-items:center;">
+        @<span style="display:inline-flex;align-items:center;gap:12px;">
+            @if (_summary != null)
+            {
+                <span style="display:inline-flex;align-items:center;gap:8px;font-size:0.8rem;">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@_summary.Count records</MudChip>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success">Billed @_summary.TotalBilling.ToString("C2")</MudChip>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary">Providers Paid @_summary.TotalProvider.ToString("C2")</MudChip>
+                </span>
+            }
             @if (_isBusy)
             {
                 <MudButton Variant="Variant.Filled"
@@ -227,16 +243,20 @@
             var footerPath = Path.Combine(Env.WebRootPath, "images", "rs-footer.jpg");
             StatementService.SetLogoPaths(headerPath, footerPath);
 
-            var pdfBytes = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters);
+            var statementFiles = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters);
 
-            if (pdfBytes.Length == 0)
+            if (statementFiles.Count == 0)
             {
                 Snackbar.Add("No records found to generate statements from.", Severity.Info);
                 return;
             }
 
-            var fileName = $"Statements_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
-            await JS.InvokeVoidAsync("downloadFile", fileName, "application/pdf", pdfBytes);
+            var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = false, CloseButton = true };
+            var parameters = new DialogParameters<BillingFilesDownloadDialog>
+            {
+                { x => x.StatementFiles, statementFiles }
+            };
+            await DialogService.ShowAsync<BillingFilesDownloadDialog>($"{statementFiles.Count} Statement(s) Generated", parameters, options);
         }
         catch (Exception ex)
         {
@@ -266,7 +286,7 @@
 
             Snackbar.Add($"{files.Count} billing file(s) saved to disk.", Severity.Success);
 
-            var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+            var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = false, CloseButton = true };
             var parameters = new DialogParameters<BillingFilesDownloadDialog>
             {
                 { x => x.Files, files }

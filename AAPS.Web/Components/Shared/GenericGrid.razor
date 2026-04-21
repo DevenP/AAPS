@@ -199,6 +199,9 @@
     // Parent pages can use this to sync their own toggle state.
     [Parameter] public EventCallback<string> OnFilterRemoved { get; set; }
 
+    // Called after each successful data load — use to refresh derived aggregates.
+    [Parameter] public EventCallback OnDataLoaded { get; set; }
+
     private MudTable<TItem> _table = default!;
     public string Search { get; private set; } = "";
     private string _search { get => Search; set => Search = value; }
@@ -415,6 +418,8 @@
             var result = await GetData(request, ct);
             _pageSize = state.PageSize;
             _totalItems = result.TotalCount;
+            if (OnDataLoaded.HasDelegate)
+                _ = OnDataLoaded.InvokeAsync();
             return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
         }
         catch (OperationCanceledException)

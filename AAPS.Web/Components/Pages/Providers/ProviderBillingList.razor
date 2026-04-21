@@ -84,12 +84,9 @@
         </GridCell>
 
         <GridCell TItem="SesiDTO" Column="ProviderPaidDate">
-            @if (sesi.ProviderPaidDate != null)
-            {
-                <MudTooltip Text="@($"Paid on {sesi.ProviderPaidDate?.ToString("MM/dd/yyyy")}")">
-                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
-                </MudTooltip>
-            }
+            <MudChip T="string" Color="@(sesi.ProviderPaidDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
+                @(sesi.ProviderPaidDate?.ToString("MM/dd/yyyy") ?? "Unpaid")
+            </MudChip>
         </GridCell>
     </RowTemplate>
 </GenericGrid>

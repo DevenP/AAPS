@@ -1,45 +1,123 @@
 @using AAPS.Application.Abstractions.Services
+@using System.IO.Compression
 @inject IJSRuntime JS
 
-<MudDialog>
+<MudDialog Style="width:480px;max-height:70vh;overflow-y:auto;">
     <DialogContent>
-        <MudText Class="mb-3">The following files were saved to disk. Would you like to download them?</MudText>
-        <MudList T="string" Dense="true">
-            @foreach (var file in Files)
-            {
-                <MudListItem Icon="@Icons.Material.Filled.InsertDriveFile" IconColor="Color.Success">
-                    @file.FileName
-                </MudListItem>
-            }
-        </MudList>
+        @if (Files.Count > 0)
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-1">Billing Files</MudText>
+            <MudList T="string" Dense="true" Class="mb-3">
+                @foreach (var file in Files)
+                {
+                    <MudListItem>
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span style="display:flex;align-items:center;gap:6px;">
+                                <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Success" Size="Size.Small" />
+                                @file.FileName
+                            </span>
+                            <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" Color="Color.Primary"
+                                           OnClick="@(() => DownloadBillingFile(file))" />
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+
+        @if (StatementFiles.Count > 0)
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-1">Statements</MudText>
+            <MudList T="string" Dense="true">
+                @foreach (var file in StatementFiles)
+                {
+                    <MudListItem>
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span style="display:flex;align-items:center;gap:6px;">
+                                <MudIcon Icon="@Icons.Material.Filled.PictureAsPdf" Color="Color.Error" Size="Size.Small" />
+                                @file.FileName
+                            </span>
+                            <span style="display:flex;align-items:center;">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Secondary"
+                                               Title="Preview" OnClick="@(() => PreviewStatementFile(file))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" Color="Color.Primary"
+                                               Title="Download" OnClick="@(() => DownloadStatementFile(file))" />
+                            </span>
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Close">No Thanks</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DownloadAll" Disabled="_downloading">
-            @if (_downloading)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            }
-            Download All
-        </MudButton>
+        <MudButton OnClick="Close">Close</MudButton>
+        @if (Files.Count > 0)
+        {
+            <MudButton Color="Color.Success" Variant="Variant.Outlined" OnClick="DownloadAllBilling" Disabled="_downloading">
+                Download Billing Files
+            </MudButton>
+        }
+        @if (StatementFiles.Count > 0)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="DownloadStatementsZip" Disabled="_downloading">
+                @if (_downloading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Download All as .zip
+            </MudButton>
+        }
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public List<GeneratedBillingFile> Files { get; set; } = [];
+    [Parameter] public List<GeneratedStatementFile> StatementFiles { get; set; } = [];
 
     private bool _downloading;
 
-    private async Task DownloadAll()
+    private async Task DownloadBillingFile(GeneratedBillingFile file) =>
+        await JS.InvokeVoidAsync("downloadFile", file.FileName, "text/plain", file.Bytes);
+
+    private async Task DownloadStatementFile(GeneratedStatementFile file) =>
+        await JS.InvokeVoidAsync("downloadFile", file.FileName, "application/pdf", file.Bytes);
+
+    private async Task PreviewStatementFile(GeneratedStatementFile file) =>
+        await JS.InvokeVoidAsync("previewFile", "application/pdf", file.Bytes);
+
+    private async Task DownloadAllBilling()
     {
         _downloading = true;
         foreach (var file in Files)
-        {
             await JS.InvokeVoidAsync("downloadFile", file.FileName, "text/plain", file.Bytes);
-        }
         _downloading = false;
         MudDialog.Close();
+    }
+
+    private async Task DownloadStatementsZip()
+    {
+        _downloading = true;
+        try
+        {
+            using var ms = new MemoryStream();
+            using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var file in StatementFiles)
+                {
+                    var entry = zip.CreateEntry(file.FileName);
+                    using var es = entry.Open();
+                    await es.WriteAsync(file.Bytes);
+                }
+            }
+            var zipBytes = ms.ToArray();
+            var zipName = $"Statements_{DateTime.Now:yyyyMMdd_HHmm}.zip";
+            await JS.InvokeVoidAsync("downloadFile", zipName, "application/zip", zipBytes);
+        }
+        finally
+        {
+            _downloading = false;
+            MudDialog.Close();
+        }
     }
 
     private void Close() => MudDialog.Cancel();

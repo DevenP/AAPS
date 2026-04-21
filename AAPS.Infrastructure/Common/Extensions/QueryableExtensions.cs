@@ -155,6 +155,16 @@ namespace AAPS.Infrastructure.Common.Extensions
                 : source.OrderBy(x => prop.GetValue(x));
         }
 
+        // ── Apply search + column filters without paging (used for aggregate queries) ──
+        public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, PagedRequest request, bool performSearch = true) where T : class
+        {
+            if (performSearch && !string.IsNullOrWhiteSpace(request.Search))
+                query = ApplySearch(query, request.Search.Trim());
+            if (request.ColumnFilters != null && request.ColumnFilters.Count > 0)
+                query = ApplyColumnFilters(query, request.ColumnFilters);
+            return query;
+        }
+
         // ── EF Core / IQueryable overload ────────────────────────────────────────
         public static async Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
             this IQueryable<T> query,

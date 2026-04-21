@@ -9,6 +9,12 @@
     URL.revokeObjectURL(url);
 };
 
+window.previewFile = (contentType, content) => {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+};
+
 window.setThemeCookie = (isDarkMode) => {
     const mode = isDarkMode ? "dark" : "light";
     document.cookie = `theme=${mode}; path=/; max-age=31536000; SameSite=Lax`;

@@ -28,7 +28,7 @@ public class StatementService : IStatementService
         _footerPath = footerPath;
     }
 
-    public async Task<byte[]> GenerateAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
+    public async Task<List<GeneratedStatementFile>> GenerateAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
 
@@ -82,7 +82,18 @@ public class StatementService : IStatementService
             .GroupBy(r => (r.ProviderLast, r.ProviderFirst))
             .ToList();
 
-        return GeneratePdf(providerGroups);
+        return providerGroups.Select(group =>
+        {
+            var safeName = $"{SanitizeFileName(group.Key.ProviderLast)}_{SanitizeFileName(group.Key.ProviderFirst)}.pdf";
+            var bytes = GeneratePdf(group);
+            return new GeneratedStatementFile(safeName, bytes);
+        }).ToList();
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        return new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
     }
 
     // ── Same base query as BillingService (no unpaidOnly filter — statements show all filtered records) ──
@@ -151,7 +162,7 @@ public class StatementService : IStatementService
             };
     }
 
-    private byte[] GeneratePdf(List<IGrouping<(string Last, string First), StatementRow>> providerGroups)
+    private byte[] GeneratePdf(IGrouping<(string Last, string First), StatementRow> group)
     {
         var headerBytes = LoadImage(_headerPath);
         var footerBytes = LoadImage(_footerPath);
@@ -159,16 +170,14 @@ public class StatementService : IStatementService
 
         return Document.Create(container =>
         {
-            foreach (var group in providerGroups)
-            {
-                var rows = group.ToList();
-                var first = rows[0];
-                var providerName = $"{first.ProviderLast}, {first.ProviderFirst}";
-                var cityStateZip = $"{first.ProviderCity}, {first.ProviderState} {first.ProviderZip}".Trim().TrimEnd(',').Trim();
-                var total = rows.Sum(r => r.BillingAmount ?? 0);
+            var rows = group.ToList();
+            var first = rows[0];
+            var providerName = $"{first.ProviderLast}, {first.ProviderFirst}";
+            var cityStateZip = $"{first.ProviderCity}, {first.ProviderState} {first.ProviderZip}".Trim().TrimEnd(',').Trim();
+            var total = rows.Sum(r => r.BillingAmount ?? 0);
 
-                container.Page(page =>
-                {
+            container.Page(page =>
+            {
                     page.Size(PageSizes.Letter);
                     page.MarginHorizontal(36);
                     page.MarginTop(14);
@@ -179,6 +188,15 @@ public class StatementService : IStatementService
                     page.Header().Column(col =>
                     {
                         col.Spacing(0);
+
+                        // Page number
+                        col.Item().AlignRight().Text(x =>
+                        {
+                            x.Span("Page ").FontSize(11f);
+                            x.CurrentPageNumber().FontSize(11f);
+                            x.Span(" of ").FontSize(11f);
+                            x.TotalPages().FontSize(11f);
+                        });
 
                         // Company logo
                         if (headerBytes != null)
@@ -289,8 +307,7 @@ public class StatementService : IStatementService
                             .Text($"Total Amount: $ {total:N2}")
                             .Bold().FontSize(9f);
                     });
-                });
-            }
+            });
         }).GeneratePdf();
     }
 

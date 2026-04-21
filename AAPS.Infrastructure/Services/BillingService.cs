@@ -103,6 +103,19 @@ public class BillingService : IBillingService
         return await BuildBaseQuery(db).ToPagedResultAsync(request, ct, performSearch: false);
     }
 
+    public async Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var request = new PagedRequest(search, columnFilters);
+        var result = await BuildBaseQuery(db)
+            .ApplyFilters(request, performSearch: false)
+            .Select(x => new { x.BillingAmount, x.ProviderAmount })
+            .GroupBy(_ => 1)
+            .Select(g => new { Count = g.Count(), TotalBilling = g.Sum(x => x.BillingAmount ?? 0), TotalProvider = g.Sum(x => x.ProviderAmount ?? 0) })
+            .FirstOrDefaultAsync(ct);
+        return result == null ? new BillingSummary(0, 0, 0) : new BillingSummary(result.Count, result.TotalBilling, result.TotalProvider);
+    }
+
     public async Task UpdateBillingDatesAsync(int sesisId, DateTime? billed, DateTime? billedPaidOn, DateTime? providerPaidOn, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
@@ -161,6 +174,7 @@ public class BillingService : IBillingService
                     s.Language_Provided,
                     s.Start_Time,
                     s.End_Time,
+                    s.Duration,
                     s.bAmount,
                     s.Provider_Last_Name,
                     s.Provider_First_Name,
@@ -248,7 +262,7 @@ public class BillingService : IBillingService
                         r.Provider_Last_Name ?? "", r.Provider_First_Name ?? "", r.SsnStripped,
                         r.Student_ID ?? "", r.First_Name ?? "", r.Last_Name ?? "",
                         aType, mandateStart, mandateEnd,
-                        aSes, aFreq, "", aGrs,
+                        aSes, aFreq, r.Duration ?? "", aGrs,
                         langCode, vp.Assign_Id ?? "", invoiceMonth, bServiceDate,
                         r.Actual_Size ?? "", r.Start_Time ?? "", r.End_Time ?? "", r.bAmount)
                 };
