@@ -316,6 +316,14 @@ public class SesiService : ISesiService
                 IsOverMandate = s.OverMandate ?? false,
                 IsUnderGroup = s.UnderGroup ?? false,
 
+                // Session fields
+                LanguageProvided  = s.Language_Provided,
+                ActualSize        = s.Actual_Size,
+                AssignmentClaimed = s.Assignment_Claimed,
+                GDistrict         = s.GDistrict,
+                ProviderPaidDate  = s.pPaid,
+                Voucher           = s.Voucher,
+
                 // Joined fields
                 ProviderLastName = s.Provider_Last_Name,
                 ProviderFirstName = s.Provider_First_Name,

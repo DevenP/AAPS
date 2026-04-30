@@ -58,6 +58,18 @@
                             </MudSelect>
                         </MudItem>
                     }
+                    else if (IsNumericType(prop.PropertyType))
+                    {
+                        <MudItem xs="12">
+                            <MudTextField T="string"
+                                          Label="@displayName"
+                                          Value="@GetFilterValue(propName)"
+                                          ValueChanged="@(s => SetFilterValue(propName, s))"
+                                          Margin="Margin.Dense"
+                                          Variant="Variant.Outlined"
+                                          Clearable="true" />
+                        </MudItem>
+                    }
                     else
                     {
                         var filterOptions = prop.GetCustomAttribute<FilterOptionsAttribute>();
@@ -119,6 +131,13 @@
         }
     }
 
+    private static bool IsNumericType(Type t)
+    {
+        var u = Nullable.GetUnderlyingType(t) ?? t;
+        return u == typeof(int) || u == typeof(long) || u == typeof(decimal) ||
+               u == typeof(double) || u == typeof(float) || u == typeof(short);
+    }
+
     private IEnumerable<PropertyInfo> GetFilteredProperties()
     {
         var all = typeof(TItem).GetProperties()
@@ -129,7 +148,8 @@
                        Nullable.GetUnderlyingType(p.PropertyType) == typeof(DateTime) ||
                        p.PropertyType == typeof(DateTime) ||
                        Nullable.GetUnderlyingType(p.PropertyType) == typeof(bool) ||
-                       p.PropertyType == typeof(bool);
+                       p.PropertyType == typeof(bool) ||
+                       IsNumericType(p.PropertyType);
             })
             .ToList();
 

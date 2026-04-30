@@ -1,9 +1,11 @@
 @page "/operations"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.Common.Paging
+@using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Operations.Forms
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject ISesiService SesiService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -25,8 +27,11 @@
 <GenericGrid TItem="OperationsDTO"
              @ref="_grid"
              Title="Operations Registry"
-             Columns="@(new[] { "Checkbox", "Actions", "Id", "Alerts", "DateOfService", "StartTime", "StudentId", "StudentLastName", "ProviderLastName", "AssignId", "BilledRate", "Duration", "VoucherBalancePaid" })"
+             Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "ServiceType", "LanguageProvided", "ActualSize", "Duration", "AssignmentClaimed", "EntryId", "ProviderPaidDate", "BilledDate", "Voucher", "AssignId" })"
+             DefaultSortLabel="DateOfService"
              GetData="SesiService.GetOperationsPagedAsync"
+             ExportHeaders="@(new[] { DN(nameof(OperationsDTO.DateOfService)), DN(nameof(OperationsDTO.StartTime)), DN(nameof(OperationsDTO.EndTime)), DN(nameof(OperationsDTO.ProviderLastName)), DN(nameof(OperationsDTO.GDistrict)), DN(nameof(OperationsDTO.StudentId)), DN(nameof(OperationsDTO.StudentLastName)), DN(nameof(OperationsDTO.ServiceType)), DN(nameof(OperationsDTO.LanguageProvided)), DN(nameof(OperationsDTO.ActualSize)), DN(nameof(OperationsDTO.Duration)), DN(nameof(OperationsDTO.AssignmentClaimed)), DN(nameof(OperationsDTO.EntryId)), DN(nameof(OperationsDTO.ProviderPaidDate)), DN(nameof(OperationsDTO.BilledDate)), DN(nameof(OperationsDTO.Voucher)), DN(nameof(OperationsDTO.AssignId)) })"
+             ExportMapper="@(op => new object?[] { op.DateOfService?.ToString("MM/dd/yyyy"), op.StartTime, op.EndTime, $"{op.ProviderLastName}, {op.ProviderFirstName}", op.GDistrict, op.StudentId, $"{op.StudentLastName}, {op.StudentFirstName}", op.ServiceType, op.LanguageProvided, op.ActualSize, op.Duration, op.AssignmentClaimed, op.EntryId, op.ProviderPaidDate?.ToString("MM/dd/yyyy"), op.BilledDate?.ToString("MM/dd/yyyy"), op.Voucher, op.AssignId })"
              OnFilterRemoved="OnFilterRemoved">
 
     <CustomActionContent>
@@ -88,38 +93,58 @@
                          Color="Color.Primary"
                          Size="Size.Small" />
         </MudTh>
-        <MudTh Style="width:40px; padding: 0 8px;"></MudTh>
-
-        <GridCell TItem="OperationsDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="OperationsDTO">ID</MudTableSortLabel>
-        </GridCell>
+        <MudTh Style="width:80px; padding: 0 8px;">Actions</MudTh>
         <GridCell TItem="OperationsDTO" Column="Alerts" IsHeader="true">Alerts</GridCell>
         <GridCell TItem="OperationsDTO" Column="DateOfService" IsHeader="true">
-            <MudTableSortLabel SortLabel="DateOfService" T="OperationsDTO">DOS</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="DateOfService" T="OperationsDTO">@_grid?.GetDisplayName("DateOfService")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="OperationsDTO" Column="StartTime" IsHeader="true">
-            <MudTableSortLabel SortLabel="StartTime" T="OperationsDTO">Time</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StartTime" T="OperationsDTO">@_grid?.GetDisplayName("StartTime")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="OperationsDTO" Column="StudentId" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentId" T="OperationsDTO">Student ID</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="OperationsDTO" Column="StudentLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentLastName" T="OperationsDTO">Student Name</MudTableSortLabel>
+        <GridCell TItem="OperationsDTO" Column="EndTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="EndTime" T="OperationsDTO">@_grid?.GetDisplayName("EndTime")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="OperationsDTO" Column="ProviderLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderLastName" T="OperationsDTO">Provider</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderLastName" T="OperationsDTO">@_grid?.GetDisplayName("ProviderLastName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="OperationsDTO" Column="AssignId" IsHeader="true">
-            <MudTableSortLabel SortLabel="AssignId" T="OperationsDTO">Assign ID</MudTableSortLabel>
+        <GridCell TItem="OperationsDTO" Column="GDistrict" IsHeader="true">
+            <MudTableSortLabel SortLabel="GDistrict" T="OperationsDTO">@_grid?.GetDisplayName("GDistrict")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="OperationsDTO" Column="BilledRate" IsHeader="true">
-            <MudTableSortLabel SortLabel="BilledRate" T="OperationsDTO">Rate</MudTableSortLabel>
+        <GridCell TItem="OperationsDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="OperationsDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="StudentLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentLastName" T="OperationsDTO">@_grid?.GetDisplayName("StudentLastName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="OperationsDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="LanguageProvided" IsHeader="true">
+            <MudTableSortLabel SortLabel="LanguageProvided" T="OperationsDTO">@_grid?.GetDisplayName("LanguageProvided")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="ActualSize" IsHeader="true">
+            <MudTableSortLabel SortLabel="ActualSize" T="OperationsDTO">@_grid?.GetDisplayName("ActualSize")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="OperationsDTO" Column="Duration" IsHeader="true">
-            <MudTableSortLabel SortLabel="Duration" T="OperationsDTO">Min</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Duration" T="OperationsDTO">@_grid?.GetDisplayName("Duration")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="OperationsDTO" Column="VoucherBalancePaid" IsHeader="true">
-            <MudTableSortLabel SortLabel="VoucherBalancePaid" T="OperationsDTO">Vchr Bal Paid</MudTableSortLabel>
+        <GridCell TItem="OperationsDTO" Column="AssignmentClaimed" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignmentClaimed" T="OperationsDTO">@_grid?.GetDisplayName("AssignmentClaimed")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="EntryId" IsHeader="true">
+            <MudTableSortLabel SortLabel="EntryId" T="OperationsDTO">@_grid?.GetDisplayName("EntryId")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="ProviderPaidDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderPaidDate" T="OperationsDTO">@_grid?.GetDisplayName("ProviderPaidDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="BilledDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledDate" T="OperationsDTO">@_grid?.GetDisplayName("BilledDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="Voucher" IsHeader="true">
+            <MudTableSortLabel SortLabel="Voucher" T="OperationsDTO">@_grid?.GetDisplayName("Voucher")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="OperationsDTO" Column="AssignId" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignId" T="OperationsDTO">@_grid?.GetDisplayName("AssignId")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
@@ -145,8 +170,6 @@
                            OnClick="@(() => OpenOsisDialog(op))" />
         </MudTd>
 
-        <GridCell TItem="OperationsDTO" Column="Id">@op.Id</GridCell>
-
         @* Combined Alert Icons Column *@
         <GridCell TItem="OperationsDTO" Column="Alerts">
             <div class="d-flex gap-1">
@@ -167,34 +190,32 @@
                 <span>@op.DateOfService?.ToString("MM/dd/yyyy")</span>
             </MudTooltip>
         </GridCell>
-
         <GridCell TItem="OperationsDTO" Column="StartTime">@op.StartTime</GridCell>
+        <GridCell TItem="OperationsDTO" Column="EndTime">@op.EndTime</GridCell>
+        <GridCell TItem="OperationsDTO" Column="ProviderLastName">@op.ProviderLastName, @op.ProviderFirstName</GridCell>
+        <GridCell TItem="OperationsDTO" Column="GDistrict">@op.GDistrict</GridCell>
         <GridCell TItem="OperationsDTO" Column="StudentId">@op.StudentId</GridCell>
-
-        <GridCell TItem="OperationsDTO" Column="StudentLastName">
-            <MudTooltip Text="@($"{op.StudentLastName}, {op.StudentFirstName}")">
-                <span>@op.StudentLastName</span>
-            </MudTooltip>
-        </GridCell>
-
-        <GridCell TItem="OperationsDTO" Column="ProviderLastName">
-            <MudTooltip Text="@($"{op.ProviderFirstName} {op.ProviderLastName}")">
-                <span>@op.ProviderLastName</span>
-            </MudTooltip>
-        </GridCell>
-
+        <GridCell TItem="OperationsDTO" Column="StudentLastName">@op.StudentLastName, @op.StudentFirstName</GridCell>
+        <GridCell TItem="OperationsDTO" Column="ServiceType">@op.ServiceType</GridCell>
+        <GridCell TItem="OperationsDTO" Column="LanguageProvided">@op.LanguageProvided</GridCell>
+        <GridCell TItem="OperationsDTO" Column="ActualSize">@op.ActualSize</GridCell>
+        <GridCell TItem="OperationsDTO" Column="Duration">@op.Duration</GridCell>
+        <GridCell TItem="OperationsDTO" Column="AssignmentClaimed">@op.AssignmentClaimed</GridCell>
+        <GridCell TItem="OperationsDTO" Column="EntryId">@op.EntryId</GridCell>
+        <GridCell TItem="OperationsDTO" Column="ProviderPaidDate">@op.ProviderPaidDate?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="OperationsDTO" Column="BilledDate">@op.BilledDate?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="OperationsDTO" Column="Voucher">@op.Voucher</GridCell>
         <GridCell TItem="OperationsDTO" Column="AssignId">
             <span style="font-family: monospace;">@op.AssignId</span>
         </GridCell>
-
-        <GridCell TItem="OperationsDTO" Column="BilledRate">@op.BilledRate?.ToString("C2")</GridCell>
-        <GridCell TItem="OperationsDTO" Column="Duration">@op.Duration</GridCell>
-        <GridCell TItem="OperationsDTO" Column="VoucherBalancePaid">@op.VoucherBalancePaid?.ToString("MM/dd/yyyy")</GridCell>
     </RowTemplate>
 </GenericGrid>
 
 @code {
     private GenericGrid<OperationsDTO> _grid = default!;
+
+    private static string DN(string prop) =>
+        typeof(OperationsDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
 
     // ── Busy state ────────────────────────────────────────────────────────────
     private bool _busy = false;

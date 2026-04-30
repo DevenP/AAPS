@@ -9,6 +9,9 @@
       "Bash(py --version)",
       "Bash(where python:*)",
       "Bash(where py:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\deven\\.claude\\projects\\c--Users-deven-source-repos-AAPS\\memory"
     ]
   }
 }
