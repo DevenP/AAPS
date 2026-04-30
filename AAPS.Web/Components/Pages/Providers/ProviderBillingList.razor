@@ -1,92 +1,118 @@
-﻿@page "/providerbilling"
+@page "/providerbilling"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject ISesiService SesiService
 
-<GenericGrid TItem="SesiDTO"
+<GenericGrid TItem="ProviderBillingDTO"
+             @ref="_grid"
              Title="Provider Billing"
-             Columns="@(new[] { "StudentId", "LastName", "FirstName", "Provider", "DateOfService", "StartTime", "EndTime", "Duration", "ServiceType", "BilledRate", "ProviderRate", "BilledDate", "ProviderPaidDate" })"
-             GetData="SesiService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Student ID", "Last", "First", "Provider", "DOS", "Start", "End", "Min", "Service", "B-Rate", "P-Rate", "Billed", "Paid" })"
-             ExportMapper="@(s => new object?[] { s.StudentId, s.StudentLastName, s.StudentFirstName, $"{s.ProviderLastName}, {s.ProviderFirstName}", s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.BilledRate, s.ProviderRate, s.BilledDate, s.ProviderPaidDate })">
+             DefaultSortLabel="DateOfService"
+             Columns="@(new[] { "StudentId", "StudentLastName", "ProviderLastName", "EntryId", "DateOfService", "StartTime", "EndTime", "Duration", "ServiceType", "GDistrict", "BilledRate", "BilledAmount", "BilledDate", "BilledPaidDate", "ProviderRate", "ProviderAmount", "ProviderPaidDate", "Voucher" })"
+             GetData="SesiService.GetProviderBillingPagedAsync"
+             ExportHeaders="@(new[] { DN(nameof(ProviderBillingDTO.StudentId)), DN(nameof(ProviderBillingDTO.StudentLastName)), DN(nameof(ProviderBillingDTO.ProviderLastName)), DN(nameof(ProviderBillingDTO.EntryId)), DN(nameof(ProviderBillingDTO.DateOfService)), DN(nameof(ProviderBillingDTO.StartTime)), DN(nameof(ProviderBillingDTO.EndTime)), DN(nameof(ProviderBillingDTO.Duration)), DN(nameof(ProviderBillingDTO.ServiceType)), DN(nameof(ProviderBillingDTO.GDistrict)), DN(nameof(ProviderBillingDTO.BilledRate)), DN(nameof(ProviderBillingDTO.BilledAmount)), DN(nameof(ProviderBillingDTO.BilledDate)), DN(nameof(ProviderBillingDTO.BilledPaidDate)), DN(nameof(ProviderBillingDTO.ProviderRate)), DN(nameof(ProviderBillingDTO.ProviderAmount)), DN(nameof(ProviderBillingDTO.ProviderPaidDate)), DN(nameof(ProviderBillingDTO.Voucher)) })"
+             ExportMapper="@(s => new object?[] { s.StudentId, $"{s.StudentLastName}, {s.StudentFirstName}", $"{s.ProviderLastName}, {s.ProviderFirstName}", s.EntryId, s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.GDistrict, s.BilledRate, s.BilledAmount, s.BilledDate?.ToString("MM/dd/yyyy"), s.BilledPaidDate?.ToString("MM/dd/yyyy"), s.ProviderRate, s.ProviderAmount, s.ProviderPaidDate?.ToString("MM/dd/yyyy"), s.Voucher })">
 
     <HeaderContent>
-@*         <GridCell TItem="SesiDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="SesiDTO">ID</MudTableSortLabel>
-        </GridCell> *@
-        <GridCell TItem="SesiDTO" Column="StudentId" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentId" T="SesiDTO">Student ID</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="ProviderBillingDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="LastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="LastName" T="SesiDTO">Last Name</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="StudentLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentLastName" T="ProviderBillingDTO">@_grid?.GetDisplayName("StudentLastName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="FirstName" IsHeader="true">
-            <MudTableSortLabel SortLabel="FirstName" T="SesiDTO">First Name</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderLastName" T="ProviderBillingDTO">@_grid?.GetDisplayName("ProviderLastName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="Provider" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderLastName" T="SesiDTO">Provider</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="EntryId" IsHeader="true">
+            <MudTableSortLabel SortLabel="EntryId" T="ProviderBillingDTO">@_grid?.GetDisplayName("EntryId")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="DateOfService" IsHeader="true">
-            <MudTableSortLabel SortLabel="DateOfService" T="SesiDTO">Service Date</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="DateOfService" IsHeader="true">
+            <MudTableSortLabel SortLabel="DateOfService" T="ProviderBillingDTO">@_grid?.GetDisplayName("DateOfService")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="StartTime" IsHeader="true">
-            <MudTableSortLabel SortLabel="StartTime" T="SesiDTO">Start Time</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="StartTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="StartTime" T="ProviderBillingDTO">@_grid?.GetDisplayName("StartTime")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="EndTime" IsHeader="true">
-            <MudTableSortLabel SortLabel="EndTime" T="SesiDTO">End Time</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="EndTime" IsHeader="true">
+            <MudTableSortLabel SortLabel="EndTime" T="ProviderBillingDTO">@_grid?.GetDisplayName("EndTime")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="Duration" IsHeader="true">
-            <MudTableSortLabel SortLabel="Duration" T="SesiDTO">Duration</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="Duration" IsHeader="true">
+            <MudTableSortLabel SortLabel="Duration" T="ProviderBillingDTO">@_grid?.GetDisplayName("Duration")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="ServiceType" IsHeader="true">
-            <MudTableSortLabel SortLabel="ServiceType" T="SesiDTO">Service</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="ProviderBillingDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="BilledRate" IsHeader="true">
-            <MudTableSortLabel SortLabel="BilledRate" T="SesiDTO">B-Rate</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="GDistrict" IsHeader="true">
+            <MudTableSortLabel SortLabel="GDistrict" T="ProviderBillingDTO">@_grid?.GetDisplayName("GDistrict")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="ProviderRate" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderRate" T="SesiDTO">P-Rate</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledRate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledRate" T="ProviderBillingDTO">@_grid?.GetDisplayName("BilledRate")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="BilledDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="BilledDate" T="SesiDTO">Billed</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledAmount" T="ProviderBillingDTO">@_grid?.GetDisplayName("BilledAmount")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="ProviderPaidDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderPaidDate" T="SesiDTO">Paid</MudTableSortLabel>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledDate" T="ProviderBillingDTO">@_grid?.GetDisplayName("BilledDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledPaidDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="BilledPaidDate" T="ProviderBillingDTO">@_grid?.GetDisplayName("BilledPaidDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderRate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderRate" T="ProviderBillingDTO">@_grid?.GetDisplayName("ProviderRate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderAmount" T="ProviderBillingDTO">@_grid?.GetDisplayName("ProviderAmount")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderPaidDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderPaidDate" T="ProviderBillingDTO">@_grid?.GetDisplayName("ProviderPaidDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="Voucher" IsHeader="true">
+            <MudTableSortLabel SortLabel="Voucher" T="ProviderBillingDTO">@_grid?.GetDisplayName("Voucher")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
-    <RowTemplate Context="sesi">
-        <GridCell TItem="SesiDTO" Column="StudentId">@sesi.StudentId</GridCell>
-        <GridCell TItem="SesiDTO" Column="LastName">
-            <MudTooltip Text="@sesi.StudentLastName"><span>@sesi.StudentLastName</span></MudTooltip>
-        </GridCell>
-        <GridCell TItem="SesiDTO" Column="FirstName">
-            <MudTooltip Text="@sesi.StudentFirstName"><span>@sesi.StudentFirstName</span></MudTooltip>
-        </GridCell>
-        <GridCell TItem="SesiDTO" Column="Provider">@sesi.ProviderLastName, @sesi.ProviderFirstName</GridCell>
-        <GridCell TItem="SesiDTO" Column="DateOfService">
-            <MudTooltip Text="@sesi.DateOfService?.ToLongDateString()">
-                <span>@sesi.DateOfService?.ToString("MM/dd/yyyy")</span>
+    <RowTemplate Context="s">
+        <GridCell TItem="ProviderBillingDTO" Column="StudentId">@s.StudentId</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="StudentLastName">@s.StudentLastName, @s.StudentFirstName</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderLastName">@s.ProviderLastName, @s.ProviderFirstName</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="EntryId">@s.EntryId</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="DateOfService">
+            <MudTooltip Text="@s.DateOfService?.ToLongDateString()">
+                <span>@s.DateOfService?.ToString("MM/dd/yyyy")</span>
             </MudTooltip>
         </GridCell>
-        <GridCell TItem="SesiDTO" Column="StartTime">@sesi.StartTime</GridCell>
-        <GridCell TItem="SesiDTO" Column="EndTime">@sesi.EndTime</GridCell>
-        <GridCell TItem="SesiDTO" Column="Duration">@sesi.Duration</GridCell>
-        <GridCell TItem="SesiDTO" Column="ServiceType">@sesi.ServiceType</GridCell>
-        <GridCell TItem="SesiDTO" Column="BilledRate">@sesi.BilledRate?.ToString("C2")</GridCell>
-        <GridCell TItem="SesiDTO" Column="ProviderRate">@sesi.ProviderRate?.ToString("C2")</GridCell>
-
-        <GridCell TItem="SesiDTO" Column="BilledDate">
-            <MudChip T="string" Color="@(sesi.BilledDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
-                @(sesi.BilledDate?.ToString("MM/dd/yyyy") ?? "Unbilled")
+        <GridCell TItem="ProviderBillingDTO" Column="StartTime">@s.StartTime</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="EndTime">@s.EndTime</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="Duration">@s.Duration</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ServiceType">@s.ServiceType</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="GDistrict">@s.GDistrict</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledRate">@s.BilledRate?.ToString("C2")</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledAmount">@s.BilledAmount?.ToString("C2")</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="BilledDate">
+            <MudChip T="string" Color="@(s.BilledDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
+                @(s.BilledDate?.ToString("MM/dd/yyyy") ?? "Unbilled")
             </MudChip>
         </GridCell>
-
-        <GridCell TItem="SesiDTO" Column="ProviderPaidDate">
-            <MudChip T="string" Color="@(sesi.ProviderPaidDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
-                @(sesi.ProviderPaidDate?.ToString("MM/dd/yyyy") ?? "Unpaid")
+        <GridCell TItem="ProviderBillingDTO" Column="BilledPaidDate">
+            <MudChip T="string" Color="@(s.BilledPaidDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
+                @(s.BilledPaidDate?.ToString("MM/dd/yyyy") ?? "Unpaid")
             </MudChip>
         </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderRate">@s.ProviderRate?.ToString("C2")</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderAmount">@s.ProviderAmount?.ToString("C2")</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderPaidDate">
+            <MudChip T="string" Color="@(s.ProviderPaidDate != null ? Color.Success : Color.Default)" Size="Size.Small" Variant="Variant.Text">
+                @(s.ProviderPaidDate?.ToString("MM/dd/yyyy") ?? "Unpaid")
+            </MudChip>
+        </GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="Voucher">@s.Voucher</GridCell>
     </RowTemplate>
 </GenericGrid>
+
+@code {
+    private GenericGrid<ProviderBillingDTO> _grid = default!;
+
+    private static string DN(string prop) =>
+        typeof(ProviderBillingDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
+}

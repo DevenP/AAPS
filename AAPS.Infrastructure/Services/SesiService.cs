@@ -66,6 +66,32 @@ public class SesiService : ISesiService
         return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
+    public async Task<PagedResult<ProviderBillingDTO>> GetProviderBillingPagedAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var baseQuery = db.Seses.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var term = request.Search.Trim();
+            baseQuery = baseQuery.Where(s =>
+                (s.Student_ID != null && s.Student_ID.Contains(term)) ||
+                (s.Last_Name != null && s.Last_Name.Contains(term)) ||
+                (s.First_Name != null && s.First_Name.Contains(term)) ||
+                (s.GDistrict != null && s.GDistrict.Contains(term)) ||
+                (s.Service_Type != null && s.Service_Type.Contains(term)) ||
+                (s.Provider_Last_Name != null && s.Provider_Last_Name.Contains(term)) ||
+                (s.Provider_First_Name != null && s.Provider_First_Name.Contains(term)) ||
+                (s.Voucher != null && s.Voucher.Contains(term)));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.SortBy))
+            request = request with { SortBy = "DateOfService", SortDir = "asc" };
+
+        var query = baseQuery.Select(ToBillingDTO);
+        return await query.ToPagedResultAsync(request, ct, performSearch: false);
+    }
+
     public async Task<SesiDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
@@ -660,6 +686,31 @@ public class SesiService : ISesiService
             AssignIds        = vpByEntry.TryGetValue(m.Entry_Id, out var agg) ? agg : null
         }).ToList();
     }
+
+    private static readonly Expression<Func<Sesi, ProviderBillingDTO>> ToBillingDTO = s => new ProviderBillingDTO
+    {
+        Id              = s.Sesis_Id,
+        StudentId       = s.Student_ID,
+        StudentLastName = s.Last_Name,
+        StudentFirstName= s.First_Name,
+        ProviderLastName= s.Provider_Last_Name,
+        ProviderFirstName=s.Provider_First_Name,
+        EntryId         = s.Entry_Id,
+        DateOfService   = s.date_of_Service,
+        StartTime       = s.Start_Time,
+        EndTime         = s.End_Time,
+        Duration        = s.Duration,
+        ServiceType     = s.Service_Type,
+        GDistrict       = s.GDistrict,
+        BilledRate      = s.bRate,
+        BilledAmount    = s.bAmount,
+        BilledDate      = s.Billed,
+        BilledPaidDate  = s.bPaid,
+        ProviderRate    = s.pRate,
+        ProviderAmount  = s.pAmount,
+        ProviderPaidDate= s.pPaid,
+        Voucher         = s.Voucher,
+    };
 
     private static readonly Expression<Func<Sesi, SesiDTO>> ToDTO = s => new SesiDTO
     {

@@ -17,6 +17,8 @@ public interface ISesiService
 
     Task<PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default);
 
+    Task<PagedResult<ProviderBillingDTO>> GetProviderBillingPagedAsync(PagedRequest request, CancellationToken ct = default);
+
     Task BulkUpdateAsync(List<int> ids, OperationEditDTO dto, CancellationToken ct = default);
 
     Task BulkUnlinkApprovalIdAsync(List<int> ids, CancellationToken ct = default);
