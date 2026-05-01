@@ -13,7 +13,7 @@
              Columns="@(new[] { "StudentId", "StudentLastName", "ProviderLastName", "EntryId", "DateOfService", "StartTime", "EndTime", "Duration", "ServiceType", "GDistrict", "BilledRate", "BilledAmount", "BilledDate", "BilledPaidDate", "ProviderRate", "ProviderAmount", "ProviderPaidDate", "Voucher" })"
              GetData="SesiService.GetProviderBillingPagedAsync"
              ExportHeaders="@(new[] { DN(nameof(ProviderBillingDTO.StudentId)), DN(nameof(ProviderBillingDTO.StudentLastName)), DN(nameof(ProviderBillingDTO.ProviderLastName)), DN(nameof(ProviderBillingDTO.EntryId)), DN(nameof(ProviderBillingDTO.DateOfService)), DN(nameof(ProviderBillingDTO.StartTime)), DN(nameof(ProviderBillingDTO.EndTime)), DN(nameof(ProviderBillingDTO.Duration)), DN(nameof(ProviderBillingDTO.ServiceType)), DN(nameof(ProviderBillingDTO.GDistrict)), DN(nameof(ProviderBillingDTO.BilledRate)), DN(nameof(ProviderBillingDTO.BilledAmount)), DN(nameof(ProviderBillingDTO.BilledDate)), DN(nameof(ProviderBillingDTO.BilledPaidDate)), DN(nameof(ProviderBillingDTO.ProviderRate)), DN(nameof(ProviderBillingDTO.ProviderAmount)), DN(nameof(ProviderBillingDTO.ProviderPaidDate)), DN(nameof(ProviderBillingDTO.Voucher)) })"
-             ExportMapper="@(s => new object?[] { s.StudentId, $"{s.StudentLastName}, {s.StudentFirstName}", $"{s.ProviderLastName}, {s.ProviderFirstName}", s.EntryId, s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.GDistrict, s.BilledRate, s.BilledAmount, s.BilledDate?.ToString("MM/dd/yyyy"), s.BilledPaidDate?.ToString("MM/dd/yyyy"), s.ProviderRate, s.ProviderAmount, s.ProviderPaidDate?.ToString("MM/dd/yyyy"), s.Voucher })">
+             ExportMapper="@(s => new object?[] { s.StudentId, CombineName(s.StudentLastName, s.StudentFirstName), CombineName(s.ProviderLastName, s.ProviderFirstName), s.EntryId, s.DateOfService?.ToString("MM/dd/yyyy"), s.StartTime, s.EndTime, s.Duration, s.ServiceType, s.GDistrict, s.BilledRate, s.BilledAmount, s.BilledDate?.ToString("MM/dd/yyyy"), s.BilledPaidDate?.ToString("MM/dd/yyyy"), s.ProviderRate, s.ProviderAmount, s.ProviderPaidDate?.ToString("MM/dd/yyyy"), s.Voucher })">
 
     <HeaderContent>
         <GridCell TItem="ProviderBillingDTO" Column="StudentId" IsHeader="true">
@@ -74,8 +74,8 @@
 
     <RowTemplate Context="s">
         <GridCell TItem="ProviderBillingDTO" Column="StudentId">@s.StudentId</GridCell>
-        <GridCell TItem="ProviderBillingDTO" Column="StudentLastName">@s.StudentLastName, @s.StudentFirstName</GridCell>
-        <GridCell TItem="ProviderBillingDTO" Column="ProviderLastName">@s.ProviderLastName, @s.ProviderFirstName</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="StudentLastName">@CombineName(s.StudentLastName, s.StudentFirstName)</GridCell>
+        <GridCell TItem="ProviderBillingDTO" Column="ProviderLastName">@CombineName(s.ProviderLastName, s.ProviderFirstName)</GridCell>
         <GridCell TItem="ProviderBillingDTO" Column="EntryId">@s.EntryId</GridCell>
         <GridCell TItem="ProviderBillingDTO" Column="DateOfService">
             <MudTooltip Text="@s.DateOfService?.ToLongDateString()">
@@ -115,4 +115,7 @@
 
     private static string DN(string prop) =>
         typeof(ProviderBillingDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
+
+    private static string CombineName(string? last, string? first) =>
+        string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
 }

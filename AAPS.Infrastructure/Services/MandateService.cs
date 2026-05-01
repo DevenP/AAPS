@@ -56,7 +56,15 @@ public class MandateService : IMandateService
                 (m.Mandate_ID != null && m.Mandate_ID.Contains(term)) ||
                 (m.Primary_Contact_Phone_1 != null && m.Primary_Contact_Phone_1.Contains(term)) ||
                 (m.Primary_Contact_Phone_2 != null && m.Primary_Contact_Phone_2.Contains(term)) ||
-                (m.FileName != null && m.FileName.Contains(term)));
+                (m.FileName != null && m.FileName.Contains(term)) ||
+                (m.IEP_Type != null && m.IEP_Type.Contains(term)) ||
+                (m.School_Name != null && m.School_Name.Contains(term)) ||
+                (m.Agency_Name != null && m.Agency_Name.Contains(term)) ||
+                (m.Auth_Physical_DBN != null && m.Auth_Physical_DBN.Contains(term)) ||
+                (m.Assignment_ID != null && m.Assignment_ID.Contains(term)) ||
+                (m.Parent_Last_Name != null && m.Parent_Last_Name.Contains(term)) ||
+                (m.Parent_First_Name != null && m.Parent_First_Name.Contains(term)) ||
+                (m.Parent_Email != null && m.Parent_Email.Contains(term)));
         }
 
         var query = from m in baseQuery
@@ -85,6 +93,14 @@ public class MandateService : IMandateService
                         MandateId = m.Mandate_ID,
                         PrimaryPhone1 = m.Primary_Contact_Phone_1,
                         PrimaryPhone2 = m.Primary_Contact_Phone_2,
+                        IepType = m.IEP_Type,
+                        SchoolName = m.School_Name,
+                        AgencyName = m.Agency_Name,
+                        AuthPhysicalDbn = m.Auth_Physical_DBN,
+                        AssignmentId = m.Assignment_ID,
+                        ParentLastName = m.Parent_Last_Name,
+                        ParentFirstName = m.Parent_First_Name,
+                        ParentEmail = m.Parent_Email,
                         MandateStart = m.MandateStart,
                         MandateEnd = m.MandateEnd,
                         FileName = m.FileName,
@@ -135,6 +151,14 @@ public class MandateService : IMandateService
             Mandate_ID = dto.MandateId,
             Primary_Contact_Phone_1 = dto.PrimaryPhone1,
             Primary_Contact_Phone_2 = dto.PrimaryPhone2,
+            IEP_Type = dto.IepType,
+            School_Name = dto.SchoolName,
+            Agency_Name = dto.AgencyName,
+            Auth_Physical_DBN = dto.AuthPhysicalDbn,
+            Assignment_ID = dto.AssignmentId,
+            Parent_Last_Name = dto.ParentLastName,
+            Parent_First_Name = dto.ParentFirstName,
+            Parent_Email = dto.ParentEmail,
             MandateStart = dto.MandateStart,
             MandateEnd = dto.MandateEnd,
             FileName = dto.FileName,
@@ -180,6 +204,14 @@ public class MandateService : IMandateService
         entity.Mandate_ID = dto.MandateId;
         entity.Primary_Contact_Phone_1 = dto.PrimaryPhone1;
         entity.Primary_Contact_Phone_2 = dto.PrimaryPhone2;
+        entity.IEP_Type = dto.IepType;
+        entity.School_Name = dto.SchoolName;
+        entity.Agency_Name = dto.AgencyName;
+        entity.Auth_Physical_DBN = dto.AuthPhysicalDbn;
+        entity.Assignment_ID = dto.AssignmentId;
+        entity.Parent_Last_Name = dto.ParentLastName;
+        entity.Parent_First_Name = dto.ParentFirstName;
+        entity.Parent_Email = dto.ParentEmail;
         entity.MandateStart = dto.MandateStart;
         entity.MandateEnd = dto.MandateEnd;
         entity.FileName = dto.FileName;
@@ -229,6 +261,14 @@ public class MandateService : IMandateService
         MandateId = m.Mandate_ID,
         PrimaryPhone1 = m.Primary_Contact_Phone_1,
         PrimaryPhone2 = m.Primary_Contact_Phone_2,
+        IepType = m.IEP_Type,
+        SchoolName = m.School_Name,
+        AgencyName = m.Agency_Name,
+        AuthPhysicalDbn = m.Auth_Physical_DBN,
+        AssignmentId = m.Assignment_ID,
+        ParentLastName = m.Parent_Last_Name,
+        ParentFirstName = m.Parent_First_Name,
+        ParentEmail = m.Parent_Email,
         MandateStart = m.MandateStart,
         MandateEnd = m.MandateEnd,
         FileName = m.FileName,

@@ -4,19 +4,19 @@ namespace AAPS.Application.DTO;
 
 public record MandateDTO
 {
-    [DisplayField("Id")]
+    [DisplayField("Approval ID", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
-    [DisplayField("Conference Date")]
+    [DisplayField("Conf Date")]
     public DateTime? ConferenceDate { get; set; }
 
     [DisplayField("Student ID")]
     public string? StudentId { get; set; }
 
-    [DisplayField("Last Name")]
+    [DisplayField("Student Name")]
     public string? LastName { get; set; }
 
-    [DisplayField("First Name")]
+    [DisplayField("First Name", browsable: false)]
     public string? FirstName { get; set; }
 
     [DisplayField("Home District")]
@@ -43,19 +43,19 @@ public record MandateDTO
     [DisplayField("Service Type")]
     public string? ServiceType { get; set; }
 
-    [DisplayField("Language")]
+    [DisplayField("Lang")]
     public string? Language { get; set; }
 
-    [DisplayField("Group Size")]
+    [DisplayField("Grp Size")]
     public string? GroupSize { get; set; }
 
-    [DisplayField("Duration")]
+    [DisplayField("Dur")]
     public string? Duration { get; set; }
 
     [DisplayField("Service Location")]
     public string? ServiceLocation { get; set; }
 
-    [DisplayField("Remaining Freq")]
+    [DisplayField("Remaining Frequency")]
     public string? RemainingFrequency { get; set; }
 
     [DisplayField("Provider")]
@@ -67,11 +67,35 @@ public record MandateDTO
     [DisplayField("Mandate ID")]
     public string? MandateId { get; set; }
 
-    [DisplayField("Primary Phone 1")]
+    [DisplayField("Primary Contact Phone 1")]
     public string? PrimaryPhone1 { get; set; }
 
-    [DisplayField("Primary Phone 2")]
+    [DisplayField("Primary Contact Phone 2")]
     public string? PrimaryPhone2 { get; set; }
+
+    [DisplayField("IEP Type")]
+    public string? IepType { get; set; }
+
+    [DisplayField("School Name")]
+    public string? SchoolName { get; set; }
+
+    [DisplayField("Agency Name")]
+    public string? AgencyName { get; set; }
+
+    [DisplayField("Auth Physical DBN")]
+    public string? AuthPhysicalDbn { get; set; }
+
+    [DisplayField("Assignment ID")]
+    public string? AssignmentId { get; set; }
+
+    [DisplayField("Parent Name")]
+    public string? ParentLastName { get; set; }
+
+    [DisplayField("Parent First Name", browsable: false)]
+    public string? ParentFirstName { get; set; }
+
+    [DisplayField("Parent Email")]
+    public string? ParentEmail { get; set; }
 
     [DisplayField("Mandate Start")]
     public DateTime? MandateStart { get; set; }
@@ -79,10 +103,10 @@ public record MandateDTO
     [DisplayField("Mandate End")]
     public DateTime? MandateEnd { get; set; }
 
-    [DisplayField("File Name", browsable: false)]
+    [DisplayField("File Name")]
     public string? FileName { get; set; }
 
-    [DisplayField("Row Number", browsable: false)]
+    [DisplayField("Row Number")]
     public int? RowNumber { get; set; }
 
     [DisplayField("Service Start Date")]

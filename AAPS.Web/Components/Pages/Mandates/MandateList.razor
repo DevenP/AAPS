@@ -1,76 +1,168 @@
-﻿@page "/approvals"
+@page "/approvals"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject IMandateService MandateService
 
 <GenericGrid @ref="_grid" TItem="MandateDTO"
              Title="Approvals"
-             Columns="@(new[] { "Id", "StudentId", "LastName", "FirstName", "ServiceType", "MandateStart", "MandateEnd", "Provider", "GroupSize", "Duration", "AdminDbn", "CseDistrict" })"
+             DefaultSortLabel="LastName"
+             Columns="@(new[] { "IsMismatched", "ConferenceDate", "StudentId", "LastName", "HomeDistrict", "Cse", "CseDistrict", "Grade", "DateOfBirth", "AdminDbn", "D75", "ServiceType", "Language", "GroupSize", "Duration", "ServiceLocation", "RemainingFrequency", "Provider", "FirstAttendDate", "MandateId", "PrimaryPhone1", "PrimaryPhone2", "MandateStart", "MandateEnd", "FileName", "RowNumber", "ServiceStartDate", "IepType", "SchoolName", "AgencyName", "AuthPhysicalDbn", "AssignmentId", "ParentLastName", "ParentEmail" })"
              GetData="MandateService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Entry ID", "Student ID", "Last Name", "First Name", "Service", "Start", "End", "Provider", "Group", "Min", "DBN", "DOB" })"
-             ExportMapper="@(m => new object?[] { m.Id, m.StudentId, m.LastName, m.FirstName, m.ServiceType, m.MandateStart?.ToShortDateString(), m.MandateEnd?.ToShortDateString(), m.Provider, m.GroupSize, m.Duration, m.AdminDbn, m.DateOfBirth?.ToShortDateString() })">
+             ExportHeaders="@(new[] { DN(nameof(MandateDTO.IsMismatched)), DN(nameof(MandateDTO.ConferenceDate)), DN(nameof(MandateDTO.StudentId)), DN(nameof(MandateDTO.LastName)), DN(nameof(MandateDTO.HomeDistrict)), DN(nameof(MandateDTO.Cse)), DN(nameof(MandateDTO.CseDistrict)), DN(nameof(MandateDTO.Grade)), DN(nameof(MandateDTO.DateOfBirth)), DN(nameof(MandateDTO.AdminDbn)), DN(nameof(MandateDTO.D75)), DN(nameof(MandateDTO.ServiceType)), DN(nameof(MandateDTO.Language)), DN(nameof(MandateDTO.GroupSize)), DN(nameof(MandateDTO.Duration)), DN(nameof(MandateDTO.ServiceLocation)), DN(nameof(MandateDTO.RemainingFrequency)), DN(nameof(MandateDTO.Provider)), DN(nameof(MandateDTO.FirstAttendDate)), DN(nameof(MandateDTO.MandateId)), DN(nameof(MandateDTO.PrimaryPhone1)), DN(nameof(MandateDTO.PrimaryPhone2)), DN(nameof(MandateDTO.MandateStart)), DN(nameof(MandateDTO.MandateEnd)), DN(nameof(MandateDTO.FileName)), DN(nameof(MandateDTO.RowNumber)), DN(nameof(MandateDTO.ServiceStartDate)), DN(nameof(MandateDTO.IepType)), DN(nameof(MandateDTO.SchoolName)), DN(nameof(MandateDTO.AgencyName)), DN(nameof(MandateDTO.AuthPhysicalDbn)), DN(nameof(MandateDTO.AssignmentId)), DN(nameof(MandateDTO.ParentLastName)), DN(nameof(MandateDTO.ParentEmail)) })"
+             ExportMapper="@(m => new object?[] { m.IsMismatched, m.ConferenceDate?.ToString("MM/dd/yyyy"), m.StudentId, CombineName(m.LastName, m.FirstName), m.HomeDistrict, m.Cse, m.CseDistrict, m.Grade, m.DateOfBirth?.ToString("MM/dd/yyyy"), m.AdminDbn, m.D75, m.ServiceType, m.Language, m.GroupSize, m.Duration, m.ServiceLocation, m.RemainingFrequency, m.Provider, m.FirstAttendDate?.ToString("MM/dd/yyyy"), m.MandateId, m.PrimaryPhone1, m.PrimaryPhone2, m.MandateStart?.ToString("MM/dd/yyyy"), m.MandateEnd?.ToString("MM/dd/yyyy"), m.FileName, m.RowNumber, m.ServiceStartDate?.ToString("MM/dd/yyyy"), m.IepType, m.SchoolName, m.AgencyName, m.AuthPhysicalDbn, m.AssignmentId, CombineName(m.ParentLastName, m.ParentFirstName), m.ParentEmail })">
 
     <HeaderContent>
-        <GridCell TItem="MandateDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="MandateDTO">Entry ID</MudTableSortLabel>
+        <GridCell TItem="MandateDTO" Column="IsMismatched" IsHeader="true">
+            <MudTableSortLabel SortLabel="IsMismatched" T="MandateDTO">@_grid?.GetDisplayName("IsMismatched")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="ConferenceDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ConferenceDate" T="MandateDTO">@_grid?.GetDisplayName("ConferenceDate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="MandateDTO" Column="StudentId" IsHeader="true">
             <MudTableSortLabel SortLabel="StudentId" T="MandateDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="MandateDTO" Column="LastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="LastName" T="MandateDTO">Last Name</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="LastName" T="MandateDTO">@_grid?.GetDisplayName("LastName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="MandateDTO" Column="FirstName" IsHeader="true">
-            <MudTableSortLabel SortLabel="FirstName" T="MandateDTO">First Name</MudTableSortLabel>
+        <GridCell TItem="MandateDTO" Column="HomeDistrict" IsHeader="true">
+            <MudTableSortLabel SortLabel="HomeDistrict" T="MandateDTO">@_grid?.GetDisplayName("HomeDistrict")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="MandateDTO" Column="ServiceType" IsHeader="true">
-            <MudTableSortLabel SortLabel="ServiceType" T="MandateDTO">Service</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="MandateStart" IsHeader="true">
-            <MudTableSortLabel SortLabel="MandateStart" T="MandateDTO">Start</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="MandateEnd" IsHeader="true">
-            <MudTableSortLabel SortLabel="MandateEnd" T="MandateDTO">End</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="Provider" IsHeader="true">
-            <MudTableSortLabel SortLabel="Provider" T="MandateDTO">Provider</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="GroupSize" IsHeader="true">
-            <MudTableSortLabel SortLabel="GroupSize" T="MandateDTO">Group</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="Duration" IsHeader="true">
-            <MudTableSortLabel SortLabel="Duration" T="MandateDTO">Min</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="AdminDbn" IsHeader="true">
-            <MudTableSortLabel SortLabel="AdminDbn" T="MandateDTO">DBN</MudTableSortLabel>
+        <GridCell TItem="MandateDTO" Column="Cse" IsHeader="true">
+            <MudTableSortLabel SortLabel="Cse" T="MandateDTO">@_grid?.GetDisplayName("Cse")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="MandateDTO" Column="CseDistrict" IsHeader="true">
-            <MudTableSortLabel SortLabel="CseDistrict" T="MandateDTO">CSE Dist</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="CseDistrict" T="MandateDTO">@_grid?.GetDisplayName("CseDistrict")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="Grade" IsHeader="true">
+            <MudTableSortLabel SortLabel="Grade" T="MandateDTO">@_grid?.GetDisplayName("Grade")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="DateOfBirth" IsHeader="true">
+            <MudTableSortLabel SortLabel="DateOfBirth" T="MandateDTO">@_grid?.GetDisplayName("DateOfBirth")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="AdminDbn" IsHeader="true">
+            <MudTableSortLabel SortLabel="AdminDbn" T="MandateDTO">@_grid?.GetDisplayName("AdminDbn")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="D75" IsHeader="true">
+            <MudTableSortLabel SortLabel="D75" T="MandateDTO">@_grid?.GetDisplayName("D75")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="MandateDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="Language" IsHeader="true">
+            <MudTableSortLabel SortLabel="Language" T="MandateDTO">@_grid?.GetDisplayName("Language")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="GroupSize" IsHeader="true">
+            <MudTableSortLabel SortLabel="GroupSize" T="MandateDTO">@_grid?.GetDisplayName("GroupSize")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="Duration" IsHeader="true">
+            <MudTableSortLabel SortLabel="Duration" T="MandateDTO">@_grid?.GetDisplayName("Duration")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceLocation" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceLocation" T="MandateDTO">@_grid?.GetDisplayName("ServiceLocation")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="RemainingFrequency" IsHeader="true">
+            <MudTableSortLabel SortLabel="RemainingFrequency" T="MandateDTO">@_grid?.GetDisplayName("RemainingFrequency")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="Provider" IsHeader="true">
+            <MudTableSortLabel SortLabel="Provider" T="MandateDTO">@_grid?.GetDisplayName("Provider")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="FirstAttendDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="FirstAttendDate" T="MandateDTO">@_grid?.GetDisplayName("FirstAttendDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateId" IsHeader="true">
+            <MudTableSortLabel SortLabel="MandateId" T="MandateDTO">@_grid?.GetDisplayName("MandateId")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="PrimaryPhone1" IsHeader="true">
+            <MudTableSortLabel SortLabel="PrimaryPhone1" T="MandateDTO">@_grid?.GetDisplayName("PrimaryPhone1")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="PrimaryPhone2" IsHeader="true">
+            <MudTableSortLabel SortLabel="PrimaryPhone2" T="MandateDTO">@_grid?.GetDisplayName("PrimaryPhone2")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateStart" IsHeader="true">
+            <MudTableSortLabel SortLabel="MandateStart" T="MandateDTO">@_grid?.GetDisplayName("MandateStart")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateEnd" IsHeader="true">
+            <MudTableSortLabel SortLabel="MandateEnd" T="MandateDTO">@_grid?.GetDisplayName("MandateEnd")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="FileName" IsHeader="true">
+            <MudTableSortLabel SortLabel="FileName" T="MandateDTO">@_grid?.GetDisplayName("FileName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="RowNumber" IsHeader="true">
+            <MudTableSortLabel SortLabel="RowNumber" T="MandateDTO">@_grid?.GetDisplayName("RowNumber")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceStartDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceStartDate" T="MandateDTO">@_grid?.GetDisplayName("ServiceStartDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="IepType" IsHeader="true">
+            <MudTableSortLabel SortLabel="IepType" T="MandateDTO">@_grid?.GetDisplayName("IepType")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="SchoolName" IsHeader="true">
+            <MudTableSortLabel SortLabel="SchoolName" T="MandateDTO">@_grid?.GetDisplayName("SchoolName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="AgencyName" IsHeader="true">
+            <MudTableSortLabel SortLabel="AgencyName" T="MandateDTO">@_grid?.GetDisplayName("AgencyName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="AuthPhysicalDbn" IsHeader="true">
+            <MudTableSortLabel SortLabel="AuthPhysicalDbn" T="MandateDTO">@_grid?.GetDisplayName("AuthPhysicalDbn")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="AssignmentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignmentId" T="MandateDTO">@_grid?.GetDisplayName("AssignmentId")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="ParentLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ParentLastName" T="MandateDTO">@_grid?.GetDisplayName("ParentLastName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="ParentEmail" IsHeader="true">
+            <MudTableSortLabel SortLabel="ParentEmail" T="MandateDTO">@_grid?.GetDisplayName("ParentEmail")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="m">
-        <GridCell TItem="MandateDTO" Column="Id">@m.Id</GridCell>
+        <GridCell TItem="MandateDTO" Column="IsMismatched">@m.IsMismatched</GridCell>
+        <GridCell TItem="MandateDTO" Column="ConferenceDate">@m.ConferenceDate?.ToString("MM/dd/yyyy")</GridCell>
         <GridCell TItem="MandateDTO" Column="StudentId">@m.StudentId</GridCell>
-        <GridCell TItem="MandateDTO" Column="LastName">
-            <MudTooltip Text="@m.LastName"><span>@m.LastName</span></MudTooltip>
-        </GridCell>
-        <GridCell TItem="MandateDTO" Column="FirstName">@m.FirstName</GridCell>
+        <GridCell TItem="MandateDTO" Column="LastName">@CombineName(m.LastName, m.FirstName)</GridCell>
+        <GridCell TItem="MandateDTO" Column="HomeDistrict">@m.HomeDistrict</GridCell>
+        <GridCell TItem="MandateDTO" Column="Cse">@m.Cse</GridCell>
+        <GridCell TItem="MandateDTO" Column="CseDistrict">@m.CseDistrict</GridCell>
+        <GridCell TItem="MandateDTO" Column="Grade">@m.Grade</GridCell>
+        <GridCell TItem="MandateDTO" Column="DateOfBirth">@m.DateOfBirth?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="AdminDbn">@m.AdminDbn</GridCell>
+        <GridCell TItem="MandateDTO" Column="D75">@m.D75</GridCell>
         <GridCell TItem="MandateDTO" Column="ServiceType">@m.ServiceType</GridCell>
-        <GridCell TItem="MandateDTO" Column="MandateStart">@m.MandateStart?.ToString("MM/dd/yyyy")</GridCell>
-        <GridCell TItem="MandateDTO" Column="MandateEnd">@m.MandateEnd?.ToString("MM/dd/yyyy")</GridCell>
-        <GridCell TItem="MandateDTO" Column="Provider">
-            <MudTooltip Text="@m.Provider"><span>@m.Provider</span></MudTooltip>
-        </GridCell>
+        <GridCell TItem="MandateDTO" Column="Language">@m.Language</GridCell>
         <GridCell TItem="MandateDTO" Column="GroupSize">@m.GroupSize</GridCell>
         <GridCell TItem="MandateDTO" Column="Duration">@m.Duration</GridCell>
-        <GridCell TItem="MandateDTO" Column="AdminDbn">@m.AdminDbn</GridCell>
-        <GridCell TItem="MandateDTO" Column="CseDistrict">@m.CseDistrict</GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceLocation">@m.ServiceLocation</GridCell>
+        <GridCell TItem="MandateDTO" Column="RemainingFrequency">@m.RemainingFrequency</GridCell>
+        <GridCell TItem="MandateDTO" Column="Provider">@m.Provider</GridCell>
+        <GridCell TItem="MandateDTO" Column="FirstAttendDate">@m.FirstAttendDate?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateId">@m.MandateId</GridCell>
+        <GridCell TItem="MandateDTO" Column="PrimaryPhone1">@m.PrimaryPhone1</GridCell>
+        <GridCell TItem="MandateDTO" Column="PrimaryPhone2">@m.PrimaryPhone2</GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateStart">@m.MandateStart?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="MandateEnd">@m.MandateEnd?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="FileName">@m.FileName</GridCell>
+        <GridCell TItem="MandateDTO" Column="RowNumber">@m.RowNumber</GridCell>
+        <GridCell TItem="MandateDTO" Column="ServiceStartDate">@m.ServiceStartDate?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="IepType">@m.IepType</GridCell>
+        <GridCell TItem="MandateDTO" Column="SchoolName">@m.SchoolName</GridCell>
+        <GridCell TItem="MandateDTO" Column="AgencyName">@m.AgencyName</GridCell>
+        <GridCell TItem="MandateDTO" Column="AuthPhysicalDbn">@m.AuthPhysicalDbn</GridCell>
+        <GridCell TItem="MandateDTO" Column="AssignmentId">@m.AssignmentId</GridCell>
+        <GridCell TItem="MandateDTO" Column="ParentLastName">@CombineName(m.ParentLastName, m.ParentFirstName)</GridCell>
+        <GridCell TItem="MandateDTO" Column="ParentEmail">@m.ParentEmail</GridCell>
     </RowTemplate>
 </GenericGrid>
 
 @code {
-
     private GenericGrid<MandateDTO> _grid = default!;
+
+    private static string DN(string prop) =>
+        typeof(MandateDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
+
+    private static string CombineName(string? last, string? first) =>
+        string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
 }

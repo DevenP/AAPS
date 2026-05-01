@@ -31,7 +31,7 @@
              DefaultSortLabel="DateOfService"
              GetData="SesiService.GetOperationsPagedAsync"
              ExportHeaders="@(new[] { DN(nameof(OperationsDTO.DateOfService)), DN(nameof(OperationsDTO.StartTime)), DN(nameof(OperationsDTO.EndTime)), DN(nameof(OperationsDTO.ProviderLastName)), DN(nameof(OperationsDTO.GDistrict)), DN(nameof(OperationsDTO.StudentId)), DN(nameof(OperationsDTO.StudentLastName)), DN(nameof(OperationsDTO.ServiceType)), DN(nameof(OperationsDTO.LanguageProvided)), DN(nameof(OperationsDTO.ActualSize)), DN(nameof(OperationsDTO.Duration)), DN(nameof(OperationsDTO.AssignmentClaimed)), DN(nameof(OperationsDTO.EntryId)), DN(nameof(OperationsDTO.ProviderPaidDate)), DN(nameof(OperationsDTO.BilledDate)), DN(nameof(OperationsDTO.Voucher)), DN(nameof(OperationsDTO.AssignId)) })"
-             ExportMapper="@(op => new object?[] { op.DateOfService?.ToString("MM/dd/yyyy"), op.StartTime, op.EndTime, $"{op.ProviderLastName}, {op.ProviderFirstName}", op.GDistrict, op.StudentId, $"{op.StudentLastName}, {op.StudentFirstName}", op.ServiceType, op.LanguageProvided, op.ActualSize, op.Duration, op.AssignmentClaimed, op.EntryId, op.ProviderPaidDate?.ToString("MM/dd/yyyy"), op.BilledDate?.ToString("MM/dd/yyyy"), op.Voucher, op.AssignId })"
+             ExportMapper="@(op => new object?[] { op.DateOfService?.ToString("MM/dd/yyyy"), op.StartTime, op.EndTime, CombineName(op.ProviderLastName, op.ProviderFirstName), op.GDistrict, op.StudentId, CombineName(op.StudentLastName, op.StudentFirstName), op.ServiceType, op.LanguageProvided, op.ActualSize, op.Duration, op.AssignmentClaimed, op.EntryId, op.ProviderPaidDate?.ToString("MM/dd/yyyy"), op.BilledDate?.ToString("MM/dd/yyyy"), op.Voucher, op.AssignId })"
              OnFilterRemoved="OnFilterRemoved">
 
     <CustomActionContent>
@@ -192,10 +192,10 @@
         </GridCell>
         <GridCell TItem="OperationsDTO" Column="StartTime">@op.StartTime</GridCell>
         <GridCell TItem="OperationsDTO" Column="EndTime">@op.EndTime</GridCell>
-        <GridCell TItem="OperationsDTO" Column="ProviderLastName">@op.ProviderLastName, @op.ProviderFirstName</GridCell>
+        <GridCell TItem="OperationsDTO" Column="ProviderLastName">@CombineName(op.ProviderLastName, op.ProviderFirstName)</GridCell>
         <GridCell TItem="OperationsDTO" Column="GDistrict">@op.GDistrict</GridCell>
         <GridCell TItem="OperationsDTO" Column="StudentId">@op.StudentId</GridCell>
-        <GridCell TItem="OperationsDTO" Column="StudentLastName">@op.StudentLastName, @op.StudentFirstName</GridCell>
+        <GridCell TItem="OperationsDTO" Column="StudentLastName">@CombineName(op.StudentLastName, op.StudentFirstName)</GridCell>
         <GridCell TItem="OperationsDTO" Column="ServiceType">@op.ServiceType</GridCell>
         <GridCell TItem="OperationsDTO" Column="LanguageProvided">@op.LanguageProvided</GridCell>
         <GridCell TItem="OperationsDTO" Column="ActualSize">@op.ActualSize</GridCell>
@@ -216,6 +216,9 @@
 
     private static string DN(string prop) =>
         typeof(OperationsDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
+
+    private static string CombineName(string? last, string? first) =>
+        string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
 
     // ── Busy state ────────────────────────────────────────────────────────────
     private bool _busy = false;
