@@ -8,7 +8,8 @@
       "Bash(python3 -c \"import pandas; print\\(''pandas available''\\)\")",
       "Bash(py --version)",
       "Bash(where python:*)",
-      "Bash(where py:*)"
+      "Bash(where py:*)",
+      "Read(//c/Users/deven/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\deven\\.claude\\projects\\c--Users-deven-source-repos-AAPS\\memory"

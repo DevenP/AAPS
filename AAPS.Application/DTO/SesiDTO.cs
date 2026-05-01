@@ -127,7 +127,7 @@ public record SesiDTO
     [DisplayField("Provider Paid Date")]
     public DateTime? ProviderPaidDate { get; set; }
 
-    [DisplayField("Is Overlap", browsable: false)]
+    [DisplayField("Overlap Service")]
     public bool IsOverlap { get; set; }
 
     [DisplayField("Voucher")]
@@ -139,12 +139,12 @@ public record SesiDTO
     [DisplayField("Voucher Balance Paid", browsable: false)]
     public DateTime? VoucherBalancePaid { get; set; }
 
-    [DisplayField("Is Over Mandate", browsable: false)]
+    [DisplayField("Over Mandate")]
     public bool IsOverMandate { get; set; }
 
-    [DisplayField("Is Over Duration", browsable: false)]
+    [DisplayField("Over Duration")]
     public bool IsOverDuration { get; set; }
 
-    [DisplayField("Is Under Group", browsable: false)]
+    [DisplayField("Under Group Size")]
     public bool IsUnderGroup { get; set; }
 }

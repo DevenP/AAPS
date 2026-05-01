@@ -4,19 +4,19 @@ namespace AAPS.Application.DTO
 {
     public record OperationsDTO : SesiDTO
     {
-        [DisplayField("Mandate Flag", browsable: false)]
+        [DisplayField("Mismatched Approval")]
         public bool MandateFlag { get; set; }
 
-        [DisplayField("Provider Flag", browsable: false)]
+        [DisplayField("Unassigned Provider")]
         public bool ProviderFlag { get; set; }
 
-        [DisplayField("Billed Rate Flag", browsable: false)]
+        [DisplayField("Missing Billing Rate")]
         public bool BRateFlag { get; set; }
 
-        [DisplayField("Provider Rate Flag", browsable: false)]
+        [DisplayField("Missing Provider Rate")]
         public bool PRateFlag { get; set; }
 
-        [DisplayField("Assign Flag", browsable: false)]
+        [DisplayField("Missing Assignment")]
         public bool AssignFlag { get; set; }
 
         [DisplayField("Assign ID")]
