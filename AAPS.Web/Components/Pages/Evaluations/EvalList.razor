@@ -1,8 +1,10 @@
 @page "/evaluations"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Evaluations.Forms
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject IEvalService EvalService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -10,10 +12,11 @@
 
 <GenericGrid @ref="_grid" TItem="EvalDTO"
              Title="Evaluations"
-             Columns="@(new[] { "Actions", "Id", "Status", "StudentLastName", "StudentFirstName", "ProviderLastName", "ServiceType", "EvalDate", "BillingAmount", "BilledDate", "BillPaidDate", "ProviderPaidAmount", "ProviderPaidDate", "District", "Language" })"
+             DefaultSortLabel="StudentLastName"
+             Columns="@(new[] { "Actions", "StudentLastName", "StudentFirstName", "StudentId", "District", "ServiceType", "Language", "Phone", "ParentLastName", "ParentFirstName", "EvalReceivedDate", "ProviderLastName", "AssignedDate", "AppointmentDate", "ReportReceivedDate", "EvalDate", "ReportSubmittedDate", "Status", "Contact" })"
              GetData="EvalService.GetPagedAsync"
-             ExportHeaders="@(new[] { "ID", "Status", "Student Last", "Student First", "Provider", "Service", "Eval Date", "Bill Amt", "Billed Date", "Paid Date", "Memo" })"
-             ExportMapper="@(e => new object?[] { e.Id, e.Status, e.StudentLastName, e.StudentFirstName, $"{e.ProviderFirstName} {e.ProviderLastName}", e.ServiceType, e.EvalDate?.ToShortDateString(), e.BillingAmount, e.BilledDate?.ToShortDateString(), e.BillPaidDate?.ToShortDateString(), e.Memo })">
+             ExportHeaders="@(new[] { DN(nameof(EvalDTO.StudentLastName)), DN(nameof(EvalDTO.StudentFirstName)), DN(nameof(EvalDTO.StudentId)), DN(nameof(EvalDTO.District)), DN(nameof(EvalDTO.ServiceType)), DN(nameof(EvalDTO.Language)), DN(nameof(EvalDTO.Phone)), DN(nameof(EvalDTO.ParentLastName)), DN(nameof(EvalDTO.ParentFirstName)), DN(nameof(EvalDTO.EvalReceivedDate)), DN(nameof(EvalDTO.ProviderLastName)), DN(nameof(EvalDTO.AssignedDate)), DN(nameof(EvalDTO.AppointmentDate)), DN(nameof(EvalDTO.ReportReceivedDate)), DN(nameof(EvalDTO.EvalDate)), DN(nameof(EvalDTO.ReportSubmittedDate)), DN(nameof(EvalDTO.Status)), DN(nameof(EvalDTO.Contact)) })"
+             ExportMapper="@(e => new object?[] { e.StudentLastName, e.StudentFirstName, e.StudentId, e.District, e.ServiceType, e.Language, e.Phone, e.ParentLastName, e.ParentFirstName, e.EvalReceivedDate?.ToString("MM/dd/yyyy"), ProviderDisplay(e), e.AssignedDate?.ToString("MM/dd/yyyy"), e.AppointmentDate?.ToString("MM/dd/yyyy"), e.ReportReceivedDate?.ToString("MM/dd/yyyy"), e.EvalDate?.ToString("MM/dd/yyyy"), e.ReportSubmittedDate?.ToString("MM/dd/yyyy"), e.Status, e.Contact })">
 
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
@@ -28,52 +31,63 @@
 
     <HeaderContent>
         <GridCell TItem="EvalDTO" Column="Actions" IsHeader="true">Actions</GridCell>
-        <GridCell TItem="EvalDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="EvalDTO">ID</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="Status" IsHeader="true">
-            <MudTableSortLabel SortLabel="Status" T="EvalDTO">Status</MudTableSortLabel>
-        </GridCell>
         <GridCell TItem="EvalDTO" Column="StudentLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentLastName" T="EvalDTO">Student Last</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StudentLastName" T="EvalDTO">@_grid?.GetDisplayName("StudentLastName")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="EvalDTO" Column="StudentFirstName" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentFirstName" T="EvalDTO">Student First</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StudentFirstName" T="EvalDTO">@_grid?.GetDisplayName("StudentFirstName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderLastName" T="EvalDTO">Provider</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="ServiceType" IsHeader="true">
-            <MudTableSortLabel SortLabel="ServiceType" T="EvalDTO">Service</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="EvalDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="EvalDate" T="EvalDTO">Eval Date</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="BillingAmount" IsHeader="true">
-            <MudTableSortLabel SortLabel="BillingAmount" T="EvalDTO">Bill Amt</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="BilledDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="BilledDate" T="EvalDTO">Billed</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="BillPaidDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="BillPaidDate" T="EvalDTO">Paid</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderPaidAmount" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderPaidAmount" T="EvalDTO">P-Paid</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderPaidDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderPaidDate" T="EvalDTO">P-Date</MudTableSortLabel>
+        <GridCell TItem="EvalDTO" Column="StudentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentId" T="EvalDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="EvalDTO" Column="District" IsHeader="true">
-            <MudTableSortLabel SortLabel="District" T="EvalDTO">Dist</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="District" T="EvalDTO">@_grid?.GetDisplayName("District")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ServiceType" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceType" T="EvalDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="EvalDTO" Column="Language" IsHeader="true">
-            <MudTableSortLabel SortLabel="Language" T="EvalDTO">Lang</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Language" T="EvalDTO">@_grid?.GetDisplayName("Language")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="Phone" IsHeader="true">
+            <MudTableSortLabel SortLabel="Phone" T="EvalDTO">@_grid?.GetDisplayName("Phone")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ParentLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ParentLastName" T="EvalDTO">@_grid?.GetDisplayName("ParentLastName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ParentFirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ParentFirstName" T="EvalDTO">@_grid?.GetDisplayName("ParentFirstName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="EvalReceivedDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="EvalReceivedDate" T="EvalDTO">@_grid?.GetDisplayName("EvalReceivedDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ProviderLastName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderLastName" T="EvalDTO">@_grid?.GetDisplayName("ProviderLastName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="AssignedDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignedDate" T="EvalDTO">@_grid?.GetDisplayName("AssignedDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="AppointmentDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="AppointmentDate" T="EvalDTO">@_grid?.GetDisplayName("AppointmentDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ReportReceivedDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ReportReceivedDate" T="EvalDTO">@_grid?.GetDisplayName("ReportReceivedDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="EvalDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="EvalDate" T="EvalDTO">@_grid?.GetDisplayName("EvalDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ReportSubmittedDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="ReportSubmittedDate" T="EvalDTO">@_grid?.GetDisplayName("ReportSubmittedDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="Status" IsHeader="true">
+            <MudTableSortLabel SortLabel="Status" T="EvalDTO">@_grid?.GetDisplayName("Status")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="Contact" IsHeader="true">
+            <MudTableSortLabel SortLabel="Contact" T="EvalDTO">@_grid?.GetDisplayName("Contact")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
     <RowTemplate Context="eval">
-        @* Row Actions *@
         <GridCell TItem="EvalDTO" Column="Actions">
             <div class="d-flex gap-1">
                 <MudTooltip Text="Edit Evaluation">
@@ -91,55 +105,68 @@
             </div>
         </GridCell>
 
-        <GridCell TItem="EvalDTO" Column="Id">@eval.Id</GridCell>
+        <GridCell TItem="EvalDTO" Column="StudentLastName">@eval.StudentLastName</GridCell>
+        <GridCell TItem="EvalDTO" Column="StudentFirstName">@eval.StudentFirstName</GridCell>
+        <GridCell TItem="EvalDTO" Column="StudentId">@eval.StudentId</GridCell>
+        <GridCell TItem="EvalDTO" Column="District">@eval.District</GridCell>
+        <GridCell TItem="EvalDTO" Column="ServiceType">@eval.ServiceType</GridCell>
+        <GridCell TItem="EvalDTO" Column="Language">@eval.Language</GridCell>
+        <GridCell TItem="EvalDTO" Column="Phone">@eval.Phone</GridCell>
+        <GridCell TItem="EvalDTO" Column="ParentLastName">@eval.ParentLastName</GridCell>
+        <GridCell TItem="EvalDTO" Column="ParentFirstName">@eval.ParentFirstName</GridCell>
+        <GridCell TItem="EvalDTO" Column="EvalReceivedDate">
+            <MudTooltip Text="@eval.EvalReceivedDate?.ToLongDateString()">
+                <span>@eval.EvalReceivedDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ProviderLastName">@ProviderDisplay(eval)</GridCell>
+        <GridCell TItem="EvalDTO" Column="AssignedDate">
+            <MudTooltip Text="@eval.AssignedDate?.ToLongDateString()">
+                <span>@eval.AssignedDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="AppointmentDate">
+            <MudTooltip Text="@eval.AppointmentDate?.ToLongDateString()">
+                <span>@eval.AppointmentDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ReportReceivedDate">
+            <MudTooltip Text="@eval.ReportReceivedDate?.ToLongDateString()">
+                <span>@eval.ReportReceivedDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="EvalDate">
+            <MudTooltip Text="@eval.EvalDate?.ToLongDateString()">
+                <span>@eval.EvalDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="EvalDTO" Column="ReportSubmittedDate">
+            <MudTooltip Text="@eval.ReportSubmittedDate?.ToLongDateString()">
+                <span>@eval.ReportSubmittedDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
+        </GridCell>
         <GridCell TItem="EvalDTO" Column="Status">
             <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                      Color="@(eval.Status == "Completed" ? Color.Success : Color.Warning)">
                 @eval.Status
             </MudChip>
         </GridCell>
-        <GridCell TItem="EvalDTO" Column="StudentLastName">
-            <MudTooltip Text="@eval.StudentLastName"><span>@eval.StudentLastName</span></MudTooltip>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="StudentFirstName">@eval.StudentFirstName</GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderLastName">
-            <MudTooltip Text="@($"{eval.ProviderFirstName} {eval.ProviderLastName}")">
-                <span>@(string.IsNullOrEmpty(eval.ProviderLastName) ? "Unassigned" : eval.ProviderLastName)</span>
-            </MudTooltip>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="ServiceType">@eval.ServiceType</GridCell>
-        <GridCell TItem="EvalDTO" Column="EvalDate">
-            <MudTooltip Text="@eval.EvalDate?.ToLongDateString()">
-                <span>@eval.EvalDate?.ToString("MM/dd/yyyy")</span>
-            </MudTooltip>
-        </GridCell>
-        <GridCell TItem="EvalDTO" Column="BillingAmount">@eval.BillingAmount?.ToString("C2")</GridCell>
-
-        <GridCell TItem="EvalDTO" Column="BilledDate">
-            <span style="opacity: @(eval.BilledDate == null ? "0.5" : "1")">
-                @(eval.BilledDate?.ToString("MM/dd/yyyy") ?? "---")
-            </span>
-        </GridCell>
-
-        <GridCell TItem="EvalDTO" Column="BillPaidDate">
-            @if (eval.BillPaidDate != null)
-            {
-                <MudTooltip Text="@($"Paid: {eval.BillPaidDate?.ToString("MM/dd/yyyy")}")">
-                    <MudIcon Icon="@Icons.Material.Filled.Payments" Color="Color.Success" Size="Size.Small" />
-                </MudTooltip>
-            }
-        </GridCell>
-
-        <GridCell TItem="EvalDTO" Column="ProviderPaidAmount">@eval.ProviderPaidAmount?.ToString("C2")</GridCell>
-        <GridCell TItem="EvalDTO" Column="ProviderPaidDate">@eval.ProviderPaidDate?.ToString("MM/dd/yyyy")</GridCell>
-        <GridCell TItem="EvalDTO" Column="District">@eval.District</GridCell>
-        <GridCell TItem="EvalDTO" Column="Language">@eval.Language</GridCell>
+        <GridCell TItem="EvalDTO" Column="Contact">@eval.Contact</GridCell>
     </RowTemplate>
 </GenericGrid>
 
 @code {
     private GenericGrid<EvalDTO> _grid = default!;
     private EvalValidator _validator = new();
+
+    private static string DN(string prop) =>
+        typeof(EvalDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
+
+    private static string CombineName(string? last, string? first) =>
+        string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
+
+    private static string ProviderDisplay(EvalDTO e) =>
+        string.IsNullOrEmpty(e.ProviderLastName) ? "Unassigned" : CombineName(e.ProviderLastName, e.ProviderFirstName);
 
     private async Task PrintConsent(int evalId)
     {
