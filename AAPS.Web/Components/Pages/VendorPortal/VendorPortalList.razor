@@ -1,7 +1,9 @@
 ﻿@page "/vendorportal"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject IVendorPortalService VendorPortalService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -9,7 +11,7 @@
 <GenericGrid TItem="VendorPortalDTO"
              @ref="_grid"
              Title="Vendor Portal"
-             Columns="@(new[] { "Id", "Mismatch", "AssignmentId", "StudentId", "StudentLastName", "ProviderLastName", "ApprovalStartDate", "VenderPortalFile", "EntryId" })"
+             Columns="@(new[] { "Mismatch", "StudentId", "StudentLastName", "StudentFirstName", "ProviderLastName", "ProviderFirstName", "ProviderSSN", "Duration", "Frequency", "GroupSize", "School", "ApprovalStartDate", "AssignmentId", "Fund", "VenderPortalFile", "EntryId" })"
              GetData="VendorPortalService.GetPagedAsync"
              OnFilterRemoved="OnFilterRemoved">
 
@@ -56,30 +58,53 @@
                          Size="Size.Small" />
         </MudTh>
 
-        <GridCell TItem="VendorPortalDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="VendorPortalDTO">ID</MudTableSortLabel>
-        </GridCell>
-        <GridCell TItem="VendorPortalDTO" Column="Mismatch" IsHeader="true">Match Status</GridCell>
-        <GridCell TItem="VendorPortalDTO" Column="AssignmentId" IsHeader="true">
-            <MudTableSortLabel SortLabel="AssignmentId" T="VendorPortalDTO">Assign ID</MudTableSortLabel>
+        <GridCell TItem="VendorPortalDTO" Column="Mismatch" IsHeader="true">
+            <MudTableSortLabel SortLabel="Mismatch" T="VendorPortalDTO">@_grid?.GetDisplayName("Mismatch")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="StudentId" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentId" T="VendorPortalDTO">Student ID</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StudentId" T="VendorPortalDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="StudentLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="StudentLastName" T="VendorPortalDTO">Student</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="StudentLastName" T="VendorPortalDTO">@_grid?.GetDisplayName("StudentLastName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="StudentFirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="StudentFirstName" T="VendorPortalDTO">@_grid?.GetDisplayName("StudentFirstName")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="ProviderLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderLastName" T="VendorPortalDTO">Provider</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderLastName" T="VendorPortalDTO">@_grid?.GetDisplayName("ProviderLastName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderFirstName" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderFirstName" T="VendorPortalDTO">@_grid?.GetDisplayName("ProviderFirstName")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderSSN" IsHeader="true">
+            <MudTableSortLabel SortLabel="ProviderSSN" T="VendorPortalDTO">@_grid?.GetDisplayName("ProviderSSN")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Duration" IsHeader="true">
+            @_grid?.GetDisplayName("Duration")
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Frequency" IsHeader="true">
+            @_grid?.GetDisplayName("Frequency")
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="GroupSize" IsHeader="true">
+            @_grid?.GetDisplayName("GroupSize")
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="School" IsHeader="true">
+            <MudTableSortLabel SortLabel="School" T="VendorPortalDTO">@_grid?.GetDisplayName("School")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="ApprovalStartDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="ApprovalStartDate" T="VendorPortalDTO">Start Date</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ApprovalStartDate" T="VendorPortalDTO">@_grid?.GetDisplayName("ApprovalStartDate")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="AssignmentId" IsHeader="true">
+            <MudTableSortLabel SortLabel="AssignmentId" T="VendorPortalDTO">@_grid?.GetDisplayName("AssignmentId")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Fund" IsHeader="true">
+            <MudTableSortLabel SortLabel="Fund" T="VendorPortalDTO">@_grid?.GetDisplayName("Fund")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile" IsHeader="true">
-            <MudTableSortLabel SortLabel="VenderPortalFile" T="VendorPortalDTO">File Source</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="VenderPortalFile" T="VendorPortalDTO">@_grid?.GetDisplayName("VenderPortalFile")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="VendorPortalDTO" Column="EntryId" IsHeader="true">
-            <MudTableSortLabel SortLabel="EntryId" T="VendorPortalDTO">Approval ID</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="EntryId" T="VendorPortalDTO">@_grid?.GetDisplayName("EntryId")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
@@ -92,61 +117,40 @@
                          Size="Size.Small" />
         </MudTd>
 
-        <GridCell TItem="VendorPortalDTO" Column="Id">@item.Id</GridCell>
-
-        <GridCell TItem="VendorPortalDTO" Column="Mismatch">
-            @if (item.Mismatch == "Approval")
-            {
-                <MudTooltip Text="Mismatch: No Matching Approval/Mandate found">
-                    <MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error" Size="Size.Small" />
-                </MudTooltip>
-            }
-            else if (item.Mismatch == "Provider")
-            {
-                <MudTooltip Text="Mismatch: Provider SSN not found in internal records">
-                    <MudIcon Icon="@Icons.Material.Filled.PersonOff" Color="Color.Warning" Size="Size.Small" />
-                </MudTooltip>
-            }
-            else
-            {
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
-            }
-        </GridCell>
-
-        <GridCell TItem="VendorPortalDTO" Column="AssignmentId">
-            <span style="font-family: monospace;">@item.AssignmentId</span>
-        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Mismatch">@item.Mismatch</GridCell>
 
         <GridCell TItem="VendorPortalDTO" Column="StudentId">@item.StudentId</GridCell>
-
-        <GridCell TItem="VendorPortalDTO" Column="StudentLastName">
-            <MudTooltip Text="@($"{item.StudentLastName}, {item.StudentFirstName}")">
-                <span>@item.StudentLastName</span>
-            </MudTooltip>
+        <GridCell TItem="VendorPortalDTO" Column="StudentLastName">@item.StudentLastName</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="StudentFirstName">@item.StudentFirstName</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderLastName">@item.ProviderLastName</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderFirstName">@item.ProviderFirstName</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="ProviderSSN">
+            <span style="font-family:monospace;">@item.ProviderSSN</span>
         </GridCell>
-
-        <GridCell TItem="VendorPortalDTO" Column="ProviderLastName">
-            <MudTooltip Text="@($"{item.ProviderLastName}, {item.ProviderFirstName}")">
-                <span>@item.ProviderLastName</span>
-            </MudTooltip>
-        </GridCell>
-
+        <GridCell TItem="VendorPortalDTO" Column="Duration">@item.Duration</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Frequency">@item.Frequency</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="GroupSize">@item.GroupSize</GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="School">@item.School</GridCell>
         <GridCell TItem="VendorPortalDTO" Column="ApprovalStartDate">
-            @item.ApprovalStartDate?.ToString("MM/dd/yyyy")
+            <MudTooltip Text="@item.ApprovalStartDate?.ToLongDateString()">
+                <span>@item.ApprovalStartDate?.ToString("MM/dd/yyyy")</span>
+            </MudTooltip>
         </GridCell>
-
+        <GridCell TItem="VendorPortalDTO" Column="AssignmentId">
+            <span style="font-family:monospace;">@item.AssignmentId</span>
+        </GridCell>
+        <GridCell TItem="VendorPortalDTO" Column="Fund">@item.Fund</GridCell>
         <GridCell TItem="VendorPortalDTO" Column="VenderPortalFile">
             <MudTooltip Text="@item.VenderPortalFile">
-                <span style="max-width: 150px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <span style="max-width:150px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                     @item.VenderPortalFile
                 </span>
             </MudTooltip>
         </GridCell>
-
         <GridCell TItem="VendorPortalDTO" Column="EntryId">
             @if (item.EntryId.HasValue)
             {
-                <span style="font-family: monospace;">@item.EntryId</span>
+                <span style="font-family:monospace;">@item.EntryId</span>
             }
             else
             {

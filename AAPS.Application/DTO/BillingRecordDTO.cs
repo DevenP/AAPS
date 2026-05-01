@@ -4,7 +4,7 @@ namespace AAPS.Application.DTO;
 
 public class BillingRecordDTO
 {
-    [DisplayField("Sesis ID")]
+    [DisplayField("Sesis ID", browsable: false)]
     public int SesisId { get; set; }
 
     [DisplayField("Service Date")]
