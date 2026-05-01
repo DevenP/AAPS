@@ -24,6 +24,9 @@ public class BillingRateService : IBillingRateService
 
     public async Task<PagedResult<BillingRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        if (string.IsNullOrEmpty(request.SortBy))
+            request = request with { SortBy = "District" };
+
         await using var db = _factory.CreateDbContext();
         var baseQuery = db.BillingRates.AsNoTracking();
 

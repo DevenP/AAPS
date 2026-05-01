@@ -4,7 +4,7 @@ namespace AAPS.Application.DTO;
 
 public record BillingRateDTO
 {
-    [DisplayField("Id")]
+    [DisplayField("Id", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
     [DisplayField("District")]

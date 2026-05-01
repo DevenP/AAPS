@@ -17,6 +17,9 @@ public class ProviderRateService : IProviderRateService
 
     public async Task<PagedResult<ProviderRateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        if (string.IsNullOrEmpty(request.SortBy))
+            request = request with { SortBy = "ProviderLastName" };
+
         await using var db = _factory.CreateDbContext();
         var query = from rate in db.ProviderRates.AsNoTracking()
                     join prov in db.Providers.AsNoTracking()

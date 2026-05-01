@@ -4,10 +4,10 @@ namespace AAPS.Application.DTO;
 
 public record ProviderRateDTO
 {
-    [DisplayField("Id")]
+    [DisplayField("Id", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
-    [DisplayField("Provider ID")]
+    [DisplayField("Provider ID", browsable: false)]
     public int? ProviderId { get; set; }
 
     [DisplayField("Service Type")]

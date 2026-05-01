@@ -1,17 +1,20 @@
 ﻿@page "/providerrates"
 @using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Providers.Forms
 @using AAPS.Web.Components.Shared
+@using System.Reflection
 @inject IProviderRateService ProviderRateService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
 <GenericGrid @ref="_grid" TItem="ProviderRateDTO"
              Title="Provider Rates"
+             DefaultSortLabel="ProviderLastName"
              Columns="@(new[] { "Actions", "ProviderFirstName", "ProviderLastName", "ServiceType", "District", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="ProviderRateService.GetPagedAsync"
-             ExportHeaders="@(new[] { "FirstName", "LastName", "Service", "District", "Language", "Rate", "Effective Date", "Active" })"
+             ExportHeaders="@(new[] { DN(nameof(ProviderRateDTO.ProviderFirstName)), DN(nameof(ProviderRateDTO.ProviderLastName)), DN(nameof(ProviderRateDTO.ServiceType)), DN(nameof(ProviderRateDTO.District)), DN(nameof(ProviderRateDTO.Language)), DN(nameof(ProviderRateDTO.Rate)), DN(nameof(ProviderRateDTO.EffectiveDate)), DN(nameof(ProviderRateDTO.IsActive)) })"
              ExportMapper="@(r => new object?[] { r.ProviderFirstName, r.ProviderLastName, r.ServiceType, r.District, r.Language, r.Rate, r.EffectiveDate?.ToShortDateString(), r.IsActive })">
 
     <CustomActionContent>
@@ -28,28 +31,28 @@
     <HeaderContent>
         <GridCell TItem="ProviderRateDTO" Column="Actions" IsHeader="true">Actions</GridCell>
         <GridCell TItem="ProviderRateDTO" Column="ProviderFirstName" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderFirstName" T="ProviderRateDTO">FirstName</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderFirstName" T="ProviderRateDTO">@_grid?.GetDisplayName("ProviderFirstName")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="ProviderLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderLastName" T="ProviderRateDTO">LastName</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderLastName" T="ProviderRateDTO">@_grid?.GetDisplayName("ProviderLastName")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="ServiceType" IsHeader="true">
-            <MudTableSortLabel SortLabel="ServiceType" T="ProviderRateDTO">Service</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ServiceType" T="ProviderRateDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="District" IsHeader="true">
-            <MudTableSortLabel SortLabel="District" T="ProviderRateDTO">District</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="District" T="ProviderRateDTO">@_grid?.GetDisplayName("District")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="Language" IsHeader="true">
-            <MudTableSortLabel SortLabel="Language" T="ProviderRateDTO">Language</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Language" T="ProviderRateDTO">@_grid?.GetDisplayName("Language")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="Rate" IsHeader="true">
-            <MudTableSortLabel SortLabel="Rate" T="ProviderRateDTO">Rate</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="Rate" T="ProviderRateDTO">@_grid?.GetDisplayName("Rate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="EffectiveDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="EffectiveDate" T="ProviderRateDTO">Effective</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="EffectiveDate" T="ProviderRateDTO">@_grid?.GetDisplayName("EffectiveDate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ProviderRateDTO" Column="IsActive" IsHeader="true">
-            <MudTableSortLabel SortLabel="IsActive" T="ProviderRateDTO">Active</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="IsActive" T="ProviderRateDTO">@_grid?.GetDisplayName("IsActive")</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
@@ -88,6 +91,9 @@
 @code {
     private GenericGrid<ProviderRateDTO> _grid = default!;
     private ProviderRateValidator _validator = new();
+
+    private static string DN(string prop) =>
+        typeof(ProviderRateDTO).GetProperty(prop)?.GetDisplayName() ?? prop;
 
     // If 'rate' is passed, it's an EDIT. If it's null, it's an ADD.
     private async Task OpenEditDialog(ProviderRateDTO? rate = null)

@@ -1,29 +1,26 @@
-﻿@page "/importlogs"
+@page "/importlogs"
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
 @inject IImportLogService ImportLogService
 
-<GenericGrid TItem="ImportLogDTO"
+<GenericGrid @ref="_grid" TItem="ImportLogDTO"
              Title="Import History"
-             Columns="@(new[] { "Id", "ImportDate", "FileName", "ImportRecord" })"
+             DefaultSortLabel="ImportDate"
+             Columns="@(new[] { "ImportDate", "FileName", "ImportRecord" })"
              GetData="ImportLogService.GetPagedAsync">
 
     <HeaderContent>
-        <GridCell TItem="ImportLogDTO" Column="Id" IsHeader="true">
-            <MudTableSortLabel SortLabel="Id" T="ImportLogDTO">ID</MudTableSortLabel>
-        </GridCell>
         <GridCell TItem="ImportLogDTO" Column="ImportDate" IsHeader="true">
-            <MudTableSortLabel SortLabel="ImportDate" T="ImportLogDTO">Import Date</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ImportDate" T="ImportLogDTO">@_grid?.GetDisplayName("ImportDate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="ImportLogDTO" Column="FileName" IsHeader="true">
-            <MudTableSortLabel SortLabel="FileName" T="ImportLogDTO">File Name</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="FileName" T="ImportLogDTO">@_grid?.GetDisplayName("FileName")</MudTableSortLabel>
         </GridCell>
-        <GridCell TItem="ImportLogDTO" Column="ImportRecord" IsHeader="true">Record Details</GridCell>
+        <GridCell TItem="ImportLogDTO" Column="ImportRecord" IsHeader="true">@_grid?.GetDisplayName("ImportRecord")</GridCell>
     </HeaderContent>
 
     <RowTemplate Context="log">
-        <GridCell TItem="ImportLogDTO" Column="Id">@log.Id</GridCell>
         <GridCell TItem="ImportLogDTO" Column="ImportDate">
             <MudTooltip Text="@log.ImportDate?.ToLongTimeString()">
                 <span>@log.ImportDate?.ToString("MM/dd/yyyy HH:mm")</span>
@@ -44,3 +41,7 @@
         </GridCell>
     </RowTemplate>
 </GenericGrid>
+
+@code {
+    private GenericGrid<ImportLogDTO> _grid = default!;
+}

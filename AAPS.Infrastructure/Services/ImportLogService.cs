@@ -17,6 +17,9 @@ public class ImportLogService : IImportLogService
 
     public async Task<PagedResult<ImportLogDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
+        if (string.IsNullOrEmpty(request.SortBy))
+            request = request with { SortBy = "ImportDate", SortDir = "desc" };
+
         await using var db = _factory.CreateDbContext();
         var query = db.ImportLogs.AsNoTracking().Select(ToDTO);
 
