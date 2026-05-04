@@ -771,16 +771,20 @@ public class ImportService : IImportService
             .ToListAsync(ct);
 
         // 4. All active billing rates: "ServiceType|District|Lang" -> Rate
-        var billingRateDict = await db.BillingRates
+        var billingRateDict = (await db.BillingRates
             .Where(b => b.Active == true)
             .Select(b => new { Key = (b.ServiceType ?? "").Trim() + "|" + (b.District ?? "").Trim() + "|" + (b.Lang ?? "").Trim(), b.Rate })
-            .ToDictionaryAsync(b => b.Key, b => (decimal?)b.Rate, StringComparer.OrdinalIgnoreCase, ct);
+            .ToListAsync(ct))
+            .GroupBy(b => b.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => (decimal?)g.First().Rate, StringComparer.OrdinalIgnoreCase);
 
         // 5. All active provider rates: "ServiceType|District|Lang|ProviderId" -> Rate
-        var providerRateDict = await db.ProviderRates
+        var providerRateDict = (await db.ProviderRates
             .Where(p => p.Active == true)
             .Select(p => new { Key = (p.ServiceType ?? "").Trim() + "|" + (p.District ?? "").Trim() + "|" + (p.Lang ?? "").Trim() + "|" + p.Provider_Id, p.Rate })
-            .ToDictionaryAsync(p => p.Key, p => (decimal?)p.Rate, StringComparer.OrdinalIgnoreCase, ct);
+            .ToListAsync(ct))
+            .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => (decimal?)g.First().Rate, StringComparer.OrdinalIgnoreCase);
 
         // ── Row processing ────────────────────────────────────────────────
 
