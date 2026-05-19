@@ -666,6 +666,7 @@ public class SesiService : ISesiService
         // Group by Entry_Id and build the aggregated string (mirrors STRING_AGG)
         var vpByEntry = vpRaw
             .Where(v => provBySsn.ContainsKey(v.pSsn!))
+            .DistinctBy(v => (v.Entry_Id, v.pSsn, v.AssignId))
             .GroupBy(v => v.Entry_Id!.Value)
             .ToDictionary(g => g.Key, g =>
                 string.Join("; ", g.Select(v =>
