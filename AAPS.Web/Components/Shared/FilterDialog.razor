@@ -1,99 +1,68 @@
-﻿@typeparam TItem
+@typeparam TItem
 @using MudBlazor
 @using System.Reflection
-@using System.ComponentModel
-@using System.ComponentModel.DataAnnotations
 @using AAPS.Application.Common.Extensions
 @using AAPS.Application.Common.Attributes
 
 <MudDialog>
     <DialogContent>
         <MudContainer Style="max-height: 450px; overflow-y: auto" Class="pa-4">
-            <MudGrid Spacing="2">
-                @foreach (var prop in GetFilteredProperties())
-                {
-                    //var displayName = prop.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? prop.Name;
-                    var displayName = GetDisplayName(prop.Name);
-                    var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                    var propName = prop.Name;
+            <EditForm Model="_localFilters" OnValidSubmit="Submit">
+                <button type="submit" style="display:none" />
+                <MudGrid Spacing="2">
+                    @foreach (var prop in GetFilteredProperties())
+                    {
+                        var displayName = GetDisplayName(prop.Name);
+                        var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                        var propName = prop.Name;
 
-                    @if (type == typeof(DateTime))
-                    {
-                        var fromKey = propName + "_From";
-                        var toKey = propName + "_To";
-                        var isNullable = Nullable.GetUnderlyingType(prop.PropertyType) != null;
-                        var nullCheck = GetFilterValue(propName);
+                        @if (type == typeof(DateTime))
+                        {
+                            var fromKey = propName + "_From";
+                            var toKey = propName + "_To";
+                            var isNullable = Nullable.GetUnderlyingType(prop.PropertyType) != null;
+                            var nullCheck = GetFilterValue(propName);
 
-                        @if (isNullable)
-                        {
-                            <MudItem xs="12">
-                                <MudSelect T="string"
-                                           Label="@displayName"
-                                           Value="@nullCheck"
-                                           ValueChanged="@(s => SetNullCheckValue(propName, s))"
-                                           Margin="Margin.Dense"
-                                           Variant="Variant.Outlined"
-                                           Clearable="true">
-                                    <MudSelectItem Value="@("notnull")">Has Date</MudSelectItem>
-                                    <MudSelectItem Value="@("null")">No Date</MudSelectItem>
-                                </MudSelect>
-                            </MudItem>
+                            @if (isNullable)
+                            {
+                                <MudItem xs="12">
+                                    <MudSelect T="string"
+                                               Label="@displayName"
+                                               Value="@nullCheck"
+                                               ValueChanged="@(s => SetNullCheckValue(propName, s))"
+                                               Margin="Margin.Dense"
+                                               Variant="Variant.Outlined"
+                                               Clearable="true">
+                                        <MudSelectItem Value="@("notnull")">Has Date</MudSelectItem>
+                                        <MudSelectItem Value="@("null")">No Date</MudSelectItem>
+                                    </MudSelect>
+                                </MudItem>
+                            }
+                            @if (!isNullable || string.IsNullOrEmpty(nullCheck))
+                            {
+                                <MudItem xs="6">
+                                    <MudTextField T="string"
+                                                  Label="@($"{displayName} From")"
+                                                  Value="@GetFilterValue(fromKey)"
+                                                  ValueChanged="@(s => SetDateRangeValue(fromKey, propName, s))"
+                                                  InputType="InputType.Date"
+                                                  Margin="Margin.Dense"
+                                                  Variant="Variant.Outlined"
+                                                  Clearable="true" />
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudTextField T="string"
+                                                  Label="@($"{displayName} To")"
+                                                  Value="@GetFilterValue(toKey)"
+                                                  ValueChanged="@(s => SetDateRangeValue(toKey, propName, s))"
+                                                  InputType="InputType.Date"
+                                                  Margin="Margin.Dense"
+                                                  Variant="Variant.Outlined"
+                                                  Clearable="true" />
+                                </MudItem>
+                            }
                         }
-                        @if (!isNullable || string.IsNullOrEmpty(nullCheck))
-                        {
-                            <MudItem xs="6">
-                                <MudTextField T="string"
-                                              Label="@($"{displayName} From")"
-                                              Value="@GetFilterValue(fromKey)"
-                                              ValueChanged="@(s => SetDateRangeValue(fromKey, propName, s))"
-                                              InputType="InputType.Date"
-                                              Margin="Margin.Dense"
-                                              Variant="Variant.Outlined"
-                                              Clearable="true" />
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudTextField T="string"
-                                              Label="@($"{displayName} To")"
-                                              Value="@GetFilterValue(toKey)"
-                                              ValueChanged="@(s => SetDateRangeValue(toKey, propName, s))"
-                                              InputType="InputType.Date"
-                                              Margin="Margin.Dense"
-                                              Variant="Variant.Outlined"
-                                              Clearable="true" />
-                            </MudItem>
-                        }
-                    }
-                    else if (type == typeof(bool))
-                    {
-                        <MudItem xs="12">
-                            <MudSelect T="string"
-                                       Label="@displayName"
-                                       Value="@GetFilterValue(propName)"
-                                       ValueChanged="@(s => SetFilterValue(propName, s))"
-                                       Margin="Margin.Dense"
-                                       Variant="Variant.Outlined"
-                                       Clearable="true">
-                                <MudSelectItem Value="@("true")">Yes</MudSelectItem>
-                                <MudSelectItem Value="@("false")">No</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                    }
-                    else if (IsNumericType(prop.PropertyType))
-                    {
-                        <MudItem xs="12">
-                            <MudTextField T="string"
-                                          Label="@displayName"
-                                          Value="@GetFilterValue(propName)"
-                                          ValueChanged="@(s => SetFilterValue(propName, s))"
-                                          Margin="Margin.Dense"
-                                          Variant="Variant.Outlined"
-                                          Clearable="true" />
-                        </MudItem>
-                    }
-                    else
-                    {
-                        var filterOptions = prop.GetCustomAttribute<FilterOptionsAttribute>();
-                        @if (filterOptions != null)
+                        else if (type == typeof(bool))
                         {
                             <MudItem xs="12">
                                 <MudSelect T="string"
@@ -103,14 +72,12 @@
                                            Margin="Margin.Dense"
                                            Variant="Variant.Outlined"
                                            Clearable="true">
-                                    @foreach (var option in filterOptions.Options)
-                                    {
-                                        <MudSelectItem Value="@option">@option</MudSelectItem>
-                                    }
+                                    <MudSelectItem Value="@("true")">Yes</MudSelectItem>
+                                    <MudSelectItem Value="@("false")">No</MudSelectItem>
                                 </MudSelect>
                             </MudItem>
                         }
-                        else
+                        else if (IsNumericType(prop.PropertyType))
                         {
                             <MudItem xs="12">
                                 <MudTextField T="string"
@@ -122,9 +89,42 @@
                                               Clearable="true" />
                             </MudItem>
                         }
+                        else
+                        {
+                            var filterOptions = prop.GetCustomAttribute<FilterOptionsAttribute>();
+                            @if (filterOptions != null)
+                            {
+                                <MudItem xs="12">
+                                    <MudSelect T="string"
+                                               Label="@displayName"
+                                               Value="@GetFilterValue(propName)"
+                                               ValueChanged="@(s => SetFilterValue(propName, s))"
+                                               Margin="Margin.Dense"
+                                               Variant="Variant.Outlined"
+                                               Clearable="true">
+                                        @foreach (var option in filterOptions.Options)
+                                        {
+                                            <MudSelectItem Value="@option">@option</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                            }
+                            else
+                            {
+                                <MudItem xs="12">
+                                    <MudTextField T="string"
+                                                  Label="@displayName"
+                                                  Value="@GetFilterValue(propName)"
+                                                  ValueChanged="@(s => SetFilterValue(propName, s))"
+                                                  Margin="Margin.Dense"
+                                                  Variant="Variant.Outlined"
+                                                  Clearable="true" />
+                                </MudItem>
+                            }
+                        }
                     }
-                }
-            </MudGrid>
+                </MudGrid>
+            </EditForm>
         </MudContainer>
     </DialogContent>
     <DialogActions>
@@ -175,7 +175,6 @@
 
         if (ColumnOrder.Length == 0) return all;
 
-        // Return in Columns order first, then any remaining browsable props
         return ColumnOrder
             .Select(col => all.FirstOrDefault(p => p.Name == col))
             .Where(p => p != null)
@@ -184,15 +183,10 @@
 
     private string GetDisplayName(string propertyName)
     {
-        // 1. Get the property from the DTO type (TItem)
         var prop = typeof(TItem).GetProperty(propertyName);
         if (prop == null) return propertyName;
-
-        // 2. Check for [DisplayField("")] (new custom attribute)
         var displayName = prop.GetDisplayName();
         if (!string.IsNullOrEmpty(displayName)) return displayName;
-
-        // 3. Fallback to the C# property name if no attribute exists
         return propertyName;
     }
 
