@@ -109,10 +109,10 @@
     </HeaderContent>
 
     <RowTemplate Context="item">
-        <MudTd Style="width:40px; padding: 0 8px;">
+        <MudTd Style="width:40px; padding: 0 8px;" @onmousedown="@(e => _shiftHeld = e.ShiftKey)">
             <MudCheckBox T="bool"
                          Value="_selectedIds.Contains(item.Id)"
-                         ValueChanged="@(v => ToggleRow(item.Id, v))"
+                         ValueChanged="@(v => ToggleRow(item.Id, v, _grid.CurrentPageItems.IndexOf(item)))"
                          Color="Color.Primary"
                          Size="Size.Small" />
         </MudTd>
@@ -167,11 +167,28 @@
     // ── Selection state ──────────────────────────────────────────────────────
     private HashSet<int> _selectedIds = new();
     private bool _allSelected = false;
+    private bool _shiftHeld = false;
+    private int _lastClickedIndex = -1;
 
-    private void ToggleRow(int id, bool selected)
+    private void ToggleRow(int id, bool selected, int index)
     {
-        if (selected) _selectedIds.Add(id);
-        else _selectedIds.Remove(id);
+        if (_shiftHeld && _lastClickedIndex >= 0)
+        {
+            var items = _grid.CurrentPageItems;
+            var from = Math.Min(_lastClickedIndex, index);
+            var to = Math.Max(_lastClickedIndex, index);
+            for (int i = from; i <= to; i++)
+            {
+                if (selected) _selectedIds.Add(items[i].Id);
+                else _selectedIds.Remove(items[i].Id);
+            }
+        }
+        else
+        {
+            if (selected) _selectedIds.Add(id);
+            else _selectedIds.Remove(id);
+        }
+        _lastClickedIndex = index;
         _allSelected = false;
     }
 
@@ -196,6 +213,7 @@
     {
         _selectedIds.Clear();
         _allSelected = false;
+        _lastClickedIndex = -1;
     }
 
     // ── Remove Discrepancy Record ────────────────────────────────────────────

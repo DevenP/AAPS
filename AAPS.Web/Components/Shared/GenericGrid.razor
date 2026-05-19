@@ -204,6 +204,7 @@
     public string Search { get; private set; } = "";
     private string _search { get => Search; set => Search = value; }
     public Dictionary<string, string> ColumnFilters { get; set; } = new();
+    public List<TItem> CurrentPageItems { get; private set; } = [];
     private Dictionary<string, bool> _columnVisibility = new();
     private bool _isFirstLoad = true;
     private int _currentPage;
@@ -411,6 +412,7 @@
             var result = await GetData(request, ct);
             _pageSize = state.PageSize;
             _totalItems = result.TotalCount;
+            CurrentPageItems = result.Items.ToList();
             if (OnDataLoaded.HasDelegate)
                 _ = OnDataLoaded.InvokeAsync();
             return new TableData<TItem> { TotalItems = result.TotalCount, Items = result.Items };
