@@ -4,6 +4,7 @@
 @inject IGDistrictService GDistrictService
 @inject ILanguageService LanguageService
 @inject IProviderService ProviderService
+@inject ISesiService SesiService
 
 <MudDialog>
     <DialogContent>
@@ -15,12 +16,67 @@
         }
         else if (_item != null)
         {
-            <MudStack Spacing="0" Class="mb-3">
-                <MudText Typo="Typo.subtitle2">@_item.ProviderLastName, @_item.ProviderFirstName</MudText>
-                <MudText Typo="Typo.body2">
-                    @_item.StudentId &nbsp;|&nbsp; @_item.DateOfService?.ToString("MM/dd/yyyy") &nbsp;|&nbsp; @_item.ServiceType
-                </MudText>
-            </MudStack>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;" class="mb-3">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.subtitle2">@_item.ProviderLastName, @_item.ProviderFirstName</MudText>
+                    <MudText Typo="Typo.body2">
+                        @_item.StudentId &nbsp;|&nbsp; @_item.DateOfService?.ToString("MM/dd/yyyy") &nbsp;|&nbsp; @_item.ServiceType
+                    </MudText>
+                </MudStack>
+                <MudButton StartIcon="@Icons.Material.Filled.AssignmentInd"
+                           Size="Size.Small"
+                           Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="ToggleOsis"
+                           Style="white-space:nowrap;flex-shrink:0;">
+                    @(_showOsis ? "Hide Approvals" : "OSIS Approvals")
+                </MudButton>
+            </div>
+
+            @if (_showOsis)
+            {
+                <MudPaper Elevation="0" Class="mb-4 pa-2" Style="border:1px solid var(--mud-palette-divider);border-radius:4px;">
+                    @if (_osisLoading)
+                    {
+                        <MudProgressLinear Indeterminate="true" />
+                    }
+                    else if (_osisMandates.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">No mandates found for this student.</MudAlert>
+                    }
+                    else
+                    {
+                        <div style="overflow-x:auto;">
+                            <MudTable Items="_osisMandates" Dense="true" Striped="true" Hover="true" Elevation="0">
+                                <HeaderContent>
+                                    <MudTh>Approval ID</MudTh>
+                                    <MudTh>Service Type</MudTh>
+                                    <MudTh>School</MudTh>
+                                    <MudTh>Language</MudTh>
+                                    <MudTh>Frequency</MudTh>
+                                    <MudTh>Duration</MudTh>
+                                    <MudTh>Group</MudTh>
+                                    <MudTh>Start</MudTh>
+                                    <MudTh>End</MudTh>
+                                    <MudTh>Assignment IDs</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.EntryId</MudTd>
+                                    <MudTd>@context.ServiceType</MudTd>
+                                    <MudTd>@context.AdminDbn</MudTd>
+                                    <MudTd>@context.Language</MudTd>
+                                    <MudTd>@context.RemainingFrequency</MudTd>
+                                    <MudTd>@context.Duration</MudTd>
+                                    <MudTd>@context.GroupSize</MudTd>
+                                    <MudTd>@context.MandateStart?.ToString("MM/dd/yyyy")</MudTd>
+                                    <MudTd>@context.MandateEnd?.ToString("MM/dd/yyyy")</MudTd>
+                                    <MudTd Style="max-width:200px;white-space:normal;word-break:break-word;">@context.AssignIds</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </div>
+                    }
+                </MudPaper>
+            }
         }
 
         <MudGrid Spacing="2">
@@ -125,6 +181,10 @@
     private List<GDistrictDTO> _gDistricts = [];
     private List<LanguageDTO>  _languages  = [];
 
+    private bool _showOsis = false;
+    private bool _osisLoading = false;
+    private List<OsisMandateDTO> _osisMandates = [];
+
     private readonly OperationEditValidator _validator = new();
     private List<string> _validationErrors = [];
 
@@ -163,6 +223,17 @@
         if (id == null) return "";
         var p = _providers.FirstOrDefault(x => x.Id == id);
         return p == null ? id.ToString()! : $"{p.LastName}, {p.FirstName}";
+    }
+
+    private async Task ToggleOsis()
+    {
+        _showOsis = !_showOsis;
+        if (_showOsis && _osisMandates.Count == 0 && !_osisLoading)
+        {
+            _osisLoading = true;
+            _osisMandates = await SesiService.GetOsisMandatesAsync(_item!.StudentId ?? "");
+            _osisLoading = false;
+        }
     }
 
     private async Task Save()
