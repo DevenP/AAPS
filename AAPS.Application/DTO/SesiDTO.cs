@@ -10,11 +10,14 @@ public record SesiDTO
     [DisplayField("Student ID")]
     public string? StudentId { get; set; }
 
-    [DisplayField("Student Name")]
+    [DisplayField("Student Name", browsable: false)]
     public string? StudentLastName { get; set; }
 
     [DisplayField("Student First Name", browsable: false)]
     public string? StudentFirstName { get; set; }
+
+    [DisplayField("Student Name")]
+    public string? StudentName { get; set; }
 
     [DisplayField("Grade", browsable: false)]
     public string? Grade { get; set; }
@@ -88,11 +91,14 @@ public record SesiDTO
     [DisplayField("Duration")]
     public string? Duration { get; set; }
 
-    [DisplayField("Provider")]
+    [DisplayField("Provider", browsable: false)]
     public string? ProviderLastName { get; set; }
 
     [DisplayField("Provider First Name", browsable: false)]
     public string? ProviderFirstName { get; set; }
+
+    [DisplayField("Provider")]
+    public string? ProviderName { get; set; }
 
     [DisplayField("File Name", browsable: false)]
     public string? FileName { get; set; }

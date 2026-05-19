@@ -26,7 +26,7 @@
 
 <GenericGrid TItem="OperationsDTO"
              @ref="_grid"
-             Title="Operations Registry"
+             Title="Operations"
              Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "ServiceType", "LanguageProvided", "ActualSize", "Duration", "AssignmentClaimed", "EntryId", "ProviderPaidDate", "BilledDate", "Voucher", "AssignId" })"
              DefaultSortLabel="DateOfService"
              GetData="SesiService.GetOperationsPagedAsync"
