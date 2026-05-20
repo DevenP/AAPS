@@ -7,53 +7,53 @@ namespace AAPS.Application.DTO
         [DisplayField("Id", browsable: false, IsReadOnly = true)]
         public int Id { get; set; }
 
-        [DisplayField("Mismatch")]
+        [DisplayField("Mismatch", GroupName = "Approval")]
         [FilterOptions("Approval", "Provider")]
         public string? Mismatch { get; set; }
 
-        [DisplayField("Student ID")]
+        [DisplayField("Student ID", GroupName = "Student")]
         public string? StudentId { get; set; }
 
-        [DisplayField("Student Last Name")]
+        [DisplayField("Student Last Name", GroupName = "Student")]
         public string? StudentLastName { get; set; }
 
-        [DisplayField("Student First Name")]
+        [DisplayField("Student First Name", GroupName = "Student")]
         public string? StudentFirstName { get; set; }
 
-        [DisplayField("Provider Last Name")]
+        [DisplayField("Provider Last Name", GroupName = "Provider")]
         public string? ProviderLastName { get; set; }
 
-        [DisplayField("Provider First Name")]
+        [DisplayField("Provider First Name", GroupName = "Provider")]
         public string? ProviderFirstName { get; set; }
 
-        [DisplayField("Provider SSN")]
+        [DisplayField("Provider SSN", GroupName = "Provider")]
         public string? ProviderSSN { get; set; }
 
-        [DisplayField("Duration")]
+        [DisplayField("Duration", GroupName = "Service")]
         public string? Duration { get; set; }
 
-        [DisplayField("Frequency")]
+        [DisplayField("Frequency", GroupName = "Service")]
         public string? Frequency { get; set; }
 
-        [DisplayField("Group Size")]
+        [DisplayField("Group Size", GroupName = "Service")]
         public string? GroupSize { get; set; }
 
-        [DisplayField("School")]
+        [DisplayField("School", GroupName = "Service")]
         public string? School { get; set; }
 
-        [DisplayField("Approval Start Date")]
+        [DisplayField("Approval Start Date", GroupName = "Approval")]
         public DateTime? ApprovalStartDate { get; set; }
 
-        [DisplayField("Assignment ID")]
+        [DisplayField("Assignment ID", GroupName = "Approval")]
         public string? AssignmentId { get; set; }
 
-        [DisplayField("Fund")]
+        [DisplayField("Fund", GroupName = "Approval")]
         public string? Fund { get; set; }
 
-        [DisplayField("Vendor Portal File")]
+        [DisplayField("Vendor Portal File", GroupName = "Approval")]
         public string? VenderPortalFile { get; set; }
 
-        [DisplayField("Approval ID")]
+        [DisplayField("Approval ID", GroupName = "Approval")]
         public int? EntryId { get; set; }
 
         [DisplayField("Boro", browsable: false)]

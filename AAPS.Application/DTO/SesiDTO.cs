@@ -7,7 +7,7 @@ public record SesiDTO
     [DisplayField("Id", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
-    [DisplayField("Student ID")]
+    [DisplayField("Student ID", GroupName = "Student")]
     public string? StudentId { get; set; }
 
     [DisplayField("Student Name", browsable: false)]
@@ -16,7 +16,7 @@ public record SesiDTO
     [DisplayField("Student First Name", browsable: false)]
     public string? StudentFirstName { get; set; }
 
-    [DisplayField("Student Name")]
+    [DisplayField("Student Name", GroupName = "Student")]
     public string? StudentName { get; set; }
 
     [DisplayField("Grade", browsable: false)]
@@ -37,7 +37,7 @@ public record SesiDTO
     [DisplayField("Admin DBN", browsable: false)]
     public string? AdminDbn { get; set; }
 
-    [DisplayField("G District")]
+    [DisplayField("G District", GroupName = "Student")]
     public string? GDistrict { get; set; }
 
     [DisplayField("Borough", browsable: false)]
@@ -58,16 +58,16 @@ public record SesiDTO
     [DisplayField("Assignment First Encounter", browsable: false)]
     public DateTime? AssignmentFirstEncounter { get; set; }
 
-    [DisplayField("Frequency")]
+    [DisplayField("Frequency", GroupName = "Service")]
     public string? AssignmentClaimed { get; set; }
 
-    [DisplayField("Service Date")]
+    [DisplayField("Service Date", GroupName = "Service")]
     public DateTime? DateOfService { get; set; }
 
-    [DisplayField("Service Type")]
+    [DisplayField("Service Type", GroupName = "Service")]
     public string? ServiceType { get; set; }
 
-    [DisplayField("Language")]
+    [DisplayField("Language", GroupName = "Service")]
     public string? LanguageProvided { get; set; }
 
     [DisplayField("Session Type", browsable: false)]
@@ -79,16 +79,16 @@ public record SesiDTO
     [DisplayField("Grouping", browsable: false)]
     public string? Grouping { get; set; }
 
-    [DisplayField("Group Size")]
+    [DisplayField("Group Size", GroupName = "Service")]
     public string? ActualSize { get; set; }
 
-    [DisplayField("Start Time")]
+    [DisplayField("Start Time", GroupName = "Service")]
     public string? StartTime { get; set; }
 
-    [DisplayField("End Time")]
+    [DisplayField("End Time", GroupName = "Service")]
     public string? EndTime { get; set; }
 
-    [DisplayField("Duration")]
+    [DisplayField("Duration", GroupName = "Service")]
     public string? Duration { get; set; }
 
     [DisplayField("Provider", browsable: false)]
@@ -97,7 +97,7 @@ public record SesiDTO
     [DisplayField("Provider First Name", browsable: false)]
     public string? ProviderFirstName { get; set; }
 
-    [DisplayField("Provider")]
+    [DisplayField("Provider", GroupName = "Provider")]
     public string? ProviderName { get; set; }
 
     [DisplayField("File Name", browsable: false)]
@@ -109,7 +109,7 @@ public record SesiDTO
     [DisplayField("Provider ID", browsable: false)]
     public int? ProviderId { get; set; }
 
-    [DisplayField("Approval ID")]
+    [DisplayField("Approval ID", GroupName = "Provider")]
     public int? EntryId { get; set; }
 
     [DisplayField("Billed Rate", browsable: false)]
@@ -118,7 +118,7 @@ public record SesiDTO
     [DisplayField("Billed Amount", browsable: false)]
     public decimal? BilledAmount { get; set; }
 
-    [DisplayField("Billed Date")]
+    [DisplayField("Billed Date", GroupName = "Billing")]
     public DateTime? BilledDate { get; set; }
 
     [DisplayField("Billed Paid Date", browsable: false)]
@@ -130,13 +130,13 @@ public record SesiDTO
     [DisplayField("Provider Amount", browsable: false)]
     public decimal? ProviderAmount { get; set; }
 
-    [DisplayField("Provider Paid Date")]
+    [DisplayField("Provider Paid Date", GroupName = "Billing")]
     public DateTime? ProviderPaidDate { get; set; }
 
-    [DisplayField("Overlap Service")]
+    [DisplayField("Overlap Service", GroupName = "Alerts")]
     public bool IsOverlap { get; set; }
 
-    [DisplayField("Voucher")]
+    [DisplayField("Voucher", GroupName = "Billing")]
     public string? Voucher { get; set; }
 
     [DisplayField("Voucher Amount", browsable: false)]
@@ -145,12 +145,12 @@ public record SesiDTO
     [DisplayField("Voucher Balance Paid", browsable: false)]
     public DateTime? VoucherBalancePaid { get; set; }
 
-    [DisplayField("Over Mandate")]
+    [DisplayField("Over Mandate", GroupName = "Alerts")]
     public bool IsOverMandate { get; set; }
 
-    [DisplayField("Over Duration")]
+    [DisplayField("Over Duration", GroupName = "Alerts")]
     public bool IsOverDuration { get; set; }
 
-    [DisplayField("Under Group Size")]
+    [DisplayField("Under Group Size", GroupName = "Alerts")]
     public bool IsUnderGroup { get; set; }
 }

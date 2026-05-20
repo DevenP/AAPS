@@ -1,4 +1,4 @@
-﻿using AAPS.Application.Common.Attributes;
+using AAPS.Application.Common.Attributes;
 
 namespace AAPS.Application.DTO;
 
@@ -7,19 +7,19 @@ public record ProviderDTO
     [DisplayField("Id", browsable: false, IsReadOnly = true)]
     public int Id { get; set; }
 
-    [DisplayField("SSN")]
+    [DisplayField("SSN", GroupName = "Info")]
     public string? Ssn { get; set; }
 
-    [DisplayField("Last Name")]
+    [DisplayField("Last Name", GroupName = "Info")]
     public string? LastName { get; set; }
 
-    [DisplayField("First Name")]
+    [DisplayField("First Name", GroupName = "Info")]
     public string? FirstName { get; set; }
 
-    [DisplayField("Phone")]
+    [DisplayField("Phone", GroupName = "Info")]
     public string? Phone { get; set; }
 
-    [DisplayField("Email")]
+    [DisplayField("Email", GroupName = "Info")]
     public string? Email { get; set; }
 
     [DisplayField("Tax ID", browsable: false)]
@@ -28,13 +28,13 @@ public record ProviderDTO
     [DisplayField("Birthdate", browsable: false)]
     public DateTime? Birthdate { get; set; }
 
-    [DisplayField("NPI")]
+    [DisplayField("NPI", GroupName = "Info")]
     public string? NpiNumber { get; set; }
 
     [DisplayField("Liability Insurance Date", browsable: false)]
     public DateTime? LiabilityInsuranceDate { get; set; }
 
-    [DisplayField("License")]
+    [DisplayField("License", GroupName = "Info")]
     public string? License1 { get; set; }
 
     [DisplayField("License 1 Expiration", browsable: false)]
@@ -82,13 +82,13 @@ public record ProviderDTO
     [DisplayField("Sexual Harassment Training Date", browsable: false)]
     public DateTime? SexualHarassmentTrainingDate { get; set; }
 
-    [DisplayField("Corp Name")]
+    [DisplayField("Corp Name", GroupName = "Info")]
     public string? CorporationName { get; set; }
 
-    [DisplayField("Service Type")]
+    [DisplayField("Service Type", GroupName = "Service")]
     public string? ServiceType { get; set; }
 
-    [DisplayField("Is Active")]
+    [DisplayField("Is Active", GroupName = "Info")]
     public bool? IsActive { get; set; }
 
     [DisplayField("Address", browsable: false)]
@@ -115,6 +115,6 @@ public record ProviderDTO
     [DisplayField("Is Duplicate Name", browsable: false)]
     public bool IsDuplicateName { get; set; }
 
-    [DisplayField("Students")]
+    [DisplayField("Students", GroupName = "Service")]
     public int AssignedCount { get; set; }
 }

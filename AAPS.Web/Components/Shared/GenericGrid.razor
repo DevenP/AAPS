@@ -275,7 +275,7 @@
             ["InitialFilters"] = new Dictionary<string, string>(ColumnFilters),
             ["ColumnOrder"]    = Columns ?? Array.Empty<string>()
         };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = await DialogService.ShowAsync<FilterDialog<TItem>>("Advanced Search", parameters, options);
         var result = await dialog.Result;
         if (result is not null && !result.Canceled)
