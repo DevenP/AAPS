@@ -133,7 +133,11 @@
                                DateFormat="MM/dd/yyyy" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudNumericField T="int?" @bind-Value="_entryId" Label="Approval ID" Clearable="true" />
+                <MudNumericField T="int?"
+                                 Value="_entryId"
+                                 ValueChanged="OnEntryIdChanged"
+                                 Label="Approval ID"
+                                 Clearable="true" />
             </MudItem>
         </MudGrid>
     </DialogContent>
@@ -223,6 +227,20 @@
         if (id == null) return "";
         var p = _providers.FirstOrDefault(x => x.Id == id);
         return p == null ? id.ToString()! : $"{p.LastName}, {p.FirstName}";
+    }
+
+    private async Task OnEntryIdChanged(int? value)
+    {
+        _entryId = value;
+        if (value.HasValue)
+        {
+            var dates = await SesiService.GetMandateDatesAsync(value.Value);
+            if (dates.HasValue)
+            {
+                _mandateStart = dates.Value.Start;
+                _mandateEnd   = dates.Value.End;
+            }
+        }
     }
 
     private async Task ToggleOsis()

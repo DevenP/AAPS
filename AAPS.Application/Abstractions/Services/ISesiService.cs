@@ -34,4 +34,7 @@ public interface ISesiService
 
     /// <summary>Mirrors Mandates_By_Osis: all mandates for a student with aggregated Assign IDs per mandate.</summary>
     Task<List<OsisMandateDTO>> GetOsisMandatesAsync(string studentId, CancellationToken ct = default);
+
+    /// <summary>Returns the MandateStart and MandateEnd for a given Approval ID, or null if not found.</summary>
+    Task<(DateTime? Start, DateTime? End)?> GetMandateDatesAsync(int entryId, CancellationToken ct = default);
 }

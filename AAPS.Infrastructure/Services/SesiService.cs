@@ -515,7 +515,8 @@ public class SesiService : ISesiService
 
         // CSE='11' — update Mandates table for MandateStart (also sets First_Attend_Date)
         // CSE='14' — update Mandates table for MandateEnd (normalized to 23:59)
-        if (dto.ApplyAll || dto.MandateStart.HasValue || dto.MandateEnd.HasValue)
+        // Only run when at least one date was explicitly provided — avoids wiping existing dates.
+        if (dto.MandateStart.HasValue || dto.MandateEnd.HasValue)
         {
             var entryIds = entities
                 .Where(e => e.Entry_Id.HasValue)
@@ -528,17 +529,15 @@ public class SesiService : ISesiService
                 var mandates = await db.Mandates.Where(m => entryIds.Contains(m.Entry_Id)).ToListAsync(ct);
                 foreach (var m in mandates)
                 {
-                    if (dto.ApplyAll || dto.MandateStart.HasValue)
+                    if (dto.MandateStart.HasValue)
                     {
                         m.MandateStart      = dto.MandateStart;
                         m.First_Attend_Date = dto.MandateStart;
                     }
-                    if (dto.ApplyAll || dto.MandateEnd.HasValue)
+                    if (dto.MandateEnd.HasValue)
                     {
                         // Proc normalizes: CONVERT(char(10),@MandateEnd,1) + ' 23:59'
-                        m.MandateEnd = dto.MandateEnd.HasValue
-                            ? dto.MandateEnd.Value.Date.AddHours(23).AddMinutes(59)
-                            : null;
+                        m.MandateEnd = dto.MandateEnd.Value.Date.AddHours(23).AddMinutes(59);
                     }
                 }
             }
@@ -688,6 +687,17 @@ public class SesiService : ISesiService
             MandateEnd       = m.MandateEnd,
             AssignIds        = vpByEntry.TryGetValue(m.Entry_Id, out var agg) ? agg : null
         }).ToList();
+    }
+
+    public async Task<(DateTime? Start, DateTime? End)?> GetMandateDatesAsync(int entryId, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var m = await db.Mandates.AsNoTracking()
+            .Where(m => m.Entry_Id == entryId)
+            .Select(m => new { m.MandateStart, m.MandateEnd })
+            .FirstOrDefaultAsync(ct);
+        if (m == null) return null;
+        return (m.MandateStart, m.MandateEnd);
     }
 
     private static readonly Expression<Func<Sesi, ProviderBillingDTO>> ToBillingDTO = s => new ProviderBillingDTO
