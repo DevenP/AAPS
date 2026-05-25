@@ -149,22 +149,33 @@ public class BillingService : IBillingService
         _logger.LogInformation("Billing dates updated for Sesis {SesisId}", sesisId);
     }
 
-    public async Task<List<GeneratedBillingFile>> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
+    public async Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(_settings.OutputPath))
             throw new InvalidOperationException("Billing OutputPath is not configured in appsettings.json.");
 
         await using var db = _factory.CreateDbContext();
 
-        // Step 1: Resolve matching SesisIds using the same query + filters as the grid, plus bPaid IS NULL.
-        // This ensures file generation always mirrors exactly what the user sees (filtered), but only unpaid records.
-        var request = new PagedRequest(search, columnFilters, PageSize: -1);
-        var matching = await BuildBaseQuery(db, unpaidOnly: true)
-            .ToPagedResultAsync(request, ct, performSearch: false);
-
-        if (matching.Items.Count == 0) return [];
-
-        var matchingIds = matching.Items.Select(r => r.SesisId).ToHashSet();
+        HashSet<int> matchingIds;
+        int skippedPaidCount = 0;
+        if (selectedIds != null && selectedIds.Count > 0)
+        {
+            var unpaidIds = await db.Seses.AsNoTracking()
+                .Where(s => selectedIds.Contains(s.Sesis_Id) && s.bPaid == null)
+                .Select(s => s.Sesis_Id)
+                .ToListAsync(ct);
+            skippedPaidCount = selectedIds.Count - unpaidIds.Count;
+            matchingIds = unpaidIds.ToHashSet();
+        }
+        else
+        {
+            // Resolve matching SesisIds using the same query + filters as the grid, plus bPaid IS NULL.
+            var request = new PagedRequest(search, columnFilters, PageSize: -1);
+            var matching = await BuildBaseQuery(db, unpaidOnly: true)
+                .ToPagedResultAsync(request, ct, performSearch: false);
+            if (matching.Items.Count == 0) return new BillingGenerateResult([], 0);
+            matchingIds = matching.Items.Select(r => r.SesisId).ToHashSet();
+        }
 
         // Step 2: Fetch sesis+provider fields needed for file content.
         // Order matches the stored proc: ORDER BY date_of_Service+Start_Time, Provider_Last_Name, Provider_First_Name, Student_ID
@@ -315,7 +326,7 @@ public class BillingService : IBillingService
             result.Add(new GeneratedBillingFile(fileName, filePath, bytes));
         }
 
-        return result;
+        return new BillingGenerateResult(result, skippedPaidCount);
     }
 
     private static string BuildRow(

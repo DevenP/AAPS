@@ -4,6 +4,7 @@ using AAPS.Application.DTO;
 namespace AAPS.Application.Abstractions.Services;
 
 public record GeneratedBillingFile(string FileName, string FilePath, byte[] Bytes);
+public record BillingGenerateResult(List<GeneratedBillingFile> Files, int SkippedPaidCount);
 public record BillingSummary(int Count, decimal TotalBilling, decimal TotalProvider);
 
 public interface IBillingService
@@ -12,5 +13,5 @@ public interface IBillingService
     Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default);
     Task UpdateBillingDatesAsync(int sesisId, DateTime? billed, DateTime? billedPaidOn, DateTime? providerPaidOn, CancellationToken ct = default);
     Task BulkUpdateBillingDatesAsync(List<int> sesisIds, bool applyBilled, DateTime? billed, bool applyBilledPaid, DateTime? billedPaid, bool applyProviderPaid, DateTime? providerPaid, CancellationToken ct = default);
-    Task<List<GeneratedBillingFile>> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default);
+    Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default);
 }

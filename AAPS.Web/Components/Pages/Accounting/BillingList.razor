@@ -360,7 +360,8 @@
             var footerPath = Path.Combine(Env.WebRootPath, "images", "rs-footer.jpg");
             StatementService.SetLogoPaths(headerPath, footerPath);
 
-            var statementFiles = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters);
+            var selected = _selectedIds.Count > 0 ? _selectedIds.ToList() : null;
+            var statementFiles = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters, selected);
 
             if (statementFiles.Count == 0)
             {
@@ -393,20 +394,24 @@
         _generating = true;
         try
         {
-            var files = await BillingService.GenerateBillingFilesAsync(_grid.Search, _grid.ColumnFilters);
+            var selected = _selectedIds.Count > 0 ? _selectedIds.ToList() : null;
+            var generateResult = await BillingService.GenerateBillingFilesAsync(_grid.Search, _grid.ColumnFilters, selected);
 
-            if (files.Count == 0)
+            if (generateResult.SkippedPaidCount > 0)
+                Snackbar.Add($"{generateResult.SkippedPaidCount} selected record(s) were already paid and were skipped.", Severity.Warning);
+
+            if (generateResult.Files.Count == 0)
             {
                 Snackbar.Add("No unbilled records found to generate files from.", Severity.Info);
                 return;
             }
 
-            Snackbar.Add($"{files.Count} billing file(s) saved to disk.", Severity.Success);
+            Snackbar.Add($"{generateResult.Files.Count} billing file(s) saved to disk.", Severity.Success);
 
             var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = false, CloseButton = true };
             var parameters = new DialogParameters<BillingFilesDownloadDialog>
             {
-                { x => x.Files, files }
+                { x => x.Files, generateResult.Files }
             };
             await DialogService.ShowAsync<BillingFilesDownloadDialog>("Billing Files Generated", parameters, options);
         }

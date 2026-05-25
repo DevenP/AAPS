@@ -28,18 +28,22 @@ public class StatementService : IStatementService
         _footerPath = footerPath;
     }
 
-    public async Task<List<GeneratedStatementFile>> GenerateAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
+    public async Task<List<GeneratedStatementFile>> GenerateAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
 
-        // Step 1: Resolve matching SesisIds using the same grid filters
-        var request = new PagedRequest(search, columnFilters, PageSize: -1);
-        var matching = await BuildBaseQuery(db).ToPagedResultAsync(request, ct, performSearch: false);
-
-        if (matching.Items.Count == 0)
-            return [];
-
-        var matchingIds = matching.Items.Select(r => r.SesisId).ToHashSet();
+        HashSet<int> matchingIds;
+        if (selectedIds != null && selectedIds.Count > 0)
+        {
+            matchingIds = selectedIds.ToHashSet();
+        }
+        else
+        {
+            var request = new PagedRequest(search, columnFilters, PageSize: -1);
+            var matching = await BuildBaseQuery(db).ToPagedResultAsync(request, ct, performSearch: false);
+            if (matching.Items.Count == 0) return [];
+            matchingIds = matching.Items.Select(r => r.SesisId).ToHashSet();
+        }
 
         // Step 2: Fetch full row data (including Admin_DBN and provider address)
         var rows = await db.Seses.AsNoTracking()
