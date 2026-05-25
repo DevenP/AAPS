@@ -37,4 +37,7 @@ public interface ISesiService
 
     /// <summary>Returns the MandateStart and MandateEnd for a given Approval ID, or null if not found.</summary>
     Task<(DateTime? Start, DateTime? End)?> GetMandateDatesAsync(int entryId, CancellationToken ct = default);
+
+    /// <summary>Returns just the Sesis_Id values matching the current operations filters — used for fast select-all.</summary>
+    Task<List<int>> GetOperationIdsAsync(PagedRequest request, CancellationToken ct = default);
 }

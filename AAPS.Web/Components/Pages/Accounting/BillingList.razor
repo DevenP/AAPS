@@ -237,9 +237,8 @@
     {
         _allSelected = selected;
         if (!selected) { _selectedIds.Clear(); return; }
-        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters, PageSize: -1);
-        var result = await BillingService.GetPagedAsync(request);
-        _selectedIds = result.Items.Select(i => i.SesisId).ToHashSet();
+        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters);
+        _selectedIds = (await BillingService.GetIdsAsync(request)).ToHashSet();
     }
 
     private void ClearSelection()

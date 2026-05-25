@@ -237,20 +237,15 @@ public class SesiService : ISesiService
         }
     }
 
-    public async Task<PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
+    // Builds the full operations IQueryable with joins and projection.
+    // Search is applied here on the raw Sesis entity before joining so EF uses real indexes.
+    // Column filters and sort are applied by the caller via ApplyFilters / ToPagedResultAsync.
+    private static IQueryable<OperationsDTO> BuildOperationQuery(AppDbContext db, string? search)
     {
-        await using var db = _factory.CreateDbContext();
         // Mirrors the stored proc's two-step VendorPortal join:
-        //
-        //   Step 1 — find the MIN(VendorPortal_Id) per Entry_Id + pSsn combo
-        //   Step 2 — join VendorPortal on that specific VendorPortal_Id
-        //   Step 3 — when joining to Sesis, also verify pSsn matches the provider's SSN
-        //            (proc strips dashes: LEFT(Ssn,3)+SUBSTRING(Ssn,5,2)+RIGHT(Ssn,4))
-        //
-        // This prevents an assignment from one provider bleeding onto a different
-        // provider's session rows that happen to share the same Entry_Id.
-
-        // Step 1: get the winning VendorPortal_Id per (Entry_Id, pSsn)
+        //   Step 1 — MIN(VendorPortal_Id) per (Entry_Id, pSsn)
+        //   Step 2 — join back to get Assign_Id for that winning row
+        //   Step 3 — cross-check pSsn == provider's dash-stripped SSN
         var topAssignByEntryAndSsn = db.VendorPortals.AsNoTracking()
             .Where(v => v.Entry_Id != null && v.pSsn != null)
             .GroupBy(v => new { v.Entry_Id, v.pSsn })
@@ -261,24 +256,16 @@ public class SesiService : ISesiService
                 TopId = g.Min(x => x.VendorPortal_Id)
             });
 
-        // Step 2: join back to get the Assign_Id for that winning row
         var topAssignments =
             from t in topAssignByEntryAndSsn
             join v in db.VendorPortals.AsNoTracking() on t.TopId equals v.VendorPortal_Id
-            select new
-            {
-                t.EntryId,
-                t.ProvSsn,
-                v.Assign_Id
-            };
+            select new { t.EntryId, t.ProvSsn, v.Assign_Id };
 
-        // Apply global search on the raw Seses table BEFORE joins/projection
-        // so EF hits real indexed columns instead of DTO projections
         var baseQuery = db.Seses.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            var term = request.Search.Trim();
+            var term = search.Trim();
             baseQuery = baseQuery.Where(s =>
                 (s.Student_ID != null && s.Student_ID.Contains(term)) ||
                 (s.Last_Name != null && s.Last_Name.Contains(term)) ||
@@ -288,9 +275,7 @@ public class SesiService : ISesiService
                 (s.Service_Type != null && s.Service_Type.Contains(term)));
         }
 
-        // Main query — left joins match the proc exactly.
-        // VendorPortal is joined on Entry_Id AND pSsn == provider's dash-stripped SSN.
-        var query =
+        return
             from s in baseQuery
 
             join m in db.Mandates.AsNoTracking()
@@ -301,7 +286,6 @@ public class SesiService : ISesiService
                 on s.Provider_Id equals p.Provider_Id into pGroup
             from p in pGroup.DefaultIfEmpty()
 
-                // Cross-check: the assignment must belong to this provider's SSN
             join va in topAssignments
                 on new
                 {
@@ -330,20 +314,17 @@ public class SesiService : ISesiService
                 ProviderId = s.Provider_Id,
                 EntryId = s.Entry_Id,
 
-                // Alert flags
                 MandateFlag = s.Entry_Id == null,
                 ProviderFlag = s.Provider_Id == null,
                 BRateFlag = s.bRate == null,
                 PRateFlag = s.pRate == null,
                 AssignFlag = va == null || va.Assign_Id == null || va.Assign_Id == "",
 
-                // Logic flags
                 IsOverDuration = s.OverDuration ?? false,
                 IsOverlap = s.Overlap ?? false,
                 IsOverMandate = s.OverMandate ?? false,
                 IsUnderGroup = s.UnderGroup ?? false,
 
-                // Session fields
                 LanguageProvided  = s.Language_Provided,
                 ActualSize        = s.Actual_Size,
                 AssignmentClaimed = s.Assignment_Claimed,
@@ -351,37 +332,41 @@ public class SesiService : ISesiService
                 ProviderPaidDate  = s.pPaid,
                 Voucher           = s.Voucher,
 
-                // Joined fields
-                ProviderLastName = s.Provider_Last_Name,
+                ProviderLastName  = s.Provider_Last_Name,
                 ProviderFirstName = s.Provider_First_Name,
-                ProviderName = (s.Provider_Last_Name ?? "") + ", " + (s.Provider_First_Name ?? ""),
-                AssignId = va != null ? va.Assign_Id : null,
-                MandateStart = m != null ? m.MandateStart : null,
-                MandateEnd   = m != null ? m.MandateEnd   : null,
+                ProviderName      = (s.Provider_Last_Name ?? "") + ", " + (s.Provider_First_Name ?? ""),
+                AssignId          = va != null ? va.Assign_Id : null,
+                MandateStart      = m != null ? m.MandateStart : null,
+                MandateEnd        = m != null ? m.MandateEnd   : null,
 
-                // Masked SSN
                 Ssn = (p != null && p.Ssn != null && p.Ssn.Length >= 4)
                       ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4)
                       : (p != null ? p.Ssn : null),
 
-                // Provider address fields from the Providers join
-                // FullAddress mirrors proc: RTRIM(City)+', '+State+' '+Zipcode
                 FullAddress = p != null
                     ? (p.City != null ? p.City.Trim() : "") + ", " + (p.State ?? "") + " " + (p.Zipcode ?? "")
                     : null,
 
                 VoucherBalancePaid = s.VoucherBalancePaid,
             };
+    }
 
-        // Default sort matches the proc: date_of_Service + Start_Time as datetime, then provider name.
-        // ToPagedResultAsync will override this if the user clicks a sort column.
+    public async Task<PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
         if (string.IsNullOrWhiteSpace(request.SortBy))
-        {
             request = request with { SortBy = "DateOfService", SortDir = "asc" };
-        }
+        return await BuildOperationQuery(db, request.Search)
+            .ToPagedResultAsync(request, ct, performSearch: false);
+    }
 
-        // performSearch: false — search was already applied above on the raw Seses entity
-        return await query.ToPagedResultAsync(request, ct, performSearch: false);
+    public async Task<List<int>> GetOperationIdsAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        return await BuildOperationQuery(db, request.Search)
+            .ApplyFilters(request, performSearch: false)
+            .Select(r => r.Id)
+            .ToListAsync(ct);
     }
 
     public async Task BulkUpdateAsync(List<int> ids, OperationEditDTO dto, CancellationToken ct = default)

@@ -260,9 +260,8 @@
             return;
         }
 
-        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters, PageSize: -1);
-        var result = await SesiService.GetOperationsPagedAsync(request);
-        _selectedIds = result.Items.Select(i => i.Id).ToHashSet();
+        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters);
+        _selectedIds = (await SesiService.GetOperationIdsAsync(request)).ToHashSet();
     }
 
     private void ClearSelection()

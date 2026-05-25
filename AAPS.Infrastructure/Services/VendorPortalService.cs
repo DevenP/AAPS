@@ -46,32 +46,8 @@ namespace AAPS.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
-        {
-            await using var db = _factory.CreateDbContext();
-            List<VendorPortalRaw> raw;
-            try
-            {
-                // Use the stored proc directly — the multi-join LINQ translation is
-                // unreliable with nullable datetime keys and produces wrong counts.
-                raw = await db.Database
-                    .SqlQueryRaw<VendorPortalRaw>(
-                        "EXEC [dbo].[VendorPortal_Select] @searchBy=0, @searchByValue=NULL, @dateSearch=0, @from=NULL, @to=NULL, @unbound=0")
-                    .ToListAsync(ct);
-            }
-            catch (OperationCanceledException)
-            {
-                return new PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
-            }
-            catch (Microsoft.Data.SqlClient.SqlException ex)
-                when (ct.IsCancellationRequested || ex.Message.Contains("Operation cancelled"))
-            {
-                // SQL Server surfaces cancellation as a SqlException with
-                // "severe error / Operation cancelled by user" — treat it the same way
-                return new PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
-            }
-
-            var query = raw.Select(r => new VendorPortalDTO
+        private static IEnumerable<VendorPortalDTO> ProjectRaw(IEnumerable<VendorPortalRaw> raw) =>
+            raw.Select(r => new VendorPortalDTO
             {
                 Id = r.VendorPortal_Id,
                 ProviderSSN = r.pSsn,
@@ -95,7 +71,39 @@ namespace AAPS.Infrastructure.Services
                 MismatchedVendorPortal = r.Entry_Id == null
             });
 
-            return await query.ToPagedResultAsync(request, ct);
+        private static async Task<List<VendorPortalRaw>> FetchRawAsync(AppDbContext db, CancellationToken ct)
+        {
+            try
+            {
+                return await db.Database
+                    .SqlQueryRaw<VendorPortalRaw>(
+                        "EXEC [dbo].[VendorPortal_Select] @searchBy=0, @searchByValue=NULL, @dateSearch=0, @from=NULL, @to=NULL, @unbound=0")
+                    .ToListAsync(ct);
+            }
+            catch (OperationCanceledException) { return []; }
+            catch (Microsoft.Data.SqlClient.SqlException ex)
+                when (ct.IsCancellationRequested || ex.Message.Contains("Operation cancelled"))
+            {
+                return [];
+            }
+        }
+
+        public async Task<PagedResult<VendorPortalDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
+        {
+            await using var db = _factory.CreateDbContext();
+            var raw = await FetchRawAsync(db, ct);
+            if (raw.Count == 0 && ct.IsCancellationRequested)
+                return new PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
+            return await ProjectRaw(raw).ToPagedResultAsync(request, ct);
+        }
+
+        public async Task<List<int>> GetIdsAsync(PagedRequest request, CancellationToken ct = default)
+        {
+            await using var db = _factory.CreateDbContext();
+            var raw = await FetchRawAsync(db, ct);
+            var allRequest = new PagedRequest(request.Search, request.ColumnFilters, PageSize: -1);
+            var result = await ProjectRaw(raw).ToPagedResultAsync(allRequest, ct);
+            return result.Items.Select(i => i.Id).ToList();
         }
 
         public async Task<VendorPortalDTO?> GetByIdAsync(int id, CancellationToken ct = default)

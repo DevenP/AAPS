@@ -201,12 +201,8 @@
             return;
         }
 
-        var request = new AAPS.Application.Common.Paging.PagedRequest(
-            _grid.ColumnFilters.TryGetValue("Global", out var s) ? s : "",
-            _grid.ColumnFilters,
-            PageSize: -1);
-        var result = await VendorPortalService.GetPagedAsync(request);
-        _selectedIds = result.Items.Select(i => i.Id).ToHashSet();
+        var request = new AAPS.Application.Common.Paging.PagedRequest(_grid.Search, _grid.ColumnFilters);
+        _selectedIds = (await VendorPortalService.GetIdsAsync(request)).ToHashSet();
     }
 
     private void ClearSelection()

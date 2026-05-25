@@ -149,6 +149,15 @@ public class BillingService : IBillingService
         _logger.LogInformation("Billing dates updated for Sesis {SesisId}", sesisId);
     }
 
+    public async Task<List<int>> GetIdsAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        return await BuildBaseQuery(db)
+            .ApplyFilters(request)
+            .Select(r => r.SesisId)
+            .ToListAsync(ct);
+    }
+
     public async Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(_settings.OutputPath))

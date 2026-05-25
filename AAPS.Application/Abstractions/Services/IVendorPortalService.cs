@@ -18,4 +18,5 @@ public interface IVendorPortalService
     Task DeleteManyAsync(IEnumerable<int> ids, CancellationToken ct = default);
 
     Task ReplaceEntryIdAsync(IEnumerable<int> ids, int newEntryId, CancellationToken ct = default);
+    Task<List<int>> GetIdsAsync(PagedRequest request, CancellationToken ct = default);
 }
