@@ -195,7 +195,6 @@
 
             if (savedId > 0)
             {
-                await _grid.ReloadServerData();
                 _providerForm = null;
 
                 if (isNew)
@@ -219,6 +218,7 @@
                 {
                     Snackbar.Add("Saved successfully!", Severity.Success);
                 }
+                await _grid.ReloadServerData();
             }
             else
             {

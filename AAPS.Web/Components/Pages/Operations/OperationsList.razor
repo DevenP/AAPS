@@ -36,16 +36,15 @@
              OnFilterRemoved="OnFilterRemoved">
 
     <CustomActionContent>
+        @if (_busy)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+        }
         @if (_selectedIds.Count > 0)
         {
             <MudText Typo="Typo.caption" Class="mr-2 align-self-center">
                 @_selectedIds.Count selected
             </MudText>
-
-            @if (_busy)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            }
 
             <MudMenu Label="Actions"
                      Variant="Variant.Filled"
