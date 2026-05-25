@@ -100,7 +100,7 @@ public class BillingService : IBillingService
     public async Task<PagedResult<BillingRecordDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        return await BuildBaseQuery(db).ToPagedResultAsync(request, ct, performSearch: false);
+        return await BuildBaseQuery(db).ToPagedResultAsync(request, ct);
     }
 
     public async Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
