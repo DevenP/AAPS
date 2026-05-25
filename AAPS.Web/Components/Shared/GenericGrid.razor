@@ -18,7 +18,7 @@
           @bind-CurrentPage="_currentPage"
           FixedHeader="true"
           FixedFooter="true"
-          Height="75vh"
+          Height="@Height"
           RowsPerPage="@_pageSize"
           HorizontalScrollbar="true"
           SortLabel="@DefaultSortLabel"
@@ -129,29 +129,9 @@
         border-bottom: 1px solid var(--mud-palette-divider);
     }
 
-    /* Combined High-Density + No-Wrap Logic */
+    /* Cell borders (layout, not density — kept here so it's scoped to this grid) */
     .sticky-table .mud-table-cell {
-        padding: 4px 8px;
-        white-space: nowrap !important; /* Prevents text from wrapping to new lines */
-        overflow: hidden; /* Keeps cell height consistent */
-        text-overflow: ellipsis; /* Adds '...' to long text */
-        border-right: 1px solid var(--mud-palette-divider); /* Excel-style grid lines */
-    }
-
-    .sticky-table .mud-table-root {
-        font-size: 0.825rem;
-    }
-
-    /* Force row height to stay compact regardless of content */
-    .mud-table-row {
-        height: 32px !important;
-    }
-
-    /* Ensure Chips and Icons don't expand the row */
-    .mud-chip.mud-chip-size-small {
-        height: 20px;
-        font-size: 0.75rem;
-        margin: 0;
+        border-right: 1px solid var(--mud-palette-divider);
     }
 
     .mud-icon-root.mud-icon-size-small {
@@ -191,6 +171,7 @@
     [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; } = default!;
     [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; } = default!;
 
+    [Parameter] public string Height { get; set; } = "86vh";
     [Parameter] public string DefaultSortLabel { get; set; } = "Id";
 
     // Called when a filter chip is removed, with the filter key that was removed.
@@ -419,8 +400,8 @@
         }
         catch (OperationCanceledException)
         {
-            // Previous request was superseded by a newer one — return current state quietly
-            return new TableData<TItem> { TotalItems = _totalItems, Items = [] };
+            // Previous request was superseded by a newer one — keep current data visible
+            return new TableData<TItem> { TotalItems = _totalItems, Items = CurrentPageItems };
         }
         catch (Exception ex)
         {

@@ -11,7 +11,7 @@
 @inject ISnackbar Snackbar
 @inject ILogger<OperationsList> Logger
 
-<div style="position:sticky;top:0;z-index:200;background:var(--mud-palette-surface);border-bottom:1px solid var(--mud-palette-divider);padding:5px 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+<div style="position:sticky;top:0;z-index:200;background:var(--mud-palette-surface);border-bottom:1px solid var(--mud-palette-divider);padding:2px 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
     <MudText Typo="Typo.caption" Style="font-weight:700;opacity:0.5;letter-spacing:.05em;">ALERT LEGEND</MudText>
     <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Error"   Size="Size.Small" /><MudText Typo="Typo.caption">Missing Approval</MudText></span>
     <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.PersonOff"       Color="Color.Error"   Size="Size.Small" /><MudText Typo="Typo.caption">Unassigned Provider</MudText></span>
@@ -27,6 +27,7 @@
 <GenericGrid TItem="OperationsDTO"
              @ref="_grid"
              Title="Operations"
+             Height="83vh"
              Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "ServiceType", "LanguageProvided", "ActualSize", "Duration", "AssignmentClaimed", "EntryId", "ProviderPaidDate", "BilledDate", "Voucher", "AssignId" })"
              DefaultSortLabel="DateOfService"
              GetData="SesiService.GetOperationsPagedAsync"

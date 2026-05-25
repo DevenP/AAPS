@@ -50,9 +50,61 @@ h1:focus {
     border-color: #929292;
 }
 
+/* ── Grid toolbar + pager compaction ── */
+.ultra-dense .mud-table-toolbar {
+    --mud-internal-toolbar-height: 40px;
+}
+
+.ultra-dense .mud-table-pagination-toolbar {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 8px !important;
+}
+
+/* ── Grid density overrides (app.css loads before MudBlazor, so !important here beats everything) ── */
+
 .ultra-dense .mud-table-cell {
-    padding-top: 1px !important;
-    padding-bottom: 1px !important;
+    padding: 0 4px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.ultra-dense .mud-table-root {
+    font-size: 0.875rem !important;
+}
+
+.ultra-dense .mud-table-row {
+    height: 20px !important;
+}
+
+/* Icon buttons (edit pencil, header actions, etc.) */
+.ultra-dense .mud-icon-button {
+    padding: 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+
+/* Checkboxes inside the grid */
+.ultra-dense .mud-checkbox .mud-icon-button,
+.ultra-dense .mud-checkbox .mud-button-root {
+    padding: 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+
+.ultra-dense .mud-checkbox .mud-icon-root {
+    font-size: 1.1rem !important;
+    width: 1.1rem !important;
+    height: 1.1rem !important;
+}
+
+/* Chips inside grid cells */
+.ultra-dense .mud-chip.mud-chip-size-small {
+    height: 18px !important;
+    font-size: 0.8rem !important;
+    margin: 0 !important;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
