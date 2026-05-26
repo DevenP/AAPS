@@ -178,6 +178,10 @@
     // Parent pages can use this to sync their own toggle state.
     [Parameter] public EventCallback<string> OnFilterRemoved { get; set; }
 
+    // Called whenever the search text or column filters change (not on chip removal).
+    // Parent pages can use this to clear stale row selections.
+    [Parameter] public EventCallback OnFiltersChanged { get; set; }
+
     // Called after each successful data load — use to refresh derived aggregates.
     [Parameter] public EventCallback OnDataLoaded { get; set; }
 
@@ -262,6 +266,8 @@
         if (result is not null && !result.Canceled)
         {
             ColumnFilters = result.Data as Dictionary<string, string> ?? new();
+            if (OnFiltersChanged.HasDelegate)
+                await OnFiltersChanged.InvokeAsync();
             await _table.ReloadServerData();
         }
     }
@@ -334,6 +340,8 @@
         }
 
         _currentPage = 0;
+        if (OnFiltersChanged.HasDelegate)
+            await OnFiltersChanged.InvokeAsync();
         await _table.ReloadServerData();
     }
 

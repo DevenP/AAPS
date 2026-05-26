@@ -20,6 +20,7 @@
              DefaultSortLabel="DateOfService"
              OnDataLoaded="RefreshSummary"
              OnFilterRemoved="@(_ => { ClearSelection(); return Task.CompletedTask; })"
+             OnFiltersChanged="ClearSelection"
              ExportMapper="@(r => new object?[] { r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.GDistrict, r.StudentId, r.Student, r.Grade, r.ServiceType, r.ActualSize, r.Duration, r.Frequency, r.Billed?.ToString("MM/dd/yyyy"), r.BilledPaidOn?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.BillingRate, r.ProviderRate, r.BillingAmount, r.ProviderAmount, r.AssignId, r.EntryId })">
 
     <CustomActionContent>

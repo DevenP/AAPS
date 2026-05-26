@@ -33,7 +33,8 @@
              GetData="SesiService.GetOperationsPagedAsync"
              ExportHeaders="@(new[] { DN(nameof(OperationsDTO.DateOfService)), DN(nameof(OperationsDTO.StartTime)), DN(nameof(OperationsDTO.EndTime)), DN(nameof(OperationsDTO.ProviderLastName)), DN(nameof(OperationsDTO.GDistrict)), DN(nameof(OperationsDTO.StudentId)), DN(nameof(OperationsDTO.StudentLastName)), DN(nameof(OperationsDTO.ServiceType)), DN(nameof(OperationsDTO.LanguageProvided)), DN(nameof(OperationsDTO.ActualSize)), DN(nameof(OperationsDTO.Duration)), DN(nameof(OperationsDTO.AssignmentClaimed)), DN(nameof(OperationsDTO.EntryId)), DN(nameof(OperationsDTO.ProviderPaidDate)), DN(nameof(OperationsDTO.BilledDate)), DN(nameof(OperationsDTO.Voucher)), DN(nameof(OperationsDTO.AssignId)) })"
              ExportMapper="@(op => new object?[] { op.DateOfService?.ToString("MM/dd/yyyy"), op.StartTime, op.EndTime, CombineName(op.ProviderLastName, op.ProviderFirstName), op.GDistrict, op.StudentId, CombineName(op.StudentLastName, op.StudentFirstName), op.ServiceType, op.LanguageProvided, op.ActualSize, op.Duration, op.AssignmentClaimed, op.EntryId, op.ProviderPaidDate?.ToString("MM/dd/yyyy"), op.BilledDate?.ToString("MM/dd/yyyy"), op.Voucher, op.AssignId })"
-             OnFilterRemoved="OnFilterRemoved">
+             OnFilterRemoved="OnFilterRemoved"
+             OnFiltersChanged="ClearSelection">
 
     <CustomActionContent>
         @if (_busy)
