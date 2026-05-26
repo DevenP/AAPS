@@ -741,13 +741,13 @@ public class ImportService : IImportService
 
         // ── Bulk lookups ──────────────────────────────────────────────────
 
-        // 1. Existing duplicate keys: StudentId|ServiceType|DOSDate|StartTime|EndTime|ProviderLast|ProviderFirst|ActualSize
+        // 1. Existing duplicate keys: StudentId|ServiceType|DOSDate|StartTime|EndTime|ActualSize
+        // Provider name intentionally excluded — name changes between imports would break deduplication.
         var existingKeys = await db.Seses
             .Where(s => s.date_of_Service.HasValue)
             .Select(s => s.Student_ID + "|" + s.Service_Type + "|" +
                          s.date_of_Service!.Value.Date.ToString("yyyyMMdd") + "|" +
-                         s.Start_Time + "|" + s.End_Time + "|" +
-                         s.Provider_Last_Name + "|" + s.Provider_First_Name + "|" + s.Actual_Size)
+                         s.Start_Time + "|" + s.End_Time + "|" + s.Actual_Size)
             .ToHashSetAsync(ct);
 
         // 2. All providers: "LastName,FirstName" -> Provider_Id
@@ -857,8 +857,7 @@ public class ImportService : IImportService
             // Duplicate check via HashSet
             string dupKey = studentId + "|" + serviceType + "|" +
                             (dateOfService?.Date.ToString("yyyyMMdd") ?? "") + "|" +
-                            startTime + "|" + endTime + "|" +
-                            providerLast + "|" + providerFirst + "|" + actualSize;
+                            startTime + "|" + endTime + "|" + actualSize;
             if (existingKeys.Contains(dupKey))
             {
                 skippedRowNumbers.Add(i - 1);
