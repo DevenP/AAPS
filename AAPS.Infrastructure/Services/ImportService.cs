@@ -598,25 +598,27 @@ public class ImportService : IImportService
                 string grpSize = Get(25)!;
                 string mandateId = Get(43)!;
 
-                // Duplicate check
+                // Calculate MandateStart / MandateEnd (needed for duplicate check)
+                DateTime? firstAttendDate = GetDate(41) ?? DateTime.Now;
+                DateTime mandateStart = firstAttendDate.Value.Date;
+                DateTime mandateEnd;
+
+                // Duplicate check — include MandateStart so the same Mandate_ID reused
+                // for a new provider/period (different first-attend date) is not skipped.
                 bool exists = await db.Mandates.AnyAsync(m =>
                     m.Student_ID == studentId &&
                     m.Service_Type == serviceType &&
                     m.Remaining_Freq == remainingFreq &&
                     m.Dur == dur &&
                     m.Grp_Size == grpSize &&
-                    m.Mandate_ID == mandateId, ct);
+                    m.Mandate_ID == mandateId &&
+                    m.MandateStart == mandateStart, ct);
 
                 if (exists)
                 {
                     skippedRowNumbers.Add(i - 3);
                     continue;
                 }
-
-                // Calculate MandateStart / MandateEnd
-                DateTime? firstAttendDate = GetDate(41) ?? DateTime.Now;
-                DateTime mandateStart = firstAttendDate.Value.Date;
-                DateTime mandateEnd;
                 int month = mandateStart.Month;
                 if (month == 7)
                     mandateEnd = new DateTime(mandateStart.Year, 8, 31, 23, 59, 0);
