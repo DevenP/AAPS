@@ -4,7 +4,7 @@ namespace AAPS.Application.DTO
 {
     public record OperationsDTO : SesiDTO
     {
-        [DisplayField("Mismatched Approval", GroupName = "Alerts")]
+        [DisplayField("Missing Approval", GroupName = "Alerts")]
         public bool MandateFlag { get; set; }
 
         [DisplayField("Unassigned Provider", GroupName = "Alerts")]
