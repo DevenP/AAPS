@@ -4,7 +4,7 @@ namespace AAPS.Application.DTO;
 
 public class BillingRecordDTO
 {
-    [DisplayField("Sesis ID", browsable: false)]
+    [DisplayField("SesisId", GroupName = "Service")]
     public int SesisId { get; set; }
 
     [DisplayField("Service Date", GroupName = "Service")]
@@ -69,4 +69,16 @@ public class BillingRecordDTO
 
     [DisplayField("Approval ID", GroupName = "Billing")]
     public int? EntryId { get; set; }
+
+    [DisplayField("Voucher", GroupName = "Billing")]
+    public string? Voucher { get; set; }
+
+    [DisplayField("Voucher Amount", GroupName = "Billing")]
+    public decimal? VoucherAmount { get; set; }
+
+    [DisplayField("Unpaid Balance", GroupName = "Billing")]
+    public decimal? UnpaidBalance { get; set; }
+
+    [DisplayField("Voucher Paid Date", GroupName = "Billing")]
+    public DateTime? VoucherBalancePaid { get; set; }
 }

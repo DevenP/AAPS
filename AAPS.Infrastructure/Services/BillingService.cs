@@ -92,8 +92,12 @@ public class BillingService : IBillingService
                 ProviderRate   = s.pRate,
                 BillingAmount  = s.bAmount,
                 ProviderAmount = s.pAmount,
-                AssignId       = va.Assign_Id,
-                EntryId        = s.Entry_Id,
+                AssignId           = va.Assign_Id,
+                EntryId            = s.Entry_Id,
+                Voucher            = s.Voucher,
+                VoucherAmount      = s.VoucherAmount,
+                UnpaidBalance      = s.bAmount - s.VoucherAmount,
+                VoucherBalancePaid = s.VoucherBalancePaid,
             };
     }
 
