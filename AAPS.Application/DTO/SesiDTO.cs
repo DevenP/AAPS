@@ -4,7 +4,7 @@ namespace AAPS.Application.DTO;
 
 public record SesiDTO
 {
-    [DisplayField("Id", browsable: false, IsReadOnly = true)]
+    [DisplayField("SesisId", GroupName = "Service", IsReadOnly = true)]
     public int Id { get; set; }
 
     [DisplayField("Student ID", GroupName = "Student")]
