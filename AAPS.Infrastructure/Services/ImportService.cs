@@ -268,7 +268,7 @@ public class ImportService : IImportService
                 try { return cell.GetDateTime(); } catch { return null; }
             }
 
-            var required = new[] { 1, 2, 3, 5, 9, 13, 15, 19, 21, 24, 25, 28, 30, 31, 32, 34, 35, 36, 41, 42 };
+            var required = new[] { 1, 2, 3, 5, 9, 13, 25, 28, 30, 31, 32, 34, 35, 36, 41, 42 };
             bool anyNull = required.Any(col => ws.Cell(i, col).IsEmpty());
 
             string? sessionType = Get(30);
