@@ -772,6 +772,22 @@ public class ImportService : IImportService
             })
             .ToListAsync(ct);
 
+        // 3b. Provider_Id → stripped SSN (no dashes) for VendorPortal matching
+        var providerSsnDict = await db.Providers
+            .Where(p => p.Ssn != null)
+            .Select(p => new { p.Provider_Id, Ssn = p.Ssn! })
+            .ToDictionaryAsync(p => p.Provider_Id, p => p.Ssn.Replace("-", ""), ct);
+
+        // 3c. Set of (Entry_Id, pSsn) that exist in VendorPortal — used to verify the billing
+        // provider is actually linked to the matched mandate before assigning Entry_Id.
+        var vpEntryProviders = (await db.VendorPortals
+            .Where(v => v.Entry_Id != null && v.pSsn != null)
+            .Select(v => new { v.Entry_Id, v.pSsn })
+            .Distinct()
+            .ToListAsync(ct))
+            .Select(v => (EntryId: v.Entry_Id!.Value, PSsn: v.pSsn!))
+            .ToHashSet();
+
         // 4. All active billing rates: "ServiceType|District|Lang" -> Rate
         var billingRateDict = (await db.BillingRates
             .Where(b => b.Active == true)
@@ -868,14 +884,16 @@ public class ImportService : IImportService
             string provKey = providerLast + "," + providerFirst;
             providerDict.TryGetValue(provKey, out int? providerId);
 
-            // Entry_Id lookup via in-memory mandates
+            // Entry_Id lookup via in-memory mandates + VendorPortal provider check.
+            // We only accept a mandate if the billing provider (cols AO/AP) has a VendorPortal
+            // entry for it — prevents attaching to another provider's approval ID.
             int? entryId = null;
             if (int.TryParse(duration, out int durInt) && dateOfService.HasValue)
             {
                 int actualSizeInt = int.TryParse(actualSize.TrimStart('0'), out var a) ? a : 1;
                 if (actualSizeInt == 0) actualSizeInt = 1;
 
-                entryId = allMandates
+                var candidates = allMandates
                     .Where(m =>
                         string.Equals(m.Service_Type?.Trim(), serviceType.Trim(), StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(m.Student_ID?.Trim(), studentId.Trim(), StringComparison.OrdinalIgnoreCase) &&
@@ -887,9 +905,24 @@ public class ImportService : IImportService
                         if (mDur != durInt) return false;
                         int mGrp = int.TryParse(m.Grp_Size, out var g) ? g : 0;
                         return (mGrp == 1 && actualSizeInt == 1) || (mGrp > 1 && mGrp >= actualSizeInt);
-                    })
-                    .Select(m => (int?)m.Entry_Id)
-                    .FirstOrDefault();
+                    });
+
+                // If provider is known and has an SSN, require a matching VendorPortal entry.
+                // If no VP entry exists for this provider + mandate, Entry_Id stays null (unassigned).
+                if (providerId.HasValue && providerSsnDict.TryGetValue(providerId.Value, out var ssnStripped) && !string.IsNullOrEmpty(ssnStripped))
+                {
+                    entryId = candidates
+                        .Where(m => vpEntryProviders.Contains((m.Entry_Id, ssnStripped)))
+                        .Select(m => (int?)m.Entry_Id)
+                        .FirstOrDefault();
+                }
+                else
+                {
+                    // Provider not in system or no SSN — fall back to mandate-only match
+                    entryId = candidates
+                        .Select(m => (int?)m.Entry_Id)
+                        .FirstOrDefault();
+                }
             }
 
             // Billing rate lookup
