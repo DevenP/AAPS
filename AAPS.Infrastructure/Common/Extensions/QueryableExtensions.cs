@@ -222,7 +222,13 @@ namespace AAPS.Infrastructure.Common.Extensions
                 if (type == typeof(bool) || type == typeof(bool?))
                 {
                     if (bool.TryParse(filter.Value, out var boolValue))
-                        query = query.Where($"{prop.Name} == @0", boolValue);
+                    {
+                        var param = Expression.Parameter(typeof(T), "e");
+                        var member = Expression.Property(param, prop);
+                        Expression right = Expression.Constant(boolValue, type);
+                        var eq = Expression.Equal(member, right);
+                        query = query.Where(Expression.Lambda<Func<T, bool>>(eq, param));
+                    }
                 }
                 else if (type == typeof(DateTime) || type == typeof(DateTime?))
                 {

@@ -351,22 +351,49 @@ public class SesiService : ISesiService
             };
     }
 
+    // Extracts AssignFlag from ColumnFilters and returns it separately.
+    // AssignFlag is computed from a complex LEFT JOIN / GROUP BY subquery that EF Core
+    // cannot filter on via SQL; it must be applied in memory after materialization.
+    private static (bool? flag, PagedRequest request) ExtractAssignFlagFilter(PagedRequest request)
+    {
+        if (request.ColumnFilters == null) return (null, request);
+        if (!request.ColumnFilters.TryGetValue("AssignFlag", out var v) || !bool.TryParse(v, out var b))
+            return (null, request);
+        var f = new Dictionary<string, string>(request.ColumnFilters, StringComparer.OrdinalIgnoreCase);
+        f.Remove("AssignFlag");
+        return (b, request with { ColumnFilters = f });
+    }
+
     public async Task<PagedResult<OperationsDTO>> GetOperationsPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
         if (string.IsNullOrWhiteSpace(request.SortBy))
             request = request with { SortBy = "DateOfService", SortDir = "asc" };
-        return await BuildOperationQuery(db, request.Search)
-            .ToPagedResultAsync(request, ct, performSearch: false);
+
+        var (assignFlag, req) = ExtractAssignFlagFilter(request);
+        var query = BuildOperationQuery(db, req.Search);
+
+        // Fast path: no AssignFlag filter — let EF handle everything
+        if (!assignFlag.HasValue)
+            return await query.ToPagedResultAsync(req, ct, performSearch: false);
+
+        // Slow path: apply remaining DB-translatable filters, materialize, then filter
+        // AssignFlag in memory (EF Core can't translate it through the VP subquery).
+        var b = assignFlag.Value;
+        var all = await query.ApplyFilters(req, performSearch: false).ToListAsync(ct);
+        var sortReq = req with { Search = null, ColumnFilters = null };
+        return await all.Where(op => op.AssignFlag == b).ToPagedResultAsync(sortReq, ct);
     }
 
     public async Task<List<int>> GetOperationIdsAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        return await BuildOperationQuery(db, request.Search)
-            .ApplyFilters(request, performSearch: false)
-            .Select(r => r.Id)
-            .ToListAsync(ct);
+        var (assignFlag, req) = ExtractAssignFlagFilter(request);
+        var query = BuildOperationQuery(db, req.Search);
+        var all = await query.ApplyFilters(req, performSearch: false).ToListAsync(ct);
+        if (assignFlag.HasValue)
+            all = all.Where(op => op.AssignFlag == assignFlag.Value).ToList();
+        return all.Select(op => op.Id).ToList();
     }
 
     public async Task BulkUpdateAsync(List<int> ids, OperationEditDTO dto, CancellationToken ct = default)
