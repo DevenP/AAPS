@@ -277,6 +277,9 @@ public class BillingService : IBillingService
                 // aGrs: '0' + Grp_Size
                 var aGrs = "0" + (m?.Grp_Size ?? "");
 
+                // aDur: LEFT(Mandates.Dur, 2) — mandate approval duration, not actual session duration
+                var aDur = (m?.Dur?.Length >= 2 ? m.Dur.Substring(0, 2) : m?.Dur) ?? "";
+
                 // Date fields formatted as MM/dd/yyyy (SQL CONVERT format 101).
                 // MandateStart, MandateEnd, bServiceDate use CONVERT(char(12),...) which pads to 12 chars
                 // — MM/dd/yyyy is 10 chars so 2 trailing spaces are appended to match WinForms output exactly.
@@ -299,7 +302,7 @@ public class BillingService : IBillingService
                         r.Provider_Last_Name ?? "", r.Provider_First_Name ?? "", r.SsnStripped,
                         r.Student_ID ?? "", r.First_Name ?? "", r.Last_Name ?? "",
                         aType, mandateStart, mandateEnd,
-                        aSes, aFreq, r.Duration ?? "", aGrs,
+                        aSes, aFreq, aDur, aGrs,
                         langCode, vp.Assign_Id ?? "", invoiceMonth, bServiceDate,
                         r.Actual_Size ?? "", r.Start_Time ?? "", r.End_Time ?? "", r.bAmount)
                 };
