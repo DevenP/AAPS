@@ -229,7 +229,7 @@ public class BillingService : IBillingService
         // Step 3: Fetch mandates — Remaining_Freq and Grp_Size for aSes/aFreq/aGrs/aType/aYear
         var mandates = await db.Mandates.AsNoTracking()
             .Where(m => entryIds.Contains(m.Entry_Id))
-            .Select(m => new { m.Entry_Id, m.MandateStart, m.MandateEnd, m.Remaining_Freq, m.Grp_Size })
+            .Select(m => new { m.Entry_Id, m.MandateStart, m.MandateEnd, m.Remaining_Freq, m.Grp_Size, m.Dur })
             .ToListAsync(ct);
         var mandateDict = mandates.ToDictionary(m => m.Entry_Id);
 
