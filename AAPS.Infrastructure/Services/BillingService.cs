@@ -215,7 +215,7 @@ public class BillingService : IBillingService
                     s.bAmount,
                     s.Provider_Last_Name,
                     s.Provider_First_Name,
-                    SsnStripped = p.Ssn!.Substring(0, 3) + p.Ssn.Substring(4, 2) + p.Ssn.Substring(7, 4),
+                    SsnStripped = p.Ssn!.Replace("-", ""),
                 })
             .OrderBy(r => r.date_of_Service)
             .ThenBy(r => r.Start_Time)

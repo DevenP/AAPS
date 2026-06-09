@@ -172,7 +172,7 @@ public class ProviderService : IProviderService
         {
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Ssn = StripSsn(dto.Ssn),
+            Ssn = dto.Ssn,
             Phone = StripPhone(dto.Phone),
             Email = dto.Email,
             Status = ProviderStatus.Active,
@@ -214,15 +214,14 @@ public class ProviderService : IProviderService
         // (In a bigger app, use AutoMapper, but manual is safer for now)
         provider.FirstName = dto.FirstName;
         provider.LastName = dto.LastName;
-        var newSsn = StripSsn(dto.Ssn);
         // Duplicate SSN check — excludes this provider (mirrors theProvider_Ssn proc)
-        if (!string.IsNullOrWhiteSpace(newSsn))
+        if (!string.IsNullOrWhiteSpace(dto.Ssn))
         {
-            var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn == newSsn, ct);
+            var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn == dto.Ssn, ct);
             if (duplicate)
                 throw new InvalidOperationException("Another provider already has this SSN.");
         }
-        provider.Ssn = newSsn;
+        provider.Ssn = dto.Ssn;
         provider.Email = dto.Email;
         provider.Phone = StripPhone(dto.Phone);
         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
@@ -262,7 +261,7 @@ public class ProviderService : IProviderService
                     {
                         FirstName = dto.FirstName,
                         LastName = dto.LastName,
-                        Ssn = StripSsn(dto.Ssn),
+                        Ssn = dto.Ssn,
                         Phone = StripPhone(dto.Phone),
                         Email = dto.Email,
                         Status = ProviderStatus.Active,
@@ -286,7 +285,7 @@ public class ProviderService : IProviderService
                     {
                         provider.FirstName = dto.FirstName;
                         provider.LastName = dto.LastName;
-                        provider.Ssn = StripSsn(dto.Ssn);
+                        provider.Ssn = dto.Ssn;
                         provider.Email = dto.Email;
                         provider.Phone = StripPhone(dto.Phone);
                         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
@@ -387,12 +386,6 @@ public class ProviderService : IProviderService
             _logger.LogInformation("Provider {Id} deleted", id);
         return deleted;
     }
-
-    /// <summary>
-    /// Strips formatting added by the UI PatternMask("000-00-0000") before persisting.
-    /// DB stores SSN as 9 raw digits with no dashes.
-    /// </summary>
-    private static string? StripSsn(string? ssn) => ssn?.Replace("-", "");
 
     private static string? StripPhone(string? phone) =>
         phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", "");
