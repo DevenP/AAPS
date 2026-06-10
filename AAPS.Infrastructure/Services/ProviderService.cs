@@ -168,23 +168,9 @@ public class ProviderService : IProviderService
     public async Task<int> CreateAsync(ProviderDTO dto, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        var entity = new Provider
-        {
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            Ssn = dto.Ssn,
-            Phone = StripPhone(dto.Phone),
-            Email = dto.Email,
-            Status = ProviderStatus.Active,
-            //IsActive = dto.IsActive ?? true, // Default to true for new providers
-            TaxId = dto.TaxId,
-            NpiNumber = dto.NpiNumber,
-            Address = dto.Address,
-            City = dto.City,
-            State = dto.State,
-            Zipcode = dto.Zipcode,
-            Pets = dto.HasPets
-        };
+        var entity = new Provider { Status = ProviderStatus.Active };
+        ApplyDto(entity, dto);
+        entity.Ssn = dto.Ssn;
 
         // Duplicate SSN check (mirrors theProvider_Ssn proc: other providers with same SSN)
         if (!string.IsNullOrWhiteSpace(entity.Ssn))
@@ -210,10 +196,6 @@ public class ProviderService : IProviderService
 
         if (provider == null) return false;
 
-        // 2. Map the DTO values back to the Entity
-        // (In a bigger app, use AutoMapper, but manual is safer for now)
-        provider.FirstName = dto.FirstName;
-        provider.LastName = dto.LastName;
         // Duplicate SSN check — excludes this provider (mirrors theProvider_Ssn proc)
         if (!string.IsNullOrWhiteSpace(dto.Ssn))
         {
@@ -221,17 +203,9 @@ public class ProviderService : IProviderService
             if (duplicate)
                 throw new InvalidOperationException("Another provider already has this SSN.");
         }
+        ApplyDto(provider, dto);
         provider.Ssn = dto.Ssn;
-        provider.Email = dto.Email;
-        provider.Phone = StripPhone(dto.Phone);
         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
-        provider.License1Exp = dto.License1Expiration;
-        provider.TaxId = dto.TaxId;
-        provider.Address = dto.Address;
-        provider.City = dto.City;
-        provider.State = dto.State;
-        provider.Zipcode = dto.Zipcode;
-        provider.Pets = dto.HasPets;
 
         // 3. Save Changes
         return await db.SaveChangesAsync(ct) > 0;
@@ -257,22 +231,9 @@ public class ProviderService : IProviderService
                 int providerId;
                 if (dto.Id == 0)
                 {
-                    var entity = new Provider
-                    {
-                        FirstName = dto.FirstName,
-                        LastName = dto.LastName,
-                        Ssn = dto.Ssn,
-                        Phone = StripPhone(dto.Phone),
-                        Email = dto.Email,
-                        Status = ProviderStatus.Active,
-                        TaxId = dto.TaxId,
-                        NpiNumber = dto.NpiNumber,
-                        Address = dto.Address,
-                        City = dto.City,
-                        State = dto.State,
-                        Zipcode = dto.Zipcode,
-                        Pets = dto.HasPets
-                    };
+                    var entity = new Provider { Status = ProviderStatus.Active };
+                    ApplyDto(entity, dto);
+                    entity.Ssn = dto.Ssn;
                     db.Providers.Add(entity);
                     await db.SaveChangesAsync();
                     providerId = entity.Provider_Id;
@@ -283,19 +244,9 @@ public class ProviderService : IProviderService
                     var provider = await db.Providers.FirstOrDefaultAsync(p => p.Provider_Id == dto.Id);
                     if (provider != null)
                     {
-                        provider.FirstName = dto.FirstName;
-                        provider.LastName = dto.LastName;
+                        ApplyDto(provider, dto);
                         provider.Ssn = dto.Ssn;
-                        provider.Email = dto.Email;
-                        provider.Phone = StripPhone(dto.Phone);
                         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
-                        provider.License1Exp = dto.License1Expiration;
-                        provider.TaxId = dto.TaxId;
-                        provider.Address = dto.Address;
-                        provider.City = dto.City;
-                        provider.State = dto.State;
-                        provider.Zipcode = dto.Zipcode;
-                        provider.Pets = dto.HasPets;
                     }
                 }
 
@@ -389,6 +340,43 @@ public class ProviderService : IProviderService
 
     private static string? StripPhone(string? phone) =>
         phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", "");
+
+    private static void ApplyDto(Provider p, ProviderDTO dto)
+    {
+        p.FirstName = dto.FirstName;
+        p.LastName = dto.LastName;
+        p.Phone = StripPhone(dto.Phone);
+        p.Email = dto.Email;
+        p.TaxId = dto.TaxId;
+        p.NpiNumber = dto.NpiNumber;
+        p.Birthdate = dto.Birthdate;
+        p.CorpName = dto.CorporationName;
+        p.ServiceType = dto.ServiceType;
+        p.Address = dto.Address;
+        p.City = dto.City;
+        p.State = dto.State;
+        p.Zipcode = dto.Zipcode;
+        p.Pets = dto.HasPets;
+        p.Liability = dto.LiabilityInsuranceDate;
+        p.License1 = dto.License1;
+        p.License1Exp = dto.License1Expiration;
+        p.License2 = dto.License2;
+        p.License2Exp = dto.License2Expiration;
+        p.Medical = dto.MedicalDate;
+        p.W9 = dto.W9Date;
+        p.DirectDeposit = dto.DirectDepositDate;
+        p.Contract = dto.ContractDate;
+        p.PhotoId = dto.PhotoIdDate;
+        p.Resume = dto.ResumeDate;
+        p.HrBundle = dto.HrBundleDate;
+        p.ProofCorp = dto.ProofOfCorpDate;
+        p.Policies = dto.PoliciesDate;
+        p.Medicaid = dto.MedicaidDate;
+        p.SexualHarassment = dto.SexualHarassmentTrainingDate;
+        p.BlExt = dto.BlExtDate;
+        p.Langs = dto.Languages;
+        p.DDInfo = dto.DirectDepositInfo;
+    }
 
     private static readonly Expression<Func<Provider, ProviderDTO>> ToDTO = p => new ProviderDTO
     {

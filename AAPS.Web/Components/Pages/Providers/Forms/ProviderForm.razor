@@ -1,4 +1,5 @@
 ﻿@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Paging
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Files
 @using MudBlazor.Extensions
@@ -6,6 +7,7 @@
 @using AAPS.Application.Common.Attributes
 @using AAPS.Application.Common.Extensions
 @inject IProviderContactService ContactService
+@inject IServiceTypeService ServiceTypeService
 @inject IServiceProvider ServiceProvider
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
@@ -44,6 +46,9 @@
                               Required />
             </MudItem>
             <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.Birthdate" Label="Date of Birth" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.Ssn"
                               Label="SSN"
                               Variant="Variant.Text"
@@ -58,6 +63,17 @@
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.TaxId" Label="Tax ID"
                               Validation="@(Validator)" For="@(() => Model.TaxId)" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="Model.ServiceType" Label="Service Type" AnchorOrigin="Origin.BottomCenter" Clearable="true">
+                    @foreach (var st in _serviceTypes)
+                    {
+                        <MudSelectItem Value="@st">@st</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.CorporationName" Label="Corporation Name" />
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudSelect @bind-Value="Model.IsActive" T="bool?" Label="Status" AnchorOrigin="Origin.BottomCenter">
@@ -93,6 +109,10 @@
             <MudItem xs="12" sm="4">
                 <MudTextField @bind-Value="Model.Zipcode" Label="Zip" />
             </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.DirectDepositInfo" Label="Direct Deposit Info"
+                              HelperText="Routing# / Account#" />
+            </MudItem>
         </MudGrid>
     </MudTabPanel>
 
@@ -100,17 +120,59 @@
     <MudTabPanel Text="Compliance" Icon="@Icons.Material.Filled.VerifiedUser">
         <MudGrid>
             <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.License1" Label="License 1" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
                 <MudDatePicker @bind-Date="Model.License1Expiration" Label="License 1 Exp"
                                Validation="@(Validator)" For="@(() => Model.License1Expiration)" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="Model.W9Date" Label="W9 Date" />
+                <MudTextField @bind-Value="Model.License2" Label="License 2" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="Model.ContractDate" Label="Contract Date" />
+                <MudDatePicker @bind-Date="Model.License2Expiration" Label="License 2 Exp" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="Model.MedicalDate" Label="Medical Date" />
+                <MudDatePicker @bind-Date="Model.LiabilityInsuranceDate" Label="Liability Insurance" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.MedicalDate" Label="Medical" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.W9Date" Label="W9" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.DirectDepositDate" Label="Direct Deposit" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.ContractDate" Label="Contract" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.PhotoIdDate" Label="Photo ID" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.ResumeDate" Label="Resume" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.HrBundleDate" Label="HR Bundle" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.ProofOfCorpDate" Label="Proof of Corp" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.PoliciesDate" Label="Policies" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.MedicaidDate" Label="Medicaid" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.SexualHarassmentTrainingDate" Label="Sexual Harassment Training" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="Model.BlExtDate" Label="Bilingual Extension" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Model.Languages" Label="Languages" />
             </MudItem>
             <MudItem xs="12">
                 <MudCheckBox @bind-Value="Model.HasPets" Label="Has Pets?" Color="Color.Primary" />
@@ -261,6 +323,7 @@
     [Parameter] public ProviderDTO Model { get; set; } = default!;
 
     public List<ProviderContactDTO> contacts = new();
+    private List<string> _serviceTypes = new();
 
     [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>> Validator { get; set; } = default!;
 
@@ -278,6 +341,9 @@
     protected override async Task OnInitializedAsync()
     {
         FileExplorerService = ServiceProvider.GetRequiredKeyedService<IFileExplorerService>("ProviderFiles");
+
+        var stResult = await ServiceTypeService.GetPagedAsync(new PagedRequest(PageSize: int.MaxValue));
+        _serviceTypes = stResult.Items.Select(s => s.Name ?? "").Where(s => s.Length > 0).OrderBy(s => s).ToList();
 
         if (Model.Id > 0)
         {
