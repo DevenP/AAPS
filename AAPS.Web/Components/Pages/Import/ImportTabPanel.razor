@@ -232,6 +232,18 @@
                         @_result.Skipped rows were skipped (duplicates or missing required fields)
                     </MudText>
                 }
+                @if (_result.WarningRows.Any())
+                {
+                    <MudAlert Severity="Severity.Warning" Class="mb-2">
+                        @_result.WarningRows.Count row(s) imported with rate warnings:
+                        <ul style="margin:4px 0 0 16px;">
+                            @foreach (var w in _result.WarningRows)
+                            {
+                                <li>Row @w.RowNumber — @w.Reason</li>
+                            }
+                        </ul>
+                    </MudAlert>
+                }
                 <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
                     File archived to server.
                 </MudText>

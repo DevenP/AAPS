@@ -24,12 +24,19 @@ public record ImportPreviewResult
     public byte[] FileBytes { get; init; } = Array.Empty<byte>();
 }
 
+public record ImportRowWarning
+{
+    public int RowNumber { get; init; }
+    public string Reason { get; init; } = "";
+}
+
 public record ImportCommitResult
 {
     public int Inserted { get; init; }
     public int Updated { get; init; }
     public int Skipped { get; init; }
     public List<int> SkippedRowNumbers { get; init; } = new();
+    public List<ImportRowWarning> WarningRows { get; init; } = new();
 }
 
 public interface IImportService

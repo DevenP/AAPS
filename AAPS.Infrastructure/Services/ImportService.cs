@@ -268,7 +268,7 @@ public class ImportService : IImportService
                 try { return cell.GetDateTime(); } catch { return null; }
             }
 
-            var required = new[] { 1, 2, 3, 5, 9, 13, 25, 28, 30, 31, 32, 34, 35, 36, 41, 42 };
+            var required = new[] { 1, 2, 3, 5, 13, 25, 28, 30, 31, 32, 34, 35, 36, 41, 42 };
             bool anyNull = required.Any(col => ws.Cell(i, col).IsEmpty());
 
             string? sessionType = Get(30);
@@ -541,6 +541,11 @@ public class ImportService : IImportService
             importRecord = "Complete Import.";
         }
 
+        if (result.WarningRows.Any())
+        {
+            importRecord += " Rate Warnings (rows): " + string.Join("; ", result.WarningRows.Select(w => w.RowNumber)) + ";";
+        }
+
         if (type == ImportType.Payments)
             _logger.LogInformation("Commit complete for {FileName}: {Updated} row(s) updated, {Skipped} no match",
                 preview.FileName, result.Updated, result.Skipped);
@@ -740,6 +745,7 @@ public class ImportService : IImportService
         int inserted = 0;
         var skippedRowNumbers = new List<int>();
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
+        var warningRows = new List<ImportRowWarning>();
 
         // ── Bulk lookups ──────────────────────────────────────────────────
 
@@ -915,6 +921,7 @@ public class ImportService : IImportService
                 {
                     entryId = candidates
                         .Where(m => vpEntryProviders.Contains((m.Entry_Id, ssnStripped)))
+                        .OrderByDescending(m => m.MandateStart)
                         .Select(m => (int?)m.Entry_Id)
                         .FirstOrDefault();
                 }
@@ -922,6 +929,7 @@ public class ImportService : IImportService
                 {
                     // Provider not in system or no SSN — fall back to mandate-only match
                     entryId = candidates
+                        .OrderByDescending(m => m.MandateStart)
                         .Select(m => (int?)m.Entry_Id)
                         .FirstOrDefault();
                 }
@@ -944,6 +952,15 @@ public class ImportService : IImportService
             if (actualSizeForCalc == 0) actualSizeForCalc = 1;
             decimal? bAmount = (bRate.HasValue && durInt > 0) ? bRate.Value * durInt / 60.0m / actualSizeForCalc : null;
             decimal? pAmount = (pRate.HasValue && durInt > 0) ? pRate.Value * durInt / 60.0m / actualSizeForCalc : null;
+
+            // Warn when rates couldn't be resolved so the user knows amounts will be blank
+            if (bRate == null || pRate == null)
+            {
+                var missingParts = new List<string>();
+                if (bRate == null) missingParts.Add("missing billing rate");
+                if (pRate == null) missingParts.Add("missing provider rate");
+                warningRows.Add(new ImportRowWarning { RowNumber = i - 1, Reason = string.Join(" / ", missingParts) });
+            }
 
             // Mandatetime_Start: col 16, only if length > 5
             string? mandateStartRaw = Get(16);
@@ -1010,7 +1027,8 @@ public class ImportService : IImportService
         {
             Inserted = inserted,
             Skipped = skippedRowNumbers.Count,
-            SkippedRowNumbers = skippedRowNumbers
+            SkippedRowNumbers = skippedRowNumbers,
+            WarningRows = warningRows
         };
     }
 
