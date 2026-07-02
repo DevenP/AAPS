@@ -127,6 +127,7 @@
                 <MudDatePicker Date="_effectiveDate"
                                DateChanged="@(d => { _effectiveDate = d; Model.EffectiveDate = d; })"
                                Label="Effective Date"
+                               Clearable="true"
                                Validation="@Validator"
                                For="@(() => Model.EffectiveDate)" />
             }

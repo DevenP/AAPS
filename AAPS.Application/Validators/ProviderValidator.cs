@@ -20,10 +20,6 @@ public class ProviderValidator : AbstractValidator<ProviderDTO>
         RuleFor(x => x.Ssn)
             .NotEmpty().WithMessage("Ssn is required");
 
-        // Logic Validation
-        RuleFor(x => x.License1Expiration)
-            .GreaterThan(DateTime.Today).WithMessage("License cannot be expired.")
-            .When(x => x.License1Expiration.HasValue);
     }
 
     // This helper makes MudBlazor happy
