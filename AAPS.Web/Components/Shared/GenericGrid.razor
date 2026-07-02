@@ -22,7 +22,8 @@
           RowsPerPage="@_pageSize"
           HorizontalScrollbar="true"
           SortLabel="@DefaultSortLabel"
-          RowStyleFunc="@RowStyleFunc"
+          RowClassFunc="@RowClassFunc"
+          RowStyleFunc="@GetRowStyle"
           Class="sticky-table mud-width-full ultra-dense">
     <ToolBarContent>
 
@@ -147,6 +148,17 @@
     .mud-dark .mud-table-striped .mud-table-row:nth-of-type(odd) {
         background-color: rgba(255, 255, 255, 0.04);
     }
+
+    /* Row highlights — must target .mud-table-cell (td), not tr, to override MudBlazor stripe */
+    .mud-table-row.row-selected .mud-table-cell {
+        background-color: rgba(63, 81, 181, 0.15) !important;
+    }
+    .mud-table-row.row-error .mud-table-cell {
+        background-color: rgba(244, 67, 54, 0.15) !important;
+    }
+    .mud-table-row.row-warning .mud-table-cell {
+        background-color: rgba(255, 152, 0, 0.15) !important;
+    }
 </style>
 
 
@@ -169,7 +181,16 @@
     /// Data mapping for the headers
     /// </summary>
     [Parameter] public Func<TItem, object?[]> ExportMapper { get; set; } = default!;
-    [Parameter] public Func<TItem, int, string> RowStyleFunc { get; set; } = default!;
+    [Parameter] public Func<TItem, int, string> RowClassFunc { get; set; } = default!;
+
+    private string GetRowStyle(TItem item, int index)
+    {
+        var cls = RowClassFunc?.Invoke(item, index) ?? "";
+        if (cls.Contains("row-selected")) return "background-color: rgba(63, 81, 181, 0.15);";
+        if (cls.Contains("row-error"))    return "background-color: rgba(244, 67, 54, 0.15);";
+        if (cls.Contains("row-warning"))  return "background-color: rgba(255, 152, 0, 0.15);";
+        return "";
+    }
 
     [Parameter] public string Height { get; set; } = "86vh";
     [Parameter] public string DefaultSortLabel { get; set; } = "Id";

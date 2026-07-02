@@ -28,6 +28,7 @@
              @ref="_grid"
              Title="Operations"
              Height="83vh"
+             RowClassFunc="OperationRowClass"
              Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "ServiceType", "LanguageProvided", "AssignmentClaimed", "Duration", "ActualSize", "EntryId", "ProviderPaidDate", "BilledDate", "Voucher", "AssignId", "Id" })"
              DefaultSortLabel="DateOfService"
              GetData="SesiService.GetOperationsPagedAsync"
@@ -226,6 +227,14 @@
 
     private static string CombineName(string? last, string? first) =>
         string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
+
+    private string OperationRowClass(OperationsDTO op, int _)
+    {
+        if (_selectedIds.Contains(op.Id)) return "row-selected";
+        if (op.MandateFlag || op.ProviderFlag || op.IsOverlap || op.IsOverMandate) return "row-error";
+        if (op.IsOverDuration || op.BRateFlag || op.PRateFlag) return "row-warning";
+        return "";
+    }
 
     // ── Busy state ────────────────────────────────────────────────────────────
     private bool _busy = false;

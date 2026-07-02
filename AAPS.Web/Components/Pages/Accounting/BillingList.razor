@@ -15,6 +15,7 @@
 
 <GenericGrid @ref="_grid" TItem="BillingRecordDTO"
              Title="Billing"
+             RowClassFunc="BillingRowClass"
              Columns="@(new[] { "Checkbox", "Actions", "DateOfService", "StartTime", "EndTime", "Provider", "StudentId", "Student", "ServiceType", "Frequency", "Duration", "ActualSize", "EntryId", "AssignId", "Billed", "Voucher", "VoucherAmount", "UnpaidBalance", "VoucherBalancePaid", "ProviderPaidOn", "ProviderAmount", "BillingRate", "ProviderRate", "SesisId" })"
              GetData="BillingService.GetPagedAsync"
              DefaultSortLabel="DateOfService"
@@ -243,6 +244,13 @@
 
 @code {
     private GenericGrid<BillingRecordDTO> _grid = default!;
+
+    private string BillingRowClass(BillingRecordDTO r, int _)
+    {
+        if (_selectedIds.Contains(r.SesisId)) return "row-selected";
+        if (r.EntryId == null) return "row-warning";
+        return "";
+    }
     private bool _generating = false;
     private bool _generatingStatements = false;
     private BillingSummary? _summary;

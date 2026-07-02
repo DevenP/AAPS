@@ -107,6 +107,24 @@ h1:focus {
     margin: 0 !important;
 }
 
+/* ── Nav compaction ── */
+.mud-nav-link {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.mud-nav-group .mud-nav-link-text,
+.mud-nav-link .mud-nav-link-text {
+    font-size: 0.85rem !important;
+}
+
+.mud-nav-group-header .mud-nav-link {
+    height: 36px !important;
+    min-height: 36px !important;
+}
+
 /* ── MudTabs: push panel content down so it doesn't overlap tab headers ── */
 .mud-tab-panel {
     padding-top: 24px !important;

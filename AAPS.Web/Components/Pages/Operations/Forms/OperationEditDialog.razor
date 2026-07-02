@@ -5,6 +5,8 @@
 @inject ILanguageService LanguageService
 @inject IProviderService ProviderService
 @inject ISesiService SesiService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -59,6 +61,7 @@
                                     <MudTh>Start</MudTh>
                                     <MudTh>End</MudTh>
                                     <MudTh>Assignment IDs</MudTh>
+                                    <MudTh Style="width:48px;"></MudTh>
                                 </HeaderContent>
                                 <RowTemplate>
                                     <MudTd>@context.EntryId</MudTd>
@@ -71,6 +74,17 @@
                                     <MudTd>@context.MandateStart?.ToString("MM/dd/yyyy")</MudTd>
                                     <MudTd>@context.MandateEnd?.ToString("MM/dd/yyyy")</MudTd>
                                     <MudTd Style="max-width:200px;white-space:normal;word-break:break-word;">@context.AssignIds</MudTd>
+                                    <MudTd Style="width:48px;">
+                                        @if (string.IsNullOrWhiteSpace(context.AssignIds))
+                                        {
+                                            <MudTooltip Text="Delete — no assignment ID (incomplete record)">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                               Size="Size.Small"
+                                                               Color="Color.Error"
+                                                               OnClick="@(() => DeleteMandate(context))" />
+                                            </MudTooltip>
+                                        }
+                                    </MudTd>
                                 </RowTemplate>
                             </MudTable>
                         </div>
@@ -251,6 +265,28 @@
             _osisLoading = true;
             _osisMandates = await SesiService.GetOsisMandatesAsync(_item!.StudentId ?? "");
             _osisLoading = false;
+        }
+    }
+
+    private async Task DeleteMandate(OsisMandateDTO mandate)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete approval line?",
+            $"Approval ID {mandate.EntryId} has no assignment ID and will be permanently removed. Continue?",
+            yesText: "Yes, Delete",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        try
+        {
+            await SesiService.DeleteMandateAsync(mandate.EntryId);
+            _osisMandates.Remove(mandate);
+            Snackbar.Add($"Approval ID {mandate.EntryId} removed.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Delete failed: {ex.Message}", Severity.Error);
         }
     }
 

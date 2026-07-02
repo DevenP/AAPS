@@ -373,16 +373,32 @@ public class SesiService : ISesiService
         var (assignFlag, req) = ExtractAssignFlagFilter(request);
         var query = BuildOperationQuery(db, req.Search);
 
-        // Fast path: no AssignFlag filter — let EF handle everything
-        if (!assignFlag.HasValue)
+        bool timeSort = req.SortBy is "StartTime" or "EndTime";
+
+        // Fast path: no AssignFlag filter AND no time-column sort — let EF handle everything
+        if (!assignFlag.HasValue && !timeSort)
             return await query.ToPagedResultAsync(req, ct, performSearch: false);
 
-        // Slow path: apply remaining DB-translatable filters, materialize, then filter
-        // AssignFlag in memory (EF Core can't translate it through the VP subquery).
-        var b = assignFlag.Value;
+        // Materialize: needed for AssignFlag (can't translate VP subquery) or time sort
+        // (times stored as "09:30 AM" strings; string sort gives wrong AM/PM ordering).
         var all = await query.ApplyFilters(req, performSearch: false).ToListAsync(ct);
+
+        if (assignFlag.HasValue)
+            all = all.Where(op => op.AssignFlag == assignFlag.Value).ToList();
+
+        if (timeSort)
+        {
+            bool desc = string.Equals(req.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
+            Func<OperationsDTO, DateTime?> key = req.SortBy == "StartTime"
+                ? op => DateTime.TryParse(op.StartTime, out var dt) ? dt : (DateTime?)null
+                : op => DateTime.TryParse(op.EndTime,   out var dt) ? dt : (DateTime?)null;
+            all = (desc ? all.OrderByDescending(key).ThenBy(op => op.Id)
+                        : all.OrderBy(key).ThenBy(op => op.Id)).ToList();
+            req = req with { SortBy = null }; // already sorted — skip in-memory re-sort below
+        }
+
         var sortReq = req with { Search = null, ColumnFilters = null };
-        return await all.Where(op => op.AssignFlag == b).ToPagedResultAsync(sortReq, ct);
+        return await all.ToPagedResultAsync(sortReq, ct);
     }
 
     public async Task<List<int>> GetOperationIdsAsync(PagedRequest request, CancellationToken ct = default)
@@ -699,6 +715,17 @@ public class SesiService : ISesiService
             MandateEnd       = m.MandateEnd,
             AssignIds        = vpByEntry.TryGetValue(m.Entry_Id, out var agg) ? agg : null
         }).ToList();
+    }
+
+    public async Task DeleteMandateAsync(int entryId, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+
+        var mandate = await db.Mandates.FirstOrDefaultAsync(m => m.Entry_Id == entryId, ct);
+        if (mandate == null) return;
+
+        db.Mandates.Remove(mandate);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task<(DateTime? Start, DateTime? End)?> GetMandateDatesAsync(int entryId, CancellationToken ct = default)

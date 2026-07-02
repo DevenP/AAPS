@@ -10,7 +10,7 @@
 
 <GenericGrid @ref="_grid" TItem="ProviderDTO"
              Title="Providers"
-             RowStyleFunc="RowStyle"
+             RowClassFunc="RowClass"
              DefaultSortLabel="LastName"
              Columns="@(new[] { "Actions", "IsActive", "LastName", "FirstName", "Phone", "Email", "NpiNumber", "License1", "CorporationName", "AssignedCount", "Ssn", "ServiceType" })"
              GetData="ProviderService.GetPagedAsync"
@@ -139,13 +139,8 @@
 
     private ProviderForm? _providerForm;
 
-    // Highlight the row in soft amber if it's a duplicate
-    private string RowStyle(ProviderDTO provider, int index)
-    {
-        if (provider.IsDuplicateName)
-            return "background-color: rgba(255, 193, 7, 0.1);"; // Subtle Warning Amber
-        return "";
-    }
+    private static string RowClass(ProviderDTO provider, int _) =>
+        provider.IsDuplicateName ? "row-warning" : "";
 
     // If 'provider' is passed, it's an EDIT. If it's null, it's an ADD.
     private async Task OpenEditDialog(ProviderDTO? provider = null)

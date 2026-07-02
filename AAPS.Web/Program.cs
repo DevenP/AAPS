@@ -65,6 +65,17 @@ namespace AAPS.Web
 
             var app = builder.Build();
 
+            // Seed any missing reference data (idempotent — safe to run on every startup)
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                if (!db.ServiceTypes.Any(s => s.ServiceType1 == "ABA Evaluation"))
+                {
+                    db.ServiceTypes.Add(new AAPS.Domain.Entities.ServiceType { ServiceType1 = "ABA Evaluation", Eval = true });
+                    db.SaveChanges();
+                }
+            }
+
             app.UseExceptionHandler("/error");
 
             if (!app.Environment.IsDevelopment())

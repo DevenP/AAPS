@@ -25,6 +25,7 @@
                     <MudTh>Start</MudTh>
                     <MudTh>End</MudTh>
                     <MudTh>Assignment IDs</MudTh>
+                    <MudTh Style="width:48px;"></MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd>@context.EntryId</MudTd>
@@ -37,6 +38,17 @@
                     <MudTd>@context.MandateStart?.ToString("MM/dd/yyyy")</MudTd>
                     <MudTd>@context.MandateEnd?.ToString("MM/dd/yyyy")</MudTd>
                     <MudTd Style="max-width:300px; white-space:normal; word-break:break-word;">@context.AssignIds</MudTd>
+                    <MudTd Style="width:48px;">
+                        @if (string.IsNullOrWhiteSpace(context.AssignIds))
+                        {
+                            <MudTooltip Text="Delete — no assignment ID (incomplete record)">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="@(() => DeleteMandate(context))" />
+                            </MudTooltip>
+                        }
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
         }
@@ -51,6 +63,8 @@
     [Parameter] public string StudentId { get; set; } = "";
     [Parameter] public string StudentName { get; set; } = "";
     [Inject] ISesiService SesiService { get; set; } = default!;
+    [Inject] IDialogService DialogService { get; set; } = default!;
+    [Inject] ISnackbar Snackbar { get; set; } = default!;
 
     private List<OsisMandateDTO> _mandates = [];
     private bool _loading = true;
@@ -59,5 +73,27 @@
     {
         _mandates = await SesiService.GetOsisMandatesAsync(StudentId);
         _loading = false;
+    }
+
+    private async Task DeleteMandate(OsisMandateDTO mandate)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete approval line?",
+            $"Approval ID {mandate.EntryId} has no assignment ID and will be permanently removed. Continue?",
+            yesText: "Yes, Delete",
+            cancelText: "Cancel");
+
+        if (confirmed != true) return;
+
+        try
+        {
+            await SesiService.DeleteMandateAsync(mandate.EntryId);
+            _mandates.Remove(mandate);
+            Snackbar.Add($"Approval ID {mandate.EntryId} removed.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Delete failed: {ex.Message}", Severity.Error);
+        }
     }
 }

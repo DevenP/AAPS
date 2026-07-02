@@ -104,7 +104,20 @@ public class BillingService : IBillingService
     public async Task<PagedResult<BillingRecordDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        return await BuildBaseQuery(db).ToPagedResultAsync(request, ct);
+
+        bool timeSort = request.SortBy is "StartTime" or "EndTime";
+        if (!timeSort)
+            return await BuildBaseQuery(db).ToPagedResultAsync(request, ct);
+
+        // Times stored as "09:30 AM" strings — materialize and sort by parsed DateTime
+        var all = await BuildBaseQuery(db).ApplyFilters(request).ToListAsync(ct);
+        bool desc = string.Equals(request.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        Func<BillingRecordDTO, DateTime?> key = request.SortBy == "StartTime"
+            ? r => DateTime.TryParse(r.StartTime, out var dt) ? dt : (DateTime?)null
+            : r => DateTime.TryParse(r.EndTime,   out var dt) ? dt : (DateTime?)null;
+        all = (desc ? all.OrderByDescending(key).ThenBy(r => r.SesisId)
+                    : all.OrderBy(key).ThenBy(r => r.SesisId)).ToList();
+        return await all.ToPagedResultAsync(request with { SortBy = null, Search = null, ColumnFilters = null }, ct);
     }
 
     public async Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)

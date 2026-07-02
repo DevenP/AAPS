@@ -65,7 +65,8 @@
                     </MudAutocomplete>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="string?" @bind-Value="Model.ServiceType"
+                    <MudSelect T="string?" Value="Model.ServiceType"
+                               ValueChanged="OnServiceTypeChanged"
                                Label="Service Type"
                                Clearable="true">
                         @foreach (var st in _serviceTypes)
@@ -331,6 +332,41 @@
     private List<ServiceTypeDTO> _serviceTypes = [];
     private List<GDistrictDTO>   _gDistricts   = [];
     private List<LanguageDTO>    _languages    = [];
+
+    // Default billing rates for specific evaluation types (client requirement #15).
+    // Auto-fills the Billing Amount when the type is selected and no amount is set yet.
+    private static readonly Dictionary<string, decimal> _evalRateDefaults =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ABA Evaluation"] = 3000m,
+        };
+
+    // Tracks the value we last auto-filled, so we only ever replace/clear our own
+    // auto-fill — never an amount the user typed in manually.
+    private decimal? _autoFilledAmount;
+
+    private void OnServiceTypeChanged(string? serviceType)
+    {
+        Model.ServiceType = serviceType;
+
+        // Leave the amount alone if the user has entered their own value
+        // (i.e. it's non-empty and isn't the one we auto-filled).
+        bool amountIsOursOrEmpty =
+            Model.BillingAmount is null or 0m || Model.BillingAmount == _autoFilledAmount;
+
+        if (!amountIsOursOrEmpty) return;
+
+        if (serviceType != null && _evalRateDefaults.TryGetValue(serviceType, out var rate))
+        {
+            Model.BillingAmount = rate;   // rated type → fill its rate
+            _autoFilledAmount = rate;
+        }
+        else
+        {
+            Model.BillingAmount = null;   // no rate for this type → clear our auto-fill
+            _autoFilledAmount = null;
+        }
+    }
 
     // ── Eval Files ─────────────────────────────────────────
     private IFileExplorerService _fileExplorerService = default!;

@@ -2,7 +2,7 @@
 @inject IJSRuntime JS
 
 <MudNavMenu Bordered="true" Color="Color.Primary" Class="pa-2">
-    <div class="pa-4 mb-2">
+    <div class="pa-3 mb-1">
         <MudText Typo="Typo.subtitle2" Class="mud-text-secondary">AAPS NAVIGATION</MudText>
     </div>
 
@@ -25,10 +25,18 @@
     </MudNavGroup>
 
     <MudNavLink Icon="@Icons.Material.Filled.ReportProblem" Href="/vendorportal" Match="NavLinkMatch.Prefix">Vendor Portal</MudNavLink>
+    <MudNavLink Href="https://sesis.nycenet.edu/userlogin.aspx"
+                Icon="@Icons.Material.Filled.OpenInNew"
+                Target="_blank">SESIS</MudNavLink>
+    <MudNavLink Href="https://www.finance360.org/vendor/vendorportal/"
+                Icon="@Icons.Material.Filled.OpenInNew"
+                Target="_blank">VPortal</MudNavLink>
 
-    <MudDivider Class="my-4" />
+    <MudDivider Class="my-2" />
 
     <MudNavLink Href="/import" Icon="@Icons.Material.Filled.FileUpload" Match="NavLinkMatch.Prefix">Import Files</MudNavLink>
+
+    <MudDivider Class="my-2" />
 
     <MudNavLink Icon="@Icons.Material.Filled.FolderOpen" Href="/fileexplorer" Match="NavLinkMatch.Prefix">
         Files Explorer
@@ -37,7 +45,7 @@
     <MudNavLink Href="/importlogs" Icon="@Icons.Material.Filled.ReceiptLong" Match="NavLinkMatch.Prefix">Import Logs</MudNavLink>
     
 
-    <MudDivider Class="my-4" />
+    <MudDivider Class="my-2" />
 
     <MudNavLink OnClick="ToggleTheme"
                 Icon="@(_layout?._isDarkMode == true ? Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)"
