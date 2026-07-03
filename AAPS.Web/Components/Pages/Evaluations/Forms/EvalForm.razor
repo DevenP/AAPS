@@ -4,6 +4,7 @@
 
 @inject IProviderService ProviderService
 @inject IServiceTypeService ServiceTypeService
+@inject IBillingRateService BillingRateService
 @inject IGDistrictService GDistrictService
 @inject ILanguageService LanguageService
 @inject IServiceProvider ServiceProvider
@@ -76,7 +77,8 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="string?" @bind-Value="Model.District"
+                    <MudSelect T="string?" Value="Model.District"
+                               ValueChanged="OnDistrictChanged"
                                Label="District"
                                Clearable="true">
                         @foreach (var d in _gDistricts)
@@ -86,7 +88,8 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="string?" @bind-Value="Model.Language"
+                    <MudSelect T="string?" Value="Model.Language"
+                               ValueChanged="OnLanguageChanged"
                                Label="Language"
                                Clearable="true">
                         @foreach (var l in _languages)
@@ -333,39 +336,42 @@
     private List<GDistrictDTO>   _gDistricts   = [];
     private List<LanguageDTO>    _languages    = [];
 
-    // Default billing rates for specific evaluation types (client requirement #15).
-    // Auto-fills the Billing Amount when the type is selected and no amount is set yet.
-    private static readonly Dictionary<string, decimal> _evalRateDefaults =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["ABA Evaluation"] = 3000m,
-        };
-
     // Tracks the value we last auto-filled, so we only ever replace/clear our own
     // auto-fill — never an amount the user typed in manually.
     private decimal? _autoFilledAmount;
 
-    private void OnServiceTypeChanged(string? serviceType)
+    private async Task OnServiceTypeChanged(string? value)
     {
-        Model.ServiceType = serviceType;
+        Model.ServiceType = value;
+        await RecomputeBillingRate();
+    }
 
-        // Leave the amount alone if the user has entered their own value
-        // (i.e. it's non-empty and isn't the one we auto-filled).
+    private async Task OnDistrictChanged(string? value)
+    {
+        Model.District = value;
+        await RecomputeBillingRate();
+    }
+
+    private async Task OnLanguageChanged(string? value)
+    {
+        Model.Language = value;
+        await RecomputeBillingRate();
+    }
+
+    // Auto-fills the Billing Amount from the Service Type / District / Language rate on the
+    // Billing Rates page (client-editable; e.g. ABA Evaluation). Runs whenever any of the three
+    // change, but never overwrites an amount the user typed in (tracked via _autoFilledAmount).
+    private async Task RecomputeBillingRate()
+    {
         bool amountIsOursOrEmpty =
             Model.BillingAmount is null or 0m || Model.BillingAmount == _autoFilledAmount;
 
         if (!amountIsOursOrEmpty) return;
 
-        if (serviceType != null && _evalRateDefaults.TryGetValue(serviceType, out var rate))
-        {
-            Model.BillingAmount = rate;   // rated type → fill its rate
-            _autoFilledAmount = rate;
-        }
-        else
-        {
-            Model.BillingAmount = null;   // no rate for this type → clear our auto-fill
-            _autoFilledAmount = null;
-        }
+        decimal? rate = await BillingRateService.GetRateAsync(Model.ServiceType, Model.District, Model.Language);
+
+        Model.BillingAmount = rate;   // fill the matching rate, or clear if none is set
+        _autoFilledAmount = rate;
     }
 
     // ── Eval Files ─────────────────────────────────────────
@@ -393,7 +399,15 @@
             await Task.WhenAll(provTask, stTask, distTask, langTask);
 
             _providers    = (await provTask).Items.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();
-            _serviceTypes = (await stTask).Items.OrderBy(s => s.Name).ToList();
+            // Evaluations only ever use evaluation-type service types.
+            _serviceTypes = (await stTask).Items.Where(s => s.IsEvaluation).OrderBy(s => s.Name).ToList();
+            // Safety: if we're editing an eval whose stored type isn't flagged as an evaluation,
+            // keep it selectable so the value isn't silently lost.
+            if (!string.IsNullOrWhiteSpace(Model.ServiceType) &&
+                !_serviceTypes.Any(s => s.Name == Model.ServiceType))
+            {
+                _serviceTypes.Insert(0, new ServiceTypeDTO { Name = Model.ServiceType, IsEvaluation = true });
+            }
             _gDistricts   = (await distTask).Items.OrderBy(d => d.DistrictCode).ToList();
             _languages    = (await langTask).Items.OrderBy(l => l.Name).ToList();
         }

@@ -18,4 +18,11 @@ public interface IBillingRateService
     Task DeleteAsync(int id, CancellationToken ct = default);
 
     Task<BillingRateUsage> GetUsageCountAsync(int id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the active rate for a Service Type / District / Language combination — used to
+    /// auto-fill evaluation billing amounts (evals are keyed the same way as session rates).
+    /// Returns null if no active rate exists for the combination.
+    /// </summary>
+    Task<decimal?> GetRateAsync(string? serviceType, string? district, string? language, CancellationToken ct = default);
 }

@@ -1,0 +1,146 @@
+@page "/servicetypes"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Accounting.Forms
+@using AAPS.Web.Components.Shared
+@inject IServiceTypeService ServiceTypeService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<GenericGrid @ref="_grid" TItem="ServiceTypeDTO"
+             Title="Service Types"
+             DefaultSortLabel="Name"
+             Columns="@(new[] { "Actions", "Name", "IsEvaluation" })"
+             GetData="ServiceTypeService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Name", "Is Evaluation" })"
+             ExportMapper="@(s => new object?[] { s.Name, s.IsEvaluation ? "Yes" : "No" })">
+
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add Service Type
+        </MudButton>
+    </CustomActionContent>
+
+    <HeaderContent>
+        <GridCell TItem="ServiceTypeDTO" Column="Actions" IsHeader="true">Actions</GridCell>
+        <GridCell TItem="ServiceTypeDTO" Column="Name" IsHeader="true">
+            <MudTableSortLabel SortLabel="Name" T="ServiceTypeDTO">Name</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ServiceTypeDTO" Column="IsEvaluation" IsHeader="true">
+            <MudTableSortLabel SortLabel="IsEvaluation" T="ServiceTypeDTO">Type</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="st">
+        <GridCell TItem="ServiceTypeDTO" Column="Actions">
+            <div class="d-flex">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small" Color="Color.Primary"
+                               Title="Edit Service Type"
+                               OnClick="@(() => OpenEditDialog(st))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small" Color="Color.Error"
+                               Title="Delete Service Type"
+                               OnClick="@(() => OnDeleteClicked(st))" />
+            </div>
+        </GridCell>
+        <GridCell TItem="ServiceTypeDTO" Column="Name">@st.Name</GridCell>
+        <GridCell TItem="ServiceTypeDTO" Column="IsEvaluation">
+            <MudChip T="bool"
+                     Color="@(st.IsEvaluation ? Color.Info : Color.Default)"
+                     Size="Size.Small"
+                     Variant="Variant.Text">
+                @(st.IsEvaluation ? "Evaluation" : "Therapy")
+            </MudChip>
+        </GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<ServiceTypeDTO>? _grid;
+    private ServiceTypeValidator _validator = new();
+
+    private async Task OpenEditDialog(ServiceTypeDTO? serviceType = null)
+    {
+        ServiceTypeDTO model;
+
+        if (serviceType == null)
+        {
+            model = new ServiceTypeDTO();
+        }
+        else
+        {
+            var fresh = await ServiceTypeService.GetByIdAsync(serviceType.Id);
+            if (fresh == null) return;
+            model = fresh;
+        }
+
+        var parameters = new DialogParameters<EntityDialog<ServiceTypeDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, serviceType == null ? "Add Service Type" : "Edit Service Type");
+        parameters.Add(x => x.IsNew, serviceType == null);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (ServiceTypeDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
+        parameters.Add(x => x.ChildContent, (ServiceTypeDTO context) =>
+            @<ServiceTypeForm Model="context" />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<ServiceTypeDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is ServiceTypeDTO saved)
+        {
+            try
+            {
+                if (serviceType == null)
+                {
+                    await ServiceTypeService.CreateAsync(saved);
+                    Snackbar.Add("Service type added.", Severity.Success);
+                }
+                else
+                {
+                    await ServiceTypeService.UpdateAsync(serviceType.Id, saved);
+                    Snackbar.Add("Service type updated.", Severity.Success);
+                }
+
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred while saving.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDeleteClicked(ServiceTypeDTO serviceType)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Service Type",
+            $"Delete \"{serviceType.Name}\"? Existing records that use this service type are matched by name and will keep their values, but the type will no longer be available to select.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed == true)
+        {
+            try
+            {
+                await ServiceTypeService.DeleteAsync(serviceType.Id);
+                Snackbar.Add("Service type deleted.", Severity.Success);
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred during deletion.", Severity.Error);
+            }
+        }
+    }
+}

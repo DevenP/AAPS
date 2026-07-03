@@ -205,6 +205,28 @@ public class BillingRateService : IBillingRateService
         return new BillingRateUsage(sesiCount, evalCount);
     }
 
+    public async Task<decimal?> GetRateAsync(string? serviceType, string? district, string? language, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(serviceType) ||
+            string.IsNullOrWhiteSpace(district) ||
+            string.IsNullOrWhiteSpace(language))
+            return null;
+
+        await using var db = _factory.CreateDbContext();
+        var st = serviceType.Trim();
+        var dist = district.Trim();
+        var lang = language.Trim();
+
+        return await db.BillingRates.AsNoTracking()
+            .Where(b => b.Active == true
+                && b.ServiceType != null && b.ServiceType.Trim() == st
+                && b.District != null && b.District.Trim() == dist
+                && b.Lang != null && b.Lang.Trim() == lang)
+            .OrderByDescending(b => b.Effective)
+            .Select(b => b.Rate)
+            .FirstOrDefaultAsync(ct);
+    }
+
     private static readonly Expression<Func<BillingRate, BillingRateDTO>> ToDTO = b => new BillingRateDTO
     {
         Id            = b.BillingRate_Id,

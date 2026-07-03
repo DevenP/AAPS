@@ -1,0 +1,37 @@
+@using AAPS.Application.DTO
+
+<MudGrid>
+
+    @* Name — editable on Add, read-only on Edit (service types are referenced by NAME across
+       many tables and the DOE import files, so renaming an existing type is intentionally blocked). *@
+    <MudItem xs="12">
+        @if (_isNew)
+        {
+            <MudTextField @bind-Value="Model.Name" Label="Name" Required
+                          Validation="@Validator" For="@(() => Model.Name)"
+                          HelperText="For DOE service types, include the code prefix (e.g. &quot;09=OT&quot;). Must match the name used in the DOE import files." />
+        }
+        else
+        {
+            <MudTextField Value="@Model.Name" Label="Name"
+                          ReadOnly="true" Variant="Variant.Filled"
+                          HelperText="Renaming is disabled — the name is matched across records and DOE files." />
+        }
+    </MudItem>
+
+    @* Evaluation flag — always editable *@
+    <MudItem xs="12">
+        <MudSwitch @bind-Value="Model.IsEvaluation" Color="Color.Primary" Label="Evaluation type" />
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+            Evaluation types appear only on the Evaluations screen; non-evaluation (therapy) types appear on the session/billing screens.
+        </MudText>
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter] public ServiceTypeDTO Model { get; set; } = default!;
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>>? Validator { get; set; }
+
+    private bool _isNew => Model.Id == 0;
+}
