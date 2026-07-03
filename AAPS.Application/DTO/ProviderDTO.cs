@@ -49,7 +49,7 @@ public record ProviderDTO
     [DisplayField("Medical Date", browsable: false)]
     public DateTime? MedicalDate { get; set; }
 
-    [DisplayField("Has Pets", browsable: false)]
+    [DisplayField("Has PETS", browsable: false)]
     public bool HasPets { get; set; }
 
     [DisplayField("W9 Date", browsable: false)]
