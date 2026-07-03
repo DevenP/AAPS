@@ -125,9 +125,18 @@ h1:focus {
     min-height: 36px !important;
 }
 
-/* ── MudTabs: push panel content down so it doesn't overlap tab headers ── */
-.mud-tab-panel {
-    padding-top: 24px !important;
+/* ── MudTabs: keep tab headers clickable ──
+   The tab bar (.mud-tabs-tabbar) and the panel container (.mud-tabs-panels) are positioned
+   siblings at the same stacking level. Because the panels come later in the DOM, they were
+   painting AND capturing pointer events over the tab bar — so the first form fields (top of the
+   panel) blocked clicks on the tab headers above them. Raising the tab bar above the panels
+   makes the headers always receive clicks. */
+.mud-tabs-tabbar {
+    z-index: 2 !important;
+}
+
+.mud-tabs-panels {
+    z-index: 1 !important;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
