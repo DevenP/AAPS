@@ -280,12 +280,18 @@ public class BillingService : IBillingService
                 var grpInt = int.TryParse(m?.Grp_Size?.Trim(), out var gs) ? gs : 0;
                 var aType = svcFirst + (grpInt == 1 ? "1" : svcFirst == "S" ? "P" : "T");
 
-                // aSes: '0' + LEFT(Remaining_Freq, 1)
+                // #12: parse Remaining_Freq of form "{count}x {TypeWord}" (e.g. "2x Weekly",
+                // "6x Monthly", "38x In Total"). Legacy read fixed char positions, which broke for
+                // multi-digit counts (dropped digits) and "In Total" (blank/'I' instead of 'T').
+                // For single-digit Weekly/Monthly this produces the SAME output as before.
                 var remFreq = m?.Remaining_Freq ?? "";
-                var aSes = "0" + (remFreq.Length > 0 ? remFreq[0].ToString() : "");
+                var (freqCount, freqType) = ParseFrequency(remFreq);
 
-                // aFreq: SUBSTRING(Remaining_Freq, 4, 1) — SQL is 1-indexed so char at C# index 3
-                var aFreq = remFreq.Length >= 4 ? remFreq[3].ToString() : "";
+                // aSes: '0' + full session count (legacy "0" + count, now correct for 2+ digits)
+                var aSes = "0" + freqCount;
+
+                // aFreq: W = Weekly, M = Monthly, T = In Total
+                var aFreq = freqType;
 
                 // aGrs: '0' + Grp_Size
                 var aGrs = "0" + (m?.Grp_Size ?? "");
@@ -356,6 +362,35 @@ public class BillingService : IBillingService
         }
 
         return new BillingGenerateResult(result, skippedPaidCount);
+    }
+
+    // #12: parses a Remaining_Freq / pFreq string of the form "{count}x {TypeWord}"
+    // (e.g. "2x Weekly", "6x Monthly", "38x In Total") into its numeric count and a
+    // single-letter frequency code: W = Weekly, M = Monthly, T = In Total. Falls back to
+    // the first letter of the type word (upper-cased) for anything unrecognized.
+    // Replaces the old fixed-character-position parsing, which broke on multi-digit
+    // counts and on "In Total". For single-digit Weekly/Monthly the result is unchanged.
+    private static (string Count, string Type) ParseFrequency(string? remainingFreq)
+    {
+        if (string.IsNullOrWhiteSpace(remainingFreq))
+            return ("", "");
+
+        int xIndex = remainingFreq.IndexOf('x');
+        string countPart = xIndex > 0 ? remainingFreq[..xIndex] : remainingFreq;
+        string typePart  = (xIndex >= 0 && xIndex + 1 < remainingFreq.Length)
+            ? remainingFreq[(xIndex + 1)..]
+            : "";
+
+        string count = new string(countPart.Where(char.IsDigit).ToArray());
+        typePart = typePart.Trim();
+
+        string type =
+            typePart.StartsWith("In Total", StringComparison.OrdinalIgnoreCase) ? "T" :
+            typePart.StartsWith("Week",     StringComparison.OrdinalIgnoreCase) ? "W" :
+            typePart.StartsWith("Month",    StringComparison.OrdinalIgnoreCase) ? "M" :
+            typePart.Length > 0 ? typePart[..1].ToUpperInvariant() : "";
+
+        return (count, type);
     }
 
     private static string BuildRow(

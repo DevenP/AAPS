@@ -915,24 +915,30 @@ public class ImportService : IImportService
                         return (mGrp == 1 && actualSizeInt == 1) || (mGrp > 1 && mGrp >= actualSizeInt);
                     });
 
-                // If provider is known and has an SSN, require a matching VendorPortal entry.
-                // If no VP entry exists for this provider + mandate, Entry_Id stays null (unassigned).
+                // #16: only attach to an approval that the billing provider (cols AO/AP) is
+                // actually linked to in VendorPortal. If the provider isn't in the system, has no
+                // SSN, or has no VendorPortal link to a candidate mandate, leave Entry_Id null
+                // (Missing Approval) rather than risk attaching to another provider's approval.
+                // (Per client + Deven: "never attach to a provider other than AO/AP" — prefer
+                // leaving unassigned over a mandate-only guess.)
                 if (providerId.HasValue && providerSsnDict.TryGetValue(providerId.Value, out var ssnStripped) && !string.IsNullOrEmpty(ssnStripped))
                 {
+                    // #17: GROUP SIZE is the deciding factor. Among provider-linked candidates
+                    // (all already exact on duration + within date range), prefer the approval
+                    // whose group size EXACTLY matches the session, then the closest accommodating
+                    // group, then the most recent. This fixes the case the client flagged: a
+                    // group-of-1 line (e.g. 1x30x1) must lock to the group-size-1 approval
+                    // (2x30x1) rather than a larger group approval (1x30x3) just because it's newer.
+                    // Frequency is intentionally ignored (client: match on group size, not frequency).
                     entryId = candidates
                         .Where(m => vpEntryProviders.Contains((m.Entry_Id, ssnStripped)))
-                        .OrderByDescending(m => m.MandateStart)
+                        .OrderBy(m => Math.Abs((int.TryParse(m.Grp_Size, out var mg) ? mg : 0) - actualSizeInt))
+                        .ThenByDescending(m => m.MandateStart)
                         .Select(m => (int?)m.Entry_Id)
                         .FirstOrDefault();
                 }
-                else
-                {
-                    // Provider not in system or no SSN — fall back to mandate-only match
-                    entryId = candidates
-                        .OrderByDescending(m => m.MandateStart)
-                        .Select(m => (int?)m.Entry_Id)
-                        .FirstOrDefault();
-                }
+                // else: provider not verifiable (not in system / no SSN) → entryId stays null →
+                // record shows as "Missing Approval" for manual review. No mandate-only fallback.
             }
 
             // Billing rate lookup
