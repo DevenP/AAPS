@@ -87,14 +87,14 @@ public class DashboardService : IDashboardService
 
         var stats = new DashboardStats
         {
-            ActiveProviders           = totalProviders,
+            ActiveProviders = totalProviders,
             VendorPortalDiscrepancies = discrepancies,
-            EvalsPendingPayment       = evalsPending,
-            OperationAlerts           = operationAlerts,
-            UnbilledSessions          = unbilledSessions,
-            UnbilledAmount            = unbilledAmount,
-            ExpiringApprovals         = expiringApprovals,
-            ExpiringLicenses          = expiringLicenses,
+            EvalsPendingPayment = evalsPending,
+            OperationAlerts = operationAlerts,
+            UnbilledSessions = unbilledSessions,
+            UnbilledAmount = unbilledAmount,
+            ExpiringApprovals = expiringApprovals,
+            ExpiringLicenses = expiringLicenses,
         };
 
         _logger.LogInformation(
@@ -123,17 +123,17 @@ public class DashboardService : IDashboardService
             .Take(limit)
             .Select(s => new OperationAlertItem
             {
-                StudentLastName  = s.Last_Name,
+                StudentLastName = s.Last_Name,
                 StudentFirstName = s.First_Name,
-                ServiceDate      = s.date_of_Service,
-                ProviderLastName  = s.Provider_Last_Name,
+                ServiceDate = s.date_of_Service,
+                ProviderLastName = s.Provider_Last_Name,
                 ProviderFirstName = s.Provider_First_Name,
-                MandateFlag  = s.Entry_Id == null,
+                MandateFlag = s.Entry_Id == null,
                 ProviderFlag = s.Provider_Id == null,
-                IsOverlap    = s.Overlap == true,
-                IsOverMandate  = s.OverMandate == true,
+                IsOverlap = s.Overlap == true,
+                IsOverMandate = s.OverMandate == true,
                 IsOverDuration = s.OverDuration == true,
-                IsUnderGroup   = s.UnderGroup == true,
+                IsUnderGroup = s.UnderGroup == true,
                 BRateFlag = s.bRate == null,
                 PRateFlag = s.pRate == null,
             })
@@ -154,11 +154,11 @@ public class DashboardService : IDashboardService
             .Take(limit)
             .Select(r => new DiscrepancyItem
             {
-                StudentLastName   = r.Last_Name,
-                StudentFirstName  = r.First_Name,
-                ProviderLastName  = r.LastName,
+                StudentLastName = r.Last_Name,
+                StudentFirstName = r.First_Name,
+                ProviderLastName = r.LastName,
                 ProviderFirstName = r.FirstName,
-                AssignId  = r.Assign_Id,
+                AssignId = r.Assign_Id,
                 StartDate = r.pStartDate
             })
             .ToList();
@@ -175,10 +175,10 @@ public class DashboardService : IDashboardService
             .Take(limit)
             .Select(e => new EvalPendingItem
             {
-                StudentLastName  = e.StudentLast,
+                StudentLastName = e.StudentLast,
                 StudentFirstName = e.StudentFirst,
                 ServiceType = e.ServiceType,
-                BilledDate  = e.Billed
+                BilledDate = e.Billed
             })
             .ToListAsync(ct);
     }
@@ -187,7 +187,7 @@ public class DashboardService : IDashboardService
     {
         await using var db = _factory.CreateDbContext();
 
-        var today  = DateTime.Today;
+        var today = DateTime.Today;
         var cutoff = today.AddDays(daysAhead);
 
         return await db.Mandates
@@ -197,12 +197,12 @@ public class DashboardService : IDashboardService
             .Take(limit)
             .Select(m => new ExpiringApprovalItem
             {
-                StudentId        = m.Student_ID,
-                StudentLastName  = m.Last_Name,
+                StudentId = m.Student_ID,
+                StudentLastName = m.Last_Name,
                 StudentFirstName = m.First_Name,
                 ServiceType = m.Service_Type,
-                MandateEnd  = m.MandateEnd,
-                Provider    = m.Provider
+                MandateEnd = m.MandateEnd,
+                Provider = m.Provider
             })
             .ToListAsync(ct);
     }
@@ -219,9 +219,9 @@ public class DashboardService : IDashboardService
             .Where(p => p.License1Exp != null && p.License1Exp <= cutoff)
             .Select(p => new ExpiringLicenseItem
             {
-                LastName       = p.LastName,
-                FirstName      = p.FirstName,
-                LicenseNumber  = p.License1,
+                LastName = p.LastName,
+                FirstName = p.FirstName,
+                LicenseNumber = p.License1,
                 ExpirationDate = p.License1Exp!.Value
             })
             .ToListAsync(ct);
@@ -231,9 +231,9 @@ public class DashboardService : IDashboardService
             .Where(p => p.License2Exp != null && p.License2Exp <= cutoff)
             .Select(p => new ExpiringLicenseItem
             {
-                LastName       = p.LastName,
-                FirstName      = p.FirstName,
-                LicenseNumber  = p.License2,
+                LastName = p.LastName,
+                FirstName = p.FirstName,
+                LicenseNumber = p.License2,
                 ExpirationDate = p.License2Exp!.Value
             })
             .ToListAsync(ct);

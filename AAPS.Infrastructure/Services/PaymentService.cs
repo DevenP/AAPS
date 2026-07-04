@@ -25,22 +25,22 @@ public class PaymentService : IPaymentService
                     from s in grp.DefaultIfEmpty()
                     select new PaymentDTO
                     {
-                        VoucherId     = p.Voucher_Id,
-                        Voucher       = p.Voucher,
-                        StudentId     = p.Student_ID,
-                        Ssn           = p.Ssn,
-                        Provider      = p.Provider,
+                        VoucherId = p.Voucher_Id,
+                        Voucher = p.Voucher,
+                        StudentId = p.Student_ID,
+                        Ssn = p.Ssn,
+                        Provider = p.Provider,
                         DateOfService = p.date_of_Service,
-                        StartTime     = p.Start_Time,
+                        StartTime = p.Start_Time,
                         VoucherAmount = p.VoucherAmount,
-                        FileName      = p.FileName,
-                        RowNumber     = p.RowNumber,
-                        SesisId       = p.Sesis_Id,
-                        EndTime       = s != null ? s.End_Time : null,
-                        AdminDbn      = s != null ? s.Admin_DBN : null,
-                        ServiceType   = s != null ? s.Service_Type : null,
-                        BilledAmount  = s != null ? s.bAmount : null,
-                        BilledOn      = s != null ? s.Billed : null,
+                        FileName = p.FileName,
+                        RowNumber = p.RowNumber,
+                        SesisId = p.Sesis_Id,
+                        EndTime = s != null ? s.End_Time : null,
+                        AdminDbn = s != null ? s.Admin_DBN : null,
+                        ServiceType = s != null ? s.Service_Type : null,
+                        BilledAmount = s != null ? s.bAmount : null,
+                        BilledOn = s != null ? s.Billed : null,
                     };
 
         return await query.ToPagedResultAsync(request, ct);

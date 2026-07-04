@@ -1309,15 +1309,15 @@ public class ImportService : IImportService
 
                 paymentRows.Add(new Payment
                 {
-                    Voucher         = r.Voucher,
-                    Student_ID      = r.StudentId,
-                    Ssn             = r.Ssn,
-                    Provider        = r.Provider,
+                    Voucher = r.Voucher,
+                    Student_ID = r.StudentId,
+                    Ssn = r.Ssn,
+                    Provider = r.Provider,
                     date_of_Service = r.DosDate,
-                    Start_Time      = r.StartTimeNormalized,
-                    FileName        = preview.FileName,
-                    RowNumber       = r.RowNumber,
-                    Sesis_Id        = sesi.Sesis_Id,
+                    Start_Time = r.StartTimeNormalized,
+                    FileName = preview.FileName,
+                    RowNumber = r.RowNumber,
+                    Sesis_Id = sesi.Sesis_Id,
                 });
             }
 

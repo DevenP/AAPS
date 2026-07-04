@@ -53,25 +53,25 @@ public class StatementService : IStatementService
                 p => p.Provider_Id,
                 (s, p) => new StatementRow
                 {
-                    ProviderLast    = s.Provider_Last_Name ?? "",
-                    ProviderFirst   = s.Provider_First_Name ?? "",
+                    ProviderLast = s.Provider_Last_Name ?? "",
+                    ProviderFirst = s.Provider_First_Name ?? "",
                     ProviderAddress = p.Address ?? "",
-                    ProviderCity    = p.City ?? "",
-                    ProviderState   = p.State ?? "",
-                    ProviderZip     = p.Zipcode ?? "",
-                    DateOfService   = s.date_of_Service,
-                    StudentId       = s.Student_ID ?? "",
-                    StudentLast     = s.Last_Name ?? "",
-                    StudentFirst    = s.First_Name ?? "",
-                    School          = s.Admin_DBN ?? "",
-                    StartTime       = s.Start_Time ?? "",
-                    EndTime         = s.End_Time ?? "",
-                    GroupSize       = s.Actual_Size ?? "",
-                    Duration        = s.Duration ?? "",
-                    Frequency       = s.Assignment_Claimed ?? "",
-                    ServiceType     = s.Service_Type ?? "",
-                    BillingRate     = s.pRate,
-                    BillingAmount   = s.pAmount,
+                    ProviderCity = p.City ?? "",
+                    ProviderState = p.State ?? "",
+                    ProviderZip = p.Zipcode ?? "",
+                    DateOfService = s.date_of_Service,
+                    StudentId = s.Student_ID ?? "",
+                    StudentLast = s.Last_Name ?? "",
+                    StudentFirst = s.First_Name ?? "",
+                    School = s.Admin_DBN ?? "",
+                    StartTime = s.Start_Time ?? "",
+                    EndTime = s.End_Time ?? "",
+                    GroupSize = s.Actual_Size ?? "",
+                    Duration = s.Duration ?? "",
+                    Frequency = s.Assignment_Claimed ?? "",
+                    ServiceType = s.Service_Type ?? "",
+                    BillingRate = s.pRate,
+                    BillingAmount = s.pAmount,
                 })
             .OrderBy(r => r.ProviderLast)
             .ThenBy(r => r.ProviderFirst)
@@ -111,7 +111,7 @@ public class StatementService : IStatementService
             {
                 EntryId = g.Key.Entry_Id,
                 ProvSsn = g.Key.pSsn,
-                TopId   = g.Min(x => x.VendorPortal_Id)
+                TopId = g.Min(x => x.VendorPortal_Id)
             });
 
         var topAssignments =
@@ -141,28 +141,28 @@ public class StatementService : IStatementService
             where va.Assign_Id != null
             select new BillingRecordDTO
             {
-                SesisId        = s.Sesis_Id,
-                DateOfService  = s.date_of_Service,
-                StartTime      = s.Start_Time,
-                EndTime        = s.End_Time,
-                Provider       = s.Provider_Last_Name + ", " + s.Provider_First_Name,
-                GDistrict      = s.GDistrict,
-                StudentId      = s.Student_ID,
-                Student        = s.Last_Name + ", " + s.First_Name,
-                Grade          = s.Grade,
-                ServiceType    = s.Service_Type,
-                ActualSize     = s.Actual_Size,
-                Duration       = s.Duration,
-                Frequency      = s.Assignment_Claimed,
-                Billed         = s.Billed,
-                BilledPaidOn   = s.bPaid,
+                SesisId = s.Sesis_Id,
+                DateOfService = s.date_of_Service,
+                StartTime = s.Start_Time,
+                EndTime = s.End_Time,
+                Provider = s.Provider_Last_Name + ", " + s.Provider_First_Name,
+                GDistrict = s.GDistrict,
+                StudentId = s.Student_ID,
+                Student = s.Last_Name + ", " + s.First_Name,
+                Grade = s.Grade,
+                ServiceType = s.Service_Type,
+                ActualSize = s.Actual_Size,
+                Duration = s.Duration,
+                Frequency = s.Assignment_Claimed,
+                Billed = s.Billed,
+                BilledPaidOn = s.bPaid,
                 ProviderPaidOn = s.pPaid,
-                BillingRate    = s.bRate,
-                ProviderRate   = s.pRate,
-                BillingAmount  = s.bAmount,
+                BillingRate = s.bRate,
+                ProviderRate = s.pRate,
+                BillingAmount = s.bAmount,
                 ProviderAmount = s.pAmount,
-                AssignId       = va.Assign_Id,
-                EntryId        = s.Entry_Id,
+                AssignId = va.Assign_Id,
+                EntryId = s.Entry_Id,
             };
     }
 
@@ -182,135 +182,135 @@ public class StatementService : IStatementService
 
             container.Page(page =>
             {
-                    page.Size(PageSizes.Letter);
-                    page.MarginHorizontal(36);
-                    page.MarginTop(14);
-                    page.MarginBottom(14);
-                    page.DefaultTextStyle(x => x.FontSize(7.5f).FontFamily("Arial"));
+                page.Size(PageSizes.Letter);
+                page.MarginHorizontal(36);
+                page.MarginTop(14);
+                page.MarginBottom(14);
+                page.DefaultTextStyle(x => x.FontSize(7.5f).FontFamily("Arial"));
 
-                    // HEADER - repeats on every page of this provider's section
-                    page.Header().Column(col =>
+                // HEADER - repeats on every page of this provider's section
+                page.Header().Column(col =>
+                {
+                    col.Spacing(0);
+
+                    // Page number
+                    col.Item().AlignRight().Text(x =>
                     {
-                        col.Spacing(0);
-
-                        // Page number
-                        col.Item().AlignRight().Text(x =>
-                        {
-                            x.Span("Page ").FontSize(11f);
-                            x.CurrentPageNumber().FontSize(11f);
-                            x.Span(" of ").FontSize(11f);
-                            x.TotalPages().FontSize(11f);
-                        });
-
-                        // Company logo
-                        if (headerBytes != null)
-                            col.Item().AlignCenter().Height(110).Image(headerBytes).FitHeight();
-                        else
-                            col.Item().AlignCenter().Height(110).AlignMiddle()
-                               .Text("Related Services \"R\" Us").Bold().FontSize(14);
-
-                        col.Item().PaddingTop(3);
-
-                        // Provider info box (name, address | date)
-                        col.Item().Border(0.5f).BorderColor(Colors.Black).Padding(4).Row(row =>
-                        {
-                            row.RelativeItem().Column(c =>
-                            {
-                                c.Item().Text(providerName).Bold().FontSize(8);
-                                if (!string.IsNullOrWhiteSpace(first.ProviderAddress))
-                                    c.Item().Text(first.ProviderAddress).FontSize(7.5f);
-                                if (!string.IsNullOrWhiteSpace(cityStateZip))
-                                    c.Item().Text(cityStateZip).FontSize(7.5f);
-                            });
-                            row.AutoItem().AlignBottom().PaddingLeft(8).Text(today).FontSize(7.5f);
-                        });
-
-                        col.Item().PaddingTop(2);
+                        x.Span("Page ").FontSize(11f);
+                        x.CurrentPageNumber().FontSize(11f);
+                        x.Span(" of ").FontSize(11f);
+                        x.TotalPages().FontSize(11f);
                     });
 
-                    // FOOTER - repeats on every page
-                    page.Footer().Column(col =>
+                    // Company logo
+                    if (headerBytes != null)
+                        col.Item().AlignCenter().Height(110).Image(headerBytes).FitHeight();
+                    else
+                        col.Item().AlignCenter().Height(110).AlignMiddle()
+                           .Text("Related Services \"R\" Us").Bold().FontSize(14);
+
+                    col.Item().PaddingTop(3);
+
+                    // Provider info box (name, address | date)
+                    col.Item().Border(0.5f).BorderColor(Colors.Black).Padding(4).Row(row =>
                     {
-                        col.Spacing(2);
-                        col.Item()
-                           .Text("** Payment is made pending the acceptance of the NYC Dept. of Education")
-                           .FontSize(6.5f).Italic();
-                        if (footerBytes != null)
-                            col.Item().AlignCenter().Height(70).Image(footerBytes).FitHeight();
-                        else
-                            col.Item().AlignCenter()
-                               .Text("SERVICES OFFERED  ■  Occupational Therapy (OT)  ■  Speech Therapy  ■  Physical Therapy (PT)  ■  Counseling")
-                               .FontSize(6.5f);
+                        row.RelativeItem().Column(c =>
+                        {
+                            c.Item().Text(providerName).Bold().FontSize(8);
+                            if (!string.IsNullOrWhiteSpace(first.ProviderAddress))
+                                c.Item().Text(first.ProviderAddress).FontSize(7.5f);
+                            if (!string.IsNullOrWhiteSpace(cityStateZip))
+                                c.Item().Text(cityStateZip).FontSize(7.5f);
+                        });
+                        row.AutoItem().AlignBottom().PaddingLeft(8).Text(today).FontSize(7.5f);
                     });
 
-                    // CONTENT
-                    page.Content().Column(contentCol =>
+                    col.Item().PaddingTop(2);
+                });
+
+                // FOOTER - repeats on every page
+                page.Footer().Column(col =>
+                {
+                    col.Spacing(2);
+                    col.Item()
+                       .Text("** Payment is made pending the acceptance of the NYC Dept. of Education")
+                       .FontSize(6.5f).Italic();
+                    if (footerBytes != null)
+                        col.Item().AlignCenter().Height(70).Image(footerBytes).FitHeight();
+                    else
+                        col.Item().AlignCenter()
+                           .Text("SERVICES OFFERED  ■  Occupational Therapy (OT)  ■  Speech Therapy  ■  Physical Therapy (PT)  ■  Counseling")
+                           .FontSize(6.5f);
+                });
+
+                // CONTENT
+                page.Content().Column(contentCol =>
+                {
+                    contentCol.Spacing(0);
+
+                    contentCol.Item().Table(t =>
                     {
-                        contentCol.Spacing(0);
-
-                        contentCol.Item().Table(t =>
+                        t.ColumnsDefinition(c =>
                         {
-                            t.ColumnsDefinition(c =>
-                            {
-                                c.ConstantColumn(38);   // Date
-                                c.ConstantColumn(54);   // OSIS
-                                c.ConstantColumn(90);   // Student Name
-                                c.ConstantColumn(34);   // School
-                                c.ConstantColumn(38);   // Start Time
-                                c.ConstantColumn(38);   // End Time
-                                c.ConstantColumn(18);   // Grou
-                                c.ConstantColumn(18);   // Dura
-                                c.ConstantColumn(52);   // Freq
-                                c.ConstantColumn(68);   // Service Type
-                                c.ConstantColumn(40);   // Hourly Ra
-                                c.RelativeColumn();     // Amount
-                            });
-
-                            t.Header(h =>
-                            {
-                                static void HCell(TableCellDescriptor h, string label) =>
-                                    h.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1)
-                                      .PaddingVertical(1).PaddingHorizontal(2)
-                                      .Text(label).Italic().FontSize(7f);
-
-                                HCell(h, "Date");
-                                HCell(h, "OSIS");
-                                HCell(h, "Student Name");
-                                HCell(h, "School");
-                                HCell(h, "Start Time");
-                                HCell(h, "End Time");
-                                HCell(h, "Grou");
-                                HCell(h, "Dura");
-                                HCell(h, "Freq");
-                                HCell(h, "Service Type");
-                                HCell(h, "Hourly Ra");
-                                HCell(h, "Amount");
-                            });
-
-                            foreach (var r in rows)
-                            {
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.DateOfService?.ToString("MM/dd/yy") ?? "").FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.StudentId).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text($"{r.StudentLast}, {r.StudentFirst}").FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.School).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.StartTime).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.EndTime).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.GroupSize).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.Duration).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.Frequency).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.ServiceType).FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.BillingRate.HasValue ? $"$ {r.BillingRate.Value:F2}" : "").FontSize(7.5f);
-                                t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).AlignRight().Text(r.BillingAmount?.ToString("C2") ?? "").FontSize(7.5f);
-                            }
+                            c.ConstantColumn(38);   // Date
+                            c.ConstantColumn(54);   // OSIS
+                            c.ConstantColumn(90);   // Student Name
+                            c.ConstantColumn(34);   // School
+                            c.ConstantColumn(38);   // Start Time
+                            c.ConstantColumn(38);   // End Time
+                            c.ConstantColumn(18);   // Grou
+                            c.ConstantColumn(18);   // Dura
+                            c.ConstantColumn(52);   // Freq
+                            c.ConstantColumn(68);   // Service Type
+                            c.ConstantColumn(40);   // Hourly Ra
+                            c.RelativeColumn();     // Amount
                         });
 
-                        // Total amount - green-bordered box, centered
-                        contentCol.Item().AlignCenter().PaddingTop(8)
-                            .Border(1f).BorderColor("#00aa00")
-                            .Padding(4)
-                            .Text($"Total Amount: $ {total:N2}")
-                            .Bold().FontSize(9f);
+                        t.Header(h =>
+                        {
+                            static void HCell(TableCellDescriptor h, string label) =>
+                                h.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1)
+                                  .PaddingVertical(1).PaddingHorizontal(2)
+                                  .Text(label).Italic().FontSize(7f);
+
+                            HCell(h, "Date");
+                            HCell(h, "OSIS");
+                            HCell(h, "Student Name");
+                            HCell(h, "School");
+                            HCell(h, "Start Time");
+                            HCell(h, "End Time");
+                            HCell(h, "Grou");
+                            HCell(h, "Dura");
+                            HCell(h, "Freq");
+                            HCell(h, "Service Type");
+                            HCell(h, "Hourly Ra");
+                            HCell(h, "Amount");
+                        });
+
+                        foreach (var r in rows)
+                        {
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.DateOfService?.ToString("MM/dd/yy") ?? "").FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.StudentId).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text($"{r.StudentLast}, {r.StudentFirst}").FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.School).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.StartTime).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.EndTime).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.GroupSize).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.Duration).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.Frequency).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.ServiceType).FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).Text(r.BillingRate.HasValue ? $"$ {r.BillingRate.Value:F2}" : "").FontSize(7.5f);
+                            t.Cell().Border(0.3f).BorderColor(Colors.Grey.Darken1).PaddingVertical(0.5f).PaddingHorizontal(2).AlignRight().Text(r.BillingAmount?.ToString("C2") ?? "").FontSize(7.5f);
+                        }
                     });
+
+                    // Total amount - green-bordered box, centered
+                    contentCol.Item().AlignCenter().PaddingTop(8)
+                        .Border(1f).BorderColor("#00aa00")
+                        .Padding(4)
+                        .Text($"Total Amount: $ {total:N2}")
+                        .Bold().FontSize(9f);
+                });
             });
         }).GeneratePdf();
     }
@@ -320,24 +320,24 @@ public class StatementService : IStatementService
 
     private sealed class StatementRow
     {
-        public string ProviderLast    { get; set; } = "";
-        public string ProviderFirst   { get; set; } = "";
+        public string ProviderLast { get; set; } = "";
+        public string ProviderFirst { get; set; } = "";
         public string ProviderAddress { get; set; } = "";
-        public string ProviderCity    { get; set; } = "";
-        public string ProviderState   { get; set; } = "";
-        public string ProviderZip     { get; set; } = "";
+        public string ProviderCity { get; set; } = "";
+        public string ProviderState { get; set; } = "";
+        public string ProviderZip { get; set; } = "";
         public DateTime? DateOfService { get; set; }
-        public string StudentId       { get; set; } = "";
-        public string StudentLast     { get; set; } = "";
-        public string StudentFirst    { get; set; } = "";
-        public string School          { get; set; } = "";
-        public string StartTime       { get; set; } = "";
-        public string EndTime         { get; set; } = "";
-        public string GroupSize       { get; set; } = "";
-        public string Duration        { get; set; } = "";
-        public string Frequency       { get; set; } = "";
-        public string ServiceType     { get; set; } = "";
-        public decimal? BillingRate   { get; set; }
+        public string StudentId { get; set; } = "";
+        public string StudentLast { get; set; } = "";
+        public string StudentFirst { get; set; } = "";
+        public string School { get; set; } = "";
+        public string StartTime { get; set; } = "";
+        public string EndTime { get; set; } = "";
+        public string GroupSize { get; set; } = "";
+        public string Duration { get; set; } = "";
+        public string Frequency { get; set; } = "";
+        public string ServiceType { get; set; } = "";
+        public decimal? BillingRate { get; set; }
         public decimal? BillingAmount { get; set; }
     }
 }

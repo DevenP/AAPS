@@ -325,19 +325,19 @@ public class SesiService : ISesiService
                 IsOverMandate = s.OverMandate ?? false,
                 IsUnderGroup = s.UnderGroup ?? false,
 
-                LanguageProvided  = s.Language_Provided,
-                ActualSize        = s.Actual_Size,
+                LanguageProvided = s.Language_Provided,
+                ActualSize = s.Actual_Size,
                 AssignmentClaimed = s.Assignment_Claimed,
-                GDistrict         = s.GDistrict,
-                ProviderPaidDate  = s.pPaid,
-                Voucher           = s.Voucher,
+                GDistrict = s.GDistrict,
+                ProviderPaidDate = s.pPaid,
+                Voucher = s.Voucher,
 
-                ProviderLastName  = s.Provider_Last_Name,
+                ProviderLastName = s.Provider_Last_Name,
                 ProviderFirstName = s.Provider_First_Name,
-                ProviderName      = (s.Provider_Last_Name ?? "") + ", " + (s.Provider_First_Name ?? ""),
-                AssignId          = va != null ? va.Assign_Id : null,
-                MandateStart      = m != null ? m.MandateStart : null,
-                MandateEnd        = m != null ? m.MandateEnd   : null,
+                ProviderName = (s.Provider_Last_Name ?? "") + ", " + (s.Provider_First_Name ?? ""),
+                AssignId = va != null ? va.Assign_Id : null,
+                MandateStart = m != null ? m.MandateStart : null,
+                MandateEnd = m != null ? m.MandateEnd : null,
 
                 Ssn = (p != null && p.Ssn != null && p.Ssn.Length >= 4)
                       ? "***-**-" + p.Ssn.Substring(p.Ssn.Length - 4)
@@ -391,7 +391,7 @@ public class SesiService : ISesiService
             bool desc = string.Equals(req.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
             Func<OperationsDTO, DateTime?> key = req.SortBy == "StartTime"
                 ? op => DateTime.TryParse(op.StartTime, out var dt) ? dt : (DateTime?)null
-                : op => DateTime.TryParse(op.EndTime,   out var dt) ? dt : (DateTime?)null;
+                : op => DateTime.TryParse(op.EndTime, out var dt) ? dt : (DateTime?)null;
             all = (desc ? all.OrderByDescending(key).ThenBy(op => op.Id)
                         : all.OrderBy(key).ThenBy(op => op.Id)).ToList();
             req = req with { SortBy = null }; // already sorted — skip in-memory re-sort below
@@ -419,8 +419,8 @@ public class SesiService : ISesiService
         _logger.LogInformation("BulkUpdate: {Count} sesi records", entities.Count);
 
         // Pre-fetch lookup data needed for rate recalculation
-        bool ratesNeeded    = dto.ApplyAll || dto.ProviderId.HasValue || dto.GDistrict != null || dto.LanguageProvided != null;
-        bool bRatesNeeded   = dto.ApplyAll || dto.GDistrict != null || dto.LanguageProvided != null;
+        bool ratesNeeded = dto.ApplyAll || dto.ProviderId.HasValue || dto.GDistrict != null || dto.LanguageProvided != null;
+        bool bRatesNeeded = dto.ApplyAll || dto.GDistrict != null || dto.LanguageProvided != null;
         bool providerNeeded = dto.ProviderId.HasValue;
 
         var providerRates = ratesNeeded
@@ -471,13 +471,13 @@ public class SesiService : ISesiService
                 e.Provider_Id = dto.ProviderId;
                 if (dto.ProviderId.HasValue)
                 {
-                    e.Provider_Last_Name  = newProvider?.LastName;
+                    e.Provider_Last_Name = newProvider?.LastName;
                     e.Provider_First_Name = newProvider?.FirstName;
                     var pr = providerRates.FirstOrDefault(r =>
                         r.Provider_Id == dto.ProviderId &&
                         r.ServiceType == e.Service_Type &&
-                        r.District    == e.GDistrict &&
-                        r.Lang        == e.Language_Provided);
+                        r.District == e.GDistrict &&
+                        r.Lang == e.Language_Provided);
                     e.pRate = pr?.Rate;
                     if (e.pRate.HasValue && int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
                         e.pAmount = e.pRate.Value * dur / 60.0m / sz;
@@ -485,9 +485,9 @@ public class SesiService : ISesiService
                 else
                 {
                     // ApplyAll + null = clear provider billing
-                    e.Provider_Last_Name  = null;
+                    e.Provider_Last_Name = null;
                     e.Provider_First_Name = null;
-                    e.pRate   = null;
+                    e.pRate = null;
                     e.pAmount = null;
                 }
             }
@@ -499,12 +499,12 @@ public class SesiService : ISesiService
                 var pr = providerRates.FirstOrDefault(r =>
                     r.Provider_Id == e.Provider_Id &&
                     r.ServiceType == e.Service_Type &&
-                    r.District    == dto.GDistrict &&
-                    r.Lang        == e.Language_Provided);
+                    r.District == dto.GDistrict &&
+                    r.Lang == e.Language_Provided);
                 var br = billingRates.FirstOrDefault(r =>
                     r.ServiceType == e.Service_Type &&
-                    r.District    == dto.GDistrict &&
-                    r.Lang        == e.Language_Provided);
+                    r.District == dto.GDistrict &&
+                    r.Lang == e.Language_Provided);
                 e.pRate = pr?.Rate;
                 e.bRate = br?.Rate;
                 if (int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
@@ -521,12 +521,12 @@ public class SesiService : ISesiService
                 var pr = providerRates.FirstOrDefault(r =>
                     r.Provider_Id == e.Provider_Id &&
                     r.ServiceType == e.Service_Type &&
-                    r.District    == e.GDistrict &&
-                    r.Lang        == dto.LanguageProvided);
+                    r.District == e.GDistrict &&
+                    r.Lang == dto.LanguageProvided);
                 var br = billingRates.FirstOrDefault(r =>
                     r.ServiceType == e.Service_Type &&
-                    r.District    == e.GDistrict &&
-                    r.Lang        == dto.LanguageProvided);
+                    r.District == e.GDistrict &&
+                    r.Lang == dto.LanguageProvided);
                 e.pRate = pr?.Rate;
                 e.bRate = br?.Rate;
                 if (int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
@@ -559,7 +559,7 @@ public class SesiService : ISesiService
                 {
                     if (dto.MandateStart.HasValue)
                     {
-                        m.MandateStart      = dto.MandateStart;
+                        m.MandateStart = dto.MandateStart;
                         m.First_Attend_Date = dto.MandateStart;
                     }
                     if (dto.MandateEnd.HasValue)
@@ -616,7 +616,7 @@ public class SesiService : ISesiService
             return null;
         var date = dos.Value.ToString("MM/dd/yyyy");
         return DateTime.TryParse($"{date} {startTime}", out var s) &&
-               DateTime.TryParse($"{date} {endTime}",   out var e)
+               DateTime.TryParse($"{date} {endTime}", out var e)
             ? (int)(e - s).TotalMinutes
             : null;
     }
@@ -704,16 +704,16 @@ public class SesiService : ISesiService
 
         return mandates.Select(m => new OsisMandateDTO
         {
-            EntryId          = m.Entry_Id,
-            ServiceType      = m.Service_Type,
-            AdminDbn         = m.Admin_DBN,
-            Language         = m.Lang,
+            EntryId = m.Entry_Id,
+            ServiceType = m.Service_Type,
+            AdminDbn = m.Admin_DBN,
+            Language = m.Lang,
             RemainingFrequency = m.Remaining_Freq,
-            Duration         = m.Dur,
-            GroupSize        = m.Grp_Size,
-            MandateStart     = m.MandateStart,
-            MandateEnd       = m.MandateEnd,
-            AssignIds        = vpByEntry.TryGetValue(m.Entry_Id, out var agg) ? agg : null
+            Duration = m.Dur,
+            GroupSize = m.Grp_Size,
+            MandateStart = m.MandateStart,
+            MandateEnd = m.MandateEnd,
+            AssignIds = vpByEntry.TryGetValue(m.Entry_Id, out var agg) ? agg : null
         }).ToList();
     }
 
@@ -741,27 +741,27 @@ public class SesiService : ISesiService
 
     private static readonly Expression<Func<Sesi, ProviderBillingDTO>> ToBillingDTO = s => new ProviderBillingDTO
     {
-        Id              = s.Sesis_Id,
-        StudentId       = s.Student_ID,
+        Id = s.Sesis_Id,
+        StudentId = s.Student_ID,
         StudentLastName = s.Last_Name,
-        StudentFirstName= s.First_Name,
-        ProviderLastName= s.Provider_Last_Name,
-        ProviderFirstName=s.Provider_First_Name,
-        EntryId         = s.Entry_Id,
-        DateOfService   = s.date_of_Service,
-        StartTime       = s.Start_Time,
-        EndTime         = s.End_Time,
-        Duration        = s.Duration,
-        ServiceType     = s.Service_Type,
-        GDistrict       = s.GDistrict,
-        BilledRate      = s.bRate,
-        BilledAmount    = s.bAmount,
-        BilledDate      = s.Billed,
-        BilledPaidDate  = s.bPaid,
-        ProviderRate    = s.pRate,
-        ProviderAmount  = s.pAmount,
-        ProviderPaidDate= s.pPaid,
-        Voucher         = s.Voucher,
+        StudentFirstName = s.First_Name,
+        ProviderLastName = s.Provider_Last_Name,
+        ProviderFirstName = s.Provider_First_Name,
+        EntryId = s.Entry_Id,
+        DateOfService = s.date_of_Service,
+        StartTime = s.Start_Time,
+        EndTime = s.End_Time,
+        Duration = s.Duration,
+        ServiceType = s.Service_Type,
+        GDistrict = s.GDistrict,
+        BilledRate = s.bRate,
+        BilledAmount = s.bAmount,
+        BilledDate = s.Billed,
+        BilledPaidDate = s.bPaid,
+        ProviderRate = s.pRate,
+        ProviderAmount = s.pAmount,
+        ProviderPaidDate = s.pPaid,
+        Voucher = s.Voucher,
     };
 
     private static readonly Expression<Func<Sesi, SesiDTO>> ToDTO = s => new SesiDTO

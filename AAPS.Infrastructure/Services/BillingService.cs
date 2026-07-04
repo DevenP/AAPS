@@ -37,7 +37,7 @@ public class BillingService : IBillingService
             {
                 EntryId = g.Key.Entry_Id,
                 ProvSsn = g.Key.pSsn,
-                TopId   = g.Min(x => x.VendorPortal_Id)
+                TopId = g.Min(x => x.VendorPortal_Id)
             });
 
         // Step 2: join back to get Assign_Id from that specific row
@@ -72,31 +72,31 @@ public class BillingService : IBillingService
             where va.Assign_Id != null
             select new BillingRecordDTO
             {
-                SesisId        = s.Sesis_Id,
-                DateOfService  = s.date_of_Service,
-                StartTime      = s.Start_Time,
-                EndTime        = s.End_Time,
-                Provider       = s.Provider_Last_Name + ", " + s.Provider_First_Name,
-                GDistrict      = s.GDistrict,
-                StudentId      = s.Student_ID,
-                Student        = s.Last_Name + ", " + s.First_Name,
-                Grade          = s.Grade,
-                ServiceType    = s.Service_Type,
-                ActualSize     = s.Actual_Size,
-                Duration       = s.Duration,
-                Frequency      = s.Assignment_Claimed,
-                Billed         = s.Billed,
-                BilledPaidOn   = s.bPaid,
+                SesisId = s.Sesis_Id,
+                DateOfService = s.date_of_Service,
+                StartTime = s.Start_Time,
+                EndTime = s.End_Time,
+                Provider = s.Provider_Last_Name + ", " + s.Provider_First_Name,
+                GDistrict = s.GDistrict,
+                StudentId = s.Student_ID,
+                Student = s.Last_Name + ", " + s.First_Name,
+                Grade = s.Grade,
+                ServiceType = s.Service_Type,
+                ActualSize = s.Actual_Size,
+                Duration = s.Duration,
+                Frequency = s.Assignment_Claimed,
+                Billed = s.Billed,
+                BilledPaidOn = s.bPaid,
                 ProviderPaidOn = s.pPaid,
-                BillingRate    = s.bRate,
-                ProviderRate   = s.pRate,
-                BillingAmount  = s.bAmount,
+                BillingRate = s.bRate,
+                ProviderRate = s.pRate,
+                BillingAmount = s.bAmount,
                 ProviderAmount = s.pAmount,
-                AssignId           = va.Assign_Id,
-                EntryId            = s.Entry_Id,
-                Voucher            = s.Voucher,
-                VoucherAmount      = s.VoucherAmount,
-                UnpaidBalance      = s.bAmount - s.VoucherAmount,
+                AssignId = va.Assign_Id,
+                EntryId = s.Entry_Id,
+                Voucher = s.Voucher,
+                VoucherAmount = s.VoucherAmount,
+                UnpaidBalance = s.bAmount - s.VoucherAmount,
                 VoucherBalancePaid = s.VoucherBalancePaid,
             };
     }
@@ -114,7 +114,7 @@ public class BillingService : IBillingService
         bool desc = string.Equals(request.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
         Func<BillingRecordDTO, DateTime?> key = request.SortBy == "StartTime"
             ? r => DateTime.TryParse(r.StartTime, out var dt) ? dt : (DateTime?)null
-            : r => DateTime.TryParse(r.EndTime,   out var dt) ? dt : (DateTime?)null;
+            : r => DateTime.TryParse(r.EndTime, out var dt) ? dt : (DateTime?)null;
         all = (desc ? all.OrderByDescending(key).ThenBy(r => r.SesisId)
                     : all.OrderBy(key).ThenBy(r => r.SesisId)).ToList();
         return await all.ToPagedResultAsync(request with { SortBy = null, Search = null, ColumnFilters = null }, ct);
@@ -158,8 +158,8 @@ public class BillingService : IBillingService
             sesisId, billed, billedPaidOn, providerPaidOn);
 
         entity.Billed = billed;
-        entity.bPaid  = billedPaidOn;
-        entity.pPaid  = providerPaidOn;
+        entity.bPaid = billedPaidOn;
+        entity.pPaid = providerPaidOn;
 
         await db.SaveChangesAsync(ct);
 
@@ -304,14 +304,14 @@ public class BillingService : IBillingService
                     ? dos.Value.ToString("MM") + "/01/" + dos.Value.Year
                     : "";
                 var mandateStart = (m?.MandateStart?.ToString("MM/dd/yyyy") ?? "") + "  ";
-                var mandateEnd   = (m?.MandateEnd?.ToString("MM/dd/yyyy") ?? "") + "  ";
+                var mandateEnd = (m?.MandateEnd?.ToString("MM/dd/yyyy") ?? "") + "  ";
 
                 var lang = r.Language_Provided ?? "";
                 var langCode = lang.Length >= 2 ? lang.Substring(0, 2).ToUpper() : lang.ToUpper();
 
                 return new
                 {
-                    FundCode     = fundCode,
+                    FundCode = fundCode,
                     BillingMonth = dos?.ToString("yyyy-MM") ?? "",
                     Row = BuildRow(
                         aYear, vp.pBoro ?? "", r.GDistrict ?? "", fundCode, vp.pSchool ?? "",
@@ -370,7 +370,7 @@ public class BillingService : IBillingService
 
         int xIndex = remainingFreq.IndexOf('x');
         string countPart = xIndex > 0 ? remainingFreq[..xIndex] : remainingFreq;
-        string typePart  = (xIndex >= 0 && xIndex + 1 < remainingFreq.Length)
+        string typePart = (xIndex >= 0 && xIndex + 1 < remainingFreq.Length)
             ? remainingFreq[(xIndex + 1)..]
             : "";
 
@@ -379,8 +379,8 @@ public class BillingService : IBillingService
 
         string type =
             typePart.StartsWith("In Total", StringComparison.OrdinalIgnoreCase) ? "T" :
-            typePart.StartsWith("Week",     StringComparison.OrdinalIgnoreCase) ? "W" :
-            typePart.StartsWith("Month",    StringComparison.OrdinalIgnoreCase) ? "M" :
+            typePart.StartsWith("Week", StringComparison.OrdinalIgnoreCase) ? "W" :
+            typePart.StartsWith("Month", StringComparison.OrdinalIgnoreCase) ? "M" :
             typePart.Length > 0 ? typePart[..1].ToUpperInvariant() : "";
 
         return (count, type);

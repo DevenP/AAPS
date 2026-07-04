@@ -2,7 +2,7 @@
 {
     public record PagedRequest(
         string? Search = null,
-        Dictionary<string, string>? ColumnFilters = null, 
+        Dictionary<string, string>? ColumnFilters = null,
         string? SortBy = null,
         string SortDir = "asc",
         int Page = 1,

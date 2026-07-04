@@ -82,12 +82,12 @@ public class BillingRateService : IBillingRateService
         // Insert new active rate
         var entity = new BillingRate
         {
-            District    = dto.District,
+            District = dto.District,
             ServiceType = dto.ServiceType,
-            Lang        = dto.Language,
-            Rate        = dto.Rate,
-            Effective   = DateTime.Now,
-            Active      = true
+            Lang = dto.Language,
+            Rate = dto.Rate,
+            Effective = DateTime.Now,
+            Active = true
         };
         db.BillingRates.Add(entity);
         await db.SaveChangesAsync(ct);
@@ -105,10 +105,10 @@ public class BillingRateService : IBillingRateService
                 AND GDistrict          = @district
                 AND Language_Provided  = @lang
                 AND bPaid IS NULL",
-            new SqlParameter("@rate",        dto.Rate        ?? 0m),
+            new SqlParameter("@rate", dto.Rate ?? 0m),
             new SqlParameter("@serviceType", dto.ServiceType ?? ""),
-            new SqlParameter("@district",    dto.District    ?? ""),
-            new SqlParameter("@lang",        dto.Language    ?? ""));
+            new SqlParameter("@district", dto.District ?? ""),
+            new SqlParameter("@lang", dto.Language ?? ""));
 
         _logger.LogInformation("Cascaded rate to {Count} Sesis records", sesisCount);
 
@@ -120,10 +120,10 @@ public class BillingRateService : IBillingRateService
                 AND RTRIM(District)   = RTRIM(@district)
                 AND RTRIM(Language)   = RTRIM(@lang)
                 AND bPaid IS NULL",
-            new SqlParameter("@rate",        dto.Rate        ?? 0m),
+            new SqlParameter("@rate", dto.Rate ?? 0m),
             new SqlParameter("@serviceType", dto.ServiceType ?? ""),
-            new SqlParameter("@district",    dto.District    ?? ""),
-            new SqlParameter("@lang",        dto.Language    ?? ""));
+            new SqlParameter("@district", dto.District ?? ""),
+            new SqlParameter("@lang", dto.Language ?? ""));
 
         _logger.LogInformation("Cascaded rate to {Count} Evals records", evalsCount);
 
@@ -153,12 +153,12 @@ public class BillingRateService : IBillingRateService
         // Insert new row with same combo but updated rate
         var newEntity = new BillingRate
         {
-            District    = existing.District,
+            District = existing.District,
             ServiceType = existing.ServiceType,
-            Lang        = existing.Lang,
-            Rate        = dto.Rate,
-            Effective   = DateTime.Now,
-            Active      = true
+            Lang = existing.Lang,
+            Rate = dto.Rate,
+            Effective = DateTime.Now,
+            Active = true
         };
         db.BillingRates.Add(newEntity);
         await db.SaveChangesAsync(ct);
@@ -193,14 +193,14 @@ public class BillingRateService : IBillingRateService
         if (rate == null) return new BillingRateUsage(0, 0);
 
         var sesiCount = await db.Seses.CountAsync(s =>
-            s.Service_Type      == rate.ServiceType &&
-            s.GDistrict         == rate.District &&
+            s.Service_Type == rate.ServiceType &&
+            s.GDistrict == rate.District &&
             s.Language_Provided == rate.Lang, ct);
 
         var evalCount = await db.Evals.CountAsync(e =>
             e.ServiceType == rate.ServiceType &&
-            e.District    == rate.District &&
-            e.Language    == rate.Lang, ct);
+            e.District == rate.District &&
+            e.Language == rate.Lang, ct);
 
         return new BillingRateUsage(sesiCount, evalCount);
     }
@@ -229,12 +229,12 @@ public class BillingRateService : IBillingRateService
 
     private static readonly Expression<Func<BillingRate, BillingRateDTO>> ToDTO = b => new BillingRateDTO
     {
-        Id            = b.BillingRate_Id,
-        District      = b.District,
-        ServiceType   = b.ServiceType,
-        Rate          = b.Rate,
+        Id = b.BillingRate_Id,
+        District = b.District,
+        ServiceType = b.ServiceType,
+        Rate = b.Rate,
         EffectiveDate = b.Effective,
-        IsActive      = b.Active ?? false,
-        Language      = b.Lang
+        IsActive = b.Active ?? false,
+        Language = b.Lang
     };
 }

@@ -72,7 +72,8 @@ public class ProviderService : IProviderService
         var assignedCounts = db.Seses
             .Where(s => s.Provider_Id != null && s.Entry_Id != null)
             .GroupBy(s => s.Provider_Id)
-            .Select(g => new {
+            .Select(g => new
+            {
                 ProviderId = g.Key,
                 Count = g.Select(x => x.Entry_Id).Distinct().Count()
             })
@@ -424,7 +425,8 @@ public class ProviderService : IProviderService
         var assignedCounts = db.Seses
         .Where(s => s.Provider_Id != null && s.Entry_Id != null)
         .GroupBy(s => s.Provider_Id)
-        .Select(g => new {
+        .Select(g => new
+        {
             ProviderId = g.Key,
             Count = g.Select(x => x.Entry_Id).Distinct().Count()
         })
