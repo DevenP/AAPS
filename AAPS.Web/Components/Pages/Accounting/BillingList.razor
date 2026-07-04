@@ -260,7 +260,7 @@
 
     private bool _isBusy => _generating || _generatingStatements;
 
-    // ── Selection ────────────────────────────────────────────────────────────
+    // Selection
     private bool _shiftHeld = false;
     private int _lastClickedIndex = -1;
 
@@ -301,7 +301,7 @@
         _lastClickedIndex = -1;
     }
 
-    // ── Bulk edit ────────────────────────────────────────────────────────────
+    // Bulk edit
     private async Task OpenBulkEditDialog()
     {
         var parameters = new DialogParameters<BillingEditDialog>

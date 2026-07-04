@@ -26,9 +26,7 @@ public class ImportService : IImportService
     }
 
 
-    // ─────────────────────────────────────────────
     // PARSE
-    // ─────────────────────────────────────────────
 
     // Expected headers per import type: col index -> substring to match (case-insensitive)
     // A handful of distinctive columns per file type to fingerprint the upload
@@ -108,7 +106,7 @@ public class ImportService : IImportService
                 throw new InvalidOperationException(
                     "The file appears to be empty — no data rows were found.");
 
-            // 6. Header fingerprint — hard block if wrong file
+            // 6. Header fingerprint - hard block if wrong file
             int headerRow = type == ImportType.Mandates ? 3 : 1;
             var expected = _expectedHeaders[type];
             var mismatches = new List<string>();
@@ -156,12 +154,10 @@ public class ImportService : IImportService
     }
 
 
-    // ─────────────────────────────────────────────
     // MANDATES PARSE
     // Data starts row 4, headers on row 3
     // Skip if any required col is null: 6,7,8,13,21,23,25,27,29,32,41,43
     // Row display number = i - 3
-    // ─────────────────────────────────────────────
     private static ImportPreviewResult ParseMandates(IXLWorksheet ws, string fileName, byte[] fileBytes)
     {
         var valid = new List<ImportRowResult>();
@@ -242,13 +238,11 @@ public class ImportService : IImportService
         return new ImportPreviewResult { ValidRows = valid, SkippedRows = skipped, FileName = fileName, FileBytes = fileBytes };
     }
 
-    // ─────────────────────────────────────────────
     // SESIS PARSE
     // Data starts row 2, headers on row 1
     // Skip if required cols null: 1,2,3,5,9,13,15,19,21,24,25,28,30,31,32,34,35,36,41,42
     // Also skip if col 30 doesn't contain "SERVICE PROVIDED" (case-insensitive)
     // Row display number = i - 1
-    // ─────────────────────────────────────────────
     private static ImportPreviewResult ParseSesis(IXLWorksheet ws, string fileName, byte[] fileBytes)
     {
         var valid = new List<ImportRowResult>();
@@ -338,12 +332,10 @@ public class ImportService : IImportService
         return new ImportPreviewResult { ValidRows = valid, SkippedRows = skipped, FileName = fileName, FileBytes = fileBytes };
     }
 
-    // ─────────────────────────────────────────────
     // VENDOR PORTAL PARSE
     // Data starts row 2, headers on row 1
     // Skip if col 23 (Assign_Id) is null
     // Deduplicate by Assign_Id using a HashSet
-    // ─────────────────────────────────────────────
     private static ImportPreviewResult ParseVendorPortal(IXLWorksheet ws, string fileName, byte[] fileBytes)
     {
         var valid = new List<ImportRowResult>();
@@ -414,12 +406,10 @@ public class ImportService : IImportService
         return new ImportPreviewResult { ValidRows = valid, SkippedRows = skipped, FileName = fileName, FileBytes = fileBytes };
     }
 
-    // ─────────────────────────────────────────────
     // PAYMENTS PARSE
     // Data starts row 2, headers on row 1
     // Skip if col 1 (Voucher) is null
     // This is an UPDATE operation, not insert
-    // ─────────────────────────────────────────────
     private static ImportPreviewResult ParsePayments(IXLWorksheet ws, string fileName, byte[] fileBytes)
     {
         var valid = new List<ImportRowResult>();
@@ -499,9 +489,7 @@ public class ImportService : IImportService
         return new ImportPreviewResult { ValidRows = valid, SkippedRows = skipped, FileName = fileName, FileBytes = fileBytes };
     }
 
-    // ─────────────────────────────────────────────
     // COMMIT
-    // ─────────────────────────────────────────────
 
     public async Task<ImportCommitResult> CommitAsync(ImportType type, ImportPreviewResult preview, CancellationToken ct = default)
     {
@@ -563,9 +551,7 @@ public class ImportService : IImportService
         return result;
     }
 
-    // ─────────────────────────────────────────────
     // COMMIT MANDATES
-    // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitMandatesAsync(ImportPreviewResult preview, CancellationToken ct)
     {
         await using var db = _factory.CreateDbContext();
@@ -609,7 +595,7 @@ public class ImportService : IImportService
                 DateTime mandateStart = firstAttendDate.Value.Date;
                 DateTime mandateEnd;
 
-                // Duplicate check — Provider included so a reassignment to a new provider
+                // Duplicate check - Provider included so a reassignment to a new provider
                 // creates a new record rather than being skipped.
                 bool exists = await db.Mandates.AnyAsync(m =>
                     m.Student_ID == studentId &&
@@ -732,10 +718,8 @@ public class ImportService : IImportService
         };
     }
 
-    // ─────────────────────────────────────────────
     // COMMIT SESIS
     // Bulk lookups upfront, then batch insert every 500 rows
-    // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitSesisAsync(ImportPreviewResult preview, CancellationToken ct)
     {
         await using var db = _factory.CreateDbContext();
@@ -747,10 +731,10 @@ public class ImportService : IImportService
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
         var warningRows = new List<ImportRowWarning>();
 
-        // ── Bulk lookups ──────────────────────────────────────────────────
+        // Bulk lookups
 
         // 1. Existing duplicate keys: StudentId|ServiceType|DOSDate|StartTime|EndTime|ActualSize
-        // Provider name intentionally excluded — name changes between imports would break deduplication.
+        // Provider name intentionally excluded - name changes between imports would break deduplication.
         var existingKeys = await db.Seses
             .Where(s => s.date_of_Service.HasValue)
             .Select(s => s.Student_ID + "|" + s.Service_Type + "|" +
@@ -786,7 +770,7 @@ public class ImportService : IImportService
             .Select(p => new { p.Provider_Id, Ssn = p.Ssn! })
             .ToDictionaryAsync(p => p.Provider_Id, p => p.Ssn.Replace("-", ""), ct);
 
-        // 3c. Set of (Entry_Id, pSsn) that exist in VendorPortal — used to verify the billing
+        // 3c. Set of (Entry_Id, pSsn) that exist in VendorPortal - used to verify the billing
         // provider is actually linked to the matched mandate before assigning Entry_Id.
         var vpEntryProviders = (await db.VendorPortals
             .Where(v => v.Entry_Id != null && v.pSsn != null)
@@ -812,7 +796,7 @@ public class ImportService : IImportService
             .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => (decimal?)g.First().Rate, StringComparer.OrdinalIgnoreCase);
 
-        // ── Row processing ────────────────────────────────────────────────
+        // Row processing
 
         int batchSize = _settings.BatchSize;
         var batch = new List<Sesi>(batchSize);
@@ -828,7 +812,7 @@ public class ImportService : IImportService
             }
             catch (Exception ex)
             {
-                // Batch failed — fall back to row-by-row so we can skip only the bad ones
+                // Batch failed - fall back to row-by-row so we can skip only the bad ones
                 _logger.LogWarning(ex, "CommitSesisAsync: batch of {Count} rows failed, falling back to row-by-row", batch.Count);
                 db.ChangeTracker.Clear();
                 foreach (var e in batch)
@@ -894,7 +878,7 @@ public class ImportService : IImportService
 
             // Entry_Id lookup via in-memory mandates + VendorPortal provider check.
             // We only accept a mandate if the billing provider (cols AO/AP) has a VendorPortal
-            // entry for it — prevents attaching to another provider's approval ID.
+            // entry for it - prevents attaching to another provider's approval ID.
             int? entryId = null;
             if (int.TryParse(duration, out int durInt) && dateOfService.HasValue)
             {
@@ -915,21 +899,12 @@ public class ImportService : IImportService
                         return (mGrp == 1 && actualSizeInt == 1) || (mGrp > 1 && mGrp >= actualSizeInt);
                     });
 
-                // #16: only attach to an approval that the billing provider (cols AO/AP) is
-                // actually linked to in VendorPortal. If the provider isn't in the system, has no
-                // SSN, or has no VendorPortal link to a candidate mandate, leave Entry_Id null
-                // (Missing Approval) rather than risk attaching to another provider's approval.
-                // (Per client + Deven: "never attach to a provider other than AO/AP" — prefer
-                // leaving unassigned over a mandate-only guess.)
+                // Only attach to an approval the billing provider (cols AO/AP) is linked to in
+                // VendorPortal; otherwise leave Entry_Id null so the row shows as unassigned.
                 if (providerId.HasValue && providerSsnDict.TryGetValue(providerId.Value, out var ssnStripped) && !string.IsNullOrEmpty(ssnStripped))
                 {
-                    // #17: GROUP SIZE is the deciding factor. Among provider-linked candidates
-                    // (all already exact on duration + within date range), prefer the approval
-                    // whose group size EXACTLY matches the session, then the closest accommodating
-                    // group, then the most recent. This fixes the case the client flagged: a
-                    // group-of-1 line (e.g. 1x30x1) must lock to the group-size-1 approval
-                    // (2x30x1) rather than a larger group approval (1x30x3) just because it's newer.
-                    // Frequency is intentionally ignored (client: match on group size, not frequency).
+                    // Prefer the approval whose group size matches the session, then the closest
+                    // accommodating group, then the most recent.
                     entryId = candidates
                         .Where(m => vpEntryProviders.Contains((m.Entry_Id, ssnStripped)))
                         .OrderBy(m => Math.Abs((int.TryParse(m.Grp_Size, out var mg) ? mg : 0) - actualSizeInt))
@@ -937,8 +912,6 @@ public class ImportService : IImportService
                         .Select(m => (int?)m.Entry_Id)
                         .FirstOrDefault();
                 }
-                // else: provider not verifiable (not in system / no SSN) → entryId stays null →
-                // record shows as "Missing Approval" for manual review. No mandate-only fallback.
             }
 
             // Billing rate lookup
@@ -1038,10 +1011,8 @@ public class ImportService : IImportService
         };
     }
 
-    // ─────────────────────────────────────────────
     // COMMIT VENDOR PORTAL
     // Bulk dup check upfront, batch insert every 500, then backfill Entry_Id
-    // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitVendorPortalAsync(ImportPreviewResult preview, CancellationToken ct)
     {
         await using var db = _factory.CreateDbContext();
@@ -1052,7 +1023,7 @@ public class ImportService : IImportService
         var skippedRowNumbers = new List<int>();
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
 
-        // ── Bulk lookups ──────────────────────────────────────────────────
+        // Bulk lookups
 
         // 1. All existing Assign_Ids
         var existingAssignIds = await db.VendorPortals
@@ -1078,7 +1049,7 @@ public class ImportService : IImportService
             })
             .ToListAsync(ct);
 
-        // ── Row processing ────────────────────────────────────────────────
+        // Row processing
 
         // Build a lookup of AssignId -> display row number for skip tracking in fallback
         var assignIdToDisplayRow = preview.ValidRows
@@ -1173,7 +1144,7 @@ public class ImportService : IImportService
 
         await FlushBatchAsync();
 
-        // ── Entry_Id backfill pass ────────────────────────────────────────
+        // Entry_Id backfill pass
         // Now that rows are inserted and have VendorPortal_Ids, link Entry_Id
         // Only process rows that were successfully inserted (no Entry_Id yet)
         var newRows = await db.VendorPortals
@@ -1227,11 +1198,9 @@ public class ImportService : IImportService
         };
     }
 
-    // ─────────────────────────────────────────────
     // COMMIT PAYMENTS
     // Updates Sesis rows: sets bPaid = now, Voucher = voucher number
     // Matches on student, date of service, start time, provider SSN last 4, provider name
-    // ─────────────────────────────────────────────
     private async Task<ImportCommitResult> CommitPaymentsAsync(ImportPreviewResult preview, CancellationToken ct)
     {
         await using var db = _factory.CreateDbContext();
@@ -1243,7 +1212,7 @@ public class ImportService : IImportService
         var skippedRowNumbers = new List<int>();
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
 
-        // ── Bulk lookups upfront (2 queries total instead of 2 per row) ──────
+        // Bulk lookups upfront (2 queries total instead of 2 per row)
         // Collect the date range and student IDs from the file first
         var rowData = new List<(int RowNumber, string Voucher, string StudentId, string? Ssn, string? SsnLast4, string? Provider, DateTime DosDate, string StartTimeNormalized)>();
 
@@ -1307,7 +1276,7 @@ public class ImportService : IImportService
             .ToListAsync(ct);
         var providerById = allProviders.ToDictionary(p => p.Provider_Id);
 
-        // ── In-memory matching loop ────────────────────────────────────────
+        // In-memory matching loop
         var paymentRows = new List<Payment>();
 
         foreach (var r in rowData)
@@ -1358,7 +1327,7 @@ public class ImportService : IImportService
                 noMatch++;
         }
 
-        // ── Single save for all changes ────────────────────────────────────
+        // Single save for all changes
         if (updated > 0)
         {
             try
@@ -1381,9 +1350,7 @@ public class ImportService : IImportService
         };
     }
 
-    // ─────────────────────────────────────────────
     // ARCHIVE
-    // ─────────────────────────────────────────────
     public async Task ArchiveFileAsync(ImportType type, string fileName, byte[] fileBytes)
     {
         string basePath = type switch
@@ -1405,7 +1372,7 @@ public class ImportService : IImportService
         var prefixedFileName = $"{datePrefix} {fileName}";
         var destPath = Path.Combine(destFolder, prefixedFileName);
 
-        // Avoid overwriting — append time if file already exists
+        // Avoid overwriting - append time if file already exists
         if (File.Exists(destPath))
         {
             var name = Path.GetFileNameWithoutExtension(prefixedFileName);

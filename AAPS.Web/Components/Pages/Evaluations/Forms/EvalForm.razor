@@ -336,8 +336,6 @@
     private List<GDistrictDTO>   _gDistricts   = [];
     private List<LanguageDTO>    _languages    = [];
 
-    // Tracks the value we last auto-filled, so we only ever replace/clear our own
-    // auto-fill — never an amount the user typed in manually.
     private decimal? _autoFilledAmount;
 
     private async Task OnServiceTypeChanged(string? value)
@@ -358,9 +356,7 @@
         await RecomputeBillingRate();
     }
 
-    // Auto-fills the Billing Amount from the Service Type / District / Language rate on the
-    // Billing Rates page (client-editable; e.g. ABA Evaluation). Runs whenever any of the three
-    // change, but never overwrites an amount the user typed in (tracked via _autoFilledAmount).
+    // Fills the Billing Amount from the matching rate; leaves a manually-entered amount alone.
     private async Task RecomputeBillingRate()
     {
         bool amountIsOursOrEmpty =
@@ -370,11 +366,11 @@
 
         decimal? rate = await BillingRateService.GetRateAsync(Model.ServiceType, Model.District, Model.Language);
 
-        Model.BillingAmount = rate;   // fill the matching rate, or clear if none is set
+        Model.BillingAmount = rate;
         _autoFilledAmount = rate;
     }
 
-    // ── Eval Files ─────────────────────────────────────────
+    // Eval Files
     private IFileExplorerService _fileExplorerService = default!;
     private List<FileExplorerItem> _files = new();
     private bool _filesLoading = false;
@@ -399,10 +395,8 @@
             await Task.WhenAll(provTask, stTask, distTask, langTask);
 
             _providers    = (await provTask).Items.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ToList();
-            // Evaluations only ever use evaluation-type service types.
             _serviceTypes = (await stTask).Items.Where(s => s.IsEvaluation).OrderBy(s => s.Name).ToList();
-            // Safety: if we're editing an eval whose stored type isn't flagged as an evaluation,
-            // keep it selectable so the value isn't silently lost.
+            // Keep the current type selectable even if it isn't flagged as an evaluation.
             if (!string.IsNullOrWhiteSpace(Model.ServiceType) &&
                 !_serviceTypes.Any(s => s.Name == Model.ServiceType))
             {
@@ -413,7 +407,7 @@
         }
         catch
         {
-            // Lookup tables failed — selects will be empty but form still opens
+            // Lookup tables failed - selects will be empty but form still opens
         }
 
         // Pre-select the current provider when editing

@@ -65,7 +65,7 @@ namespace AAPS.Web
 
             var app = builder.Build();
 
-            // Seed any missing reference data (idempotent — safe to run on every startup)
+            // Seed any missing reference data (idempotent - safe to run on every startup)
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -126,7 +126,7 @@ namespace AAPS.Web
 
         private static void CreateFileExplorerEndpoints(WebApplication app)
         {
-            // Download endpoint — streams the file as an attachment
+            // Download endpoint - streams the file as an attachment
             app.MapGet("/files/download", (string path, IFileExplorerService fileService) =>
             {
                 if (!fileService.IsPathSafe(path))
@@ -143,7 +143,7 @@ namespace AAPS.Web
                 return Results.File(stream, contentType, fileName);
             });
 
-            // Preview endpoint — serves the file inline (for iframe/img tags)
+            // Preview endpoint - serves the file inline (for iframe/img tags)
             app.MapGet("/files/preview", (string path, IFileExplorerService fileService) =>
             {
                 if (!fileService.IsPathSafe(path))
@@ -161,7 +161,7 @@ namespace AAPS.Web
                 return Results.File(stream, contentType, enableRangeProcessing: true);
             });
 
-            // Provider files download — uses the ProviderFiles keyed service (C:\AAPS\Provider Profiles)
+            // Provider files download - uses the ProviderFiles keyed service (C:\AAPS\Provider Profiles)
             app.MapGet("/provider-files/download", (string path, [FromKeyedServices("ProviderFiles")] IFileExplorerService fileService) =>
             {
                 if (!fileService.IsPathSafe(path))
@@ -178,7 +178,7 @@ namespace AAPS.Web
                 return Results.File(stream, contentType, fileName);
             });
 
-            // Provider files preview — serves inline for iframe/img/new window
+            // Provider files preview - serves inline for iframe/img/new window
             app.MapGet("/provider-files/preview", (string path, [FromKeyedServices("ProviderFiles")] IFileExplorerService fileService) =>
             {
                 if (!fileService.IsPathSafe(path))
@@ -195,7 +195,7 @@ namespace AAPS.Web
                 return Results.File(stream, contentType, enableRangeProcessing: true);
             });
 
-            // Eval files download — uses the EvalFiles keyed service (C:\AAPS\Evaluation Documents)
+            // Eval files download - uses the EvalFiles keyed service (C:\AAPS\Evaluation Documents)
             app.MapGet("/eval-files/download", (string path, [FromKeyedServices("EvalFiles")] IFileExplorerService fileService) =>
             {
                 if (!fileService.IsPathSafe(path))
@@ -212,7 +212,7 @@ namespace AAPS.Web
                 return Results.File(stream, contentType, fileName);
             });
 
-            // Eval files preview — serves inline for iframe/img/new window
+            // Eval files preview - serves inline for iframe/img/new window
             app.MapGet("/eval-files/preview", (string path, [FromKeyedServices("EvalFiles")] IFileExplorerService fileService) =>
             {
                 if (!fileService.IsPathSafe(path))
@@ -230,7 +230,7 @@ namespace AAPS.Web
             });
         }
 
-        // ── NEW: Consent report endpoint ──────────────────────────────────────────
+        // NEW: Consent report endpoint
         private static void CreateReportEndpoints(WebApplication app)
         {
             // GET /reports/consent/{id}
@@ -246,7 +246,7 @@ namespace AAPS.Web
                 if (eval is null)
                     return Results.NotFound($"Evaluation {id} not found.");
 
-                // Supply logo — wwwroot/images/doe-logo.png (replace with your real file)
+                // Supply logo - wwwroot/images/doe-logo.png (replace with your real file)
                 var logoPath = Path.Combine(env.WebRootPath, "images", "nyc-doe-logo.png");
                 reportService.SetLogoPath(logoPath);
 

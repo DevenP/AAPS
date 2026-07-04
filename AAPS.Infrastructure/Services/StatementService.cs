@@ -100,7 +100,7 @@ public class StatementService : IStatementService
         return new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
     }
 
-    // ── Same base query as BillingService (no unpaidOnly filter — statements show all filtered records) ──
+    // Same base query as BillingService (no unpaidOnly filter - statements show all filtered records)
     // Uses MIN(VendorPortal_Id) per (Entry_Id, pSsn) to match Acounting_Select exactly.
     private static IQueryable<BillingRecordDTO> BuildBaseQuery(AppDbContext db)
     {
@@ -188,7 +188,7 @@ public class StatementService : IStatementService
                     page.MarginBottom(14);
                     page.DefaultTextStyle(x => x.FontSize(7.5f).FontFamily("Arial"));
 
-                    // ── HEADER — repeats on every page of this provider's section ──
+                    // HEADER - repeats on every page of this provider's section
                     page.Header().Column(col =>
                     {
                         col.Spacing(0);
@@ -228,7 +228,7 @@ public class StatementService : IStatementService
                         col.Item().PaddingTop(2);
                     });
 
-                    // ── FOOTER — repeats on every page ──
+                    // FOOTER - repeats on every page
                     page.Footer().Column(col =>
                     {
                         col.Spacing(2);
@@ -243,7 +243,7 @@ public class StatementService : IStatementService
                                .FontSize(6.5f);
                     });
 
-                    // ── CONTENT ──
+                    // CONTENT
                     page.Content().Column(contentCol =>
                     {
                         contentCol.Spacing(0);
@@ -304,7 +304,7 @@ public class StatementService : IStatementService
                             }
                         });
 
-                        // Total amount — green-bordered box, centered
+                        // Total amount - green-bordered box, centered
                         contentCol.Item().AlignCenter().PaddingTop(8)
                             .Border(1f).BorderColor("#00aa00")
                             .Padding(4)

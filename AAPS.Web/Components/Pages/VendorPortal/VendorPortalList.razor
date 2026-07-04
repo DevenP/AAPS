@@ -173,7 +173,7 @@
         return "";
     }
 
-    // ── Selection state ──────────────────────────────────────────────────────
+    // Selection state
     private HashSet<int> _selectedIds = new();
     private bool _allSelected = false;
     private bool _shiftHeld = false;
@@ -221,7 +221,7 @@
         _lastClickedIndex = -1;
     }
 
-    // ── Remove Discrepancy Record ────────────────────────────────────────────
+    // Remove Discrepancy Record
     private async Task ConfirmRemoveSelected()
     {
         var idsToDelete = _selectedIds.ToList();
@@ -248,7 +248,7 @@
         }
     }
 
-    // ── Replace Approval ID ──────────────────────────────────────────────────
+    // Replace Approval ID
     private async Task OpenReplaceApprovalId()
     {
         var idsToUpdate = _selectedIds.ToList();

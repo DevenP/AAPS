@@ -2,8 +2,7 @@
 
 <MudGrid>
 
-    @* Name — editable on Add, read-only on Edit (service types are referenced by NAME across
-       many tables and the DOE import files, so renaming an existing type is intentionally blocked). *@
+    @* Name - editable on Add, read-only on Edit *@
     <MudItem xs="12">
         @if (_isNew)
         {
@@ -19,7 +18,7 @@
         }
     </MudItem>
 
-    @* Evaluation flag — always editable *@
+    @* Evaluation flag - always editable *@
     <MudItem xs="12">
         <MudSwitch @bind-Value="Model.IsEvaluation" Color="Color.Primary" Label="Evaluation type" />
         <MudText Typo="Typo.caption" Class="mud-text-secondary">

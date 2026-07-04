@@ -24,12 +24,12 @@ public class BillingService : IBillingService
         _settings = settings.Value;
     }
 
-    // ── Shared base query — same filters used by the grid and file generation ──
+    // Shared base query - same filters used by the grid and file generation
     // Matches Acounting_Select exactly: MIN(VendorPortal_Id) per (Entry_Id, pSsn),
     // then inner-join semantics via WHERE VendorPortal.Assign_Id IS NOT NULL.
     private static IQueryable<BillingRecordDTO> BuildBaseQuery(AppDbContext db, bool unpaidOnly = false)
     {
-        // Step 1: MIN(VendorPortal_Id) per (Entry_Id, pSsn) — mirrors the proc subquery
+        // Step 1: MIN(VendorPortal_Id) per (Entry_Id, pSsn) - mirrors the proc subquery
         var topAssignByEntryAndSsn = db.VendorPortals.AsNoTracking()
             .Where(v => v.Entry_Id != null && v.pSsn != null)
             .GroupBy(v => new { v.Entry_Id, v.pSsn })
@@ -109,7 +109,7 @@ public class BillingService : IBillingService
         if (!timeSort)
             return await BuildBaseQuery(db).ToPagedResultAsync(request, ct);
 
-        // Times stored as "09:30 AM" strings — materialize and sort by parsed DateTime
+        // Times stored as "09:30 AM" strings - materialize and sort by parsed DateTime
         var all = await BuildBaseQuery(db).ApplyFilters(request).ToListAsync(ct);
         bool desc = string.Equals(request.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
         Func<BillingRecordDTO, DateTime?> key = request.SortBy == "StartTime"
@@ -239,14 +239,14 @@ public class BillingService : IBillingService
 
         var entryIds = sesiRows.Select(r => r.Entry_Id!.Value).Distinct().ToList();
 
-        // Step 3: Fetch mandates — Remaining_Freq and Grp_Size for aSes/aFreq/aGrs/aType/aYear
+        // Step 3: Fetch mandates - Remaining_Freq and Grp_Size for aSes/aFreq/aGrs/aType/aYear
         var mandates = await db.Mandates.AsNoTracking()
             .Where(m => entryIds.Contains(m.Entry_Id))
             .Select(m => new { m.Entry_Id, m.MandateStart, m.MandateEnd, m.Remaining_Freq, m.Grp_Size, m.Dur })
             .ToListAsync(ct);
         var mandateDict = mandates.ToDictionary(m => m.Entry_Id);
 
-        // Step 4: Fetch vendor portal — MIN(VendorPortal_Id) per (Entry_Id, pSsn), matches proc subquery
+        // Step 4: Fetch vendor portal - MIN(VendorPortal_Id) per (Entry_Id, pSsn), matches proc subquery
         var vendorPortals = await db.VendorPortals.AsNoTracking()
             .Where(v => v.Entry_Id.HasValue && entryIds.Contains(v.Entry_Id.Value) && v.Assign_Id != null)
             .Select(v => new { v.VendorPortal_Id, v.Entry_Id, v.pSsn, v.pFund, v.pBoro, v.pSchool, v.Assign_Id })
@@ -280,14 +280,11 @@ public class BillingService : IBillingService
                 var grpInt = int.TryParse(m?.Grp_Size?.Trim(), out var gs) ? gs : 0;
                 var aType = svcFirst + (grpInt == 1 ? "1" : svcFirst == "S" ? "P" : "T");
 
-                // #12: parse Remaining_Freq of form "{count}x {TypeWord}" (e.g. "2x Weekly",
-                // "6x Monthly", "38x In Total"). Legacy read fixed char positions, which broke for
-                // multi-digit counts (dropped digits) and "In Total" (blank/'I' instead of 'T').
-                // For single-digit Weekly/Monthly this produces the SAME output as before.
+                // Remaining_Freq is "{count}x {TypeWord}" (e.g. "2x Weekly", "38x In Total").
                 var remFreq = m?.Remaining_Freq ?? "";
                 var (freqCount, freqType) = ParseFrequency(remFreq);
 
-                // aSes: '0' + full session count (legacy "0" + count, now correct for 2+ digits)
+                // aSes: '0' + session count
                 var aSes = "0" + freqCount;
 
                 // aFreq: W = Weekly, M = Monthly, T = In Total
@@ -296,12 +293,12 @@ public class BillingService : IBillingService
                 // aGrs: '0' + Grp_Size
                 var aGrs = "0" + (m?.Grp_Size ?? "");
 
-                // aDur: LEFT(Mandates.Dur, 2) — mandate approval duration, not actual session duration
+                // aDur: LEFT(Mandates.Dur, 2) - mandate approval duration, not actual session duration
                 var aDur = (m?.Dur?.Length >= 2 ? m.Dur.Substring(0, 2) : m?.Dur) ?? "";
 
                 // Date fields formatted as MM/dd/yyyy (SQL CONVERT format 101).
                 // MandateStart, MandateEnd, bServiceDate use CONVERT(char(12),...) which pads to 12 chars
-                // — MM/dd/yyyy is 10 chars so 2 trailing spaces are appended to match WinForms output exactly.
+                // - MM/dd/yyyy is 10 chars so 2 trailing spaces are appended to match WinForms output exactly.
                 var bServiceDate = (dos?.ToString("MM/dd/yyyy") ?? "") + "  ";
                 var invoiceMonth = dos.HasValue
                     ? dos.Value.ToString("MM") + "/01/" + dos.Value.Year
@@ -330,7 +327,7 @@ public class BillingService : IBillingService
             .GroupBy(x => (x!.FundCode, x.BillingMonth))
             .ToList();
 
-        // Step 6: Write files — OutputPath/{year}/{month}/{fundCode}_{yyyy-MM}_{ddMMyyHHmm}.txt
+        // Step 6: Write files - OutputPath/{year}/{month}/{fundCode}_{yyyy-MM}_{ddMMyyHHmm}.txt
         var now = DateTime.Now;
         var destFolder = Path.Combine(_settings.OutputPath, now.Year.ToString(), now.Month.ToString("D2"));
         Directory.CreateDirectory(destFolder);
@@ -364,12 +361,8 @@ public class BillingService : IBillingService
         return new BillingGenerateResult(result, skippedPaidCount);
     }
 
-    // #12: parses a Remaining_Freq / pFreq string of the form "{count}x {TypeWord}"
-    // (e.g. "2x Weekly", "6x Monthly", "38x In Total") into its numeric count and a
-    // single-letter frequency code: W = Weekly, M = Monthly, T = In Total. Falls back to
-    // the first letter of the type word (upper-cased) for anything unrecognized.
-    // Replaces the old fixed-character-position parsing, which broke on multi-digit
-    // counts and on "In Total". For single-digit Weekly/Monthly the result is unchanged.
+    // Parses "{count}x {TypeWord}" (e.g. "2x Weekly", "38x In Total") into the numeric count
+    // and a single-letter code: W = Weekly, M = Monthly, T = In Total.
     private static (string Count, string Type) ParseFrequency(string? remainingFreq)
     {
         if (string.IsNullOrWhiteSpace(remainingFreq))

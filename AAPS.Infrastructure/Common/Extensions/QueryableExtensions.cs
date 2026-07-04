@@ -10,11 +10,11 @@ namespace AAPS.Infrastructure.Common.Extensions
 {
     public static class QueryableExtensions
     {
-        // ── Reflection cache — populated once per DTO type, reused on every request ──
+        // Reflection cache - populated once per DTO type, reused on every request
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _browseableStringProps = new();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _allProps = new();
 
-        // Cache the EF.Functions.Like MethodInfo — looked up once at startup
+        // Cache the EF.Functions.Like MethodInfo - looked up once at startup
         private static readonly MethodInfo _likeMethod =
             typeof(DbFunctionsExtensions).GetMethod("Like",
                 new[] { typeof(DbFunctions), typeof(string), typeof(string) })!;
@@ -28,7 +28,7 @@ namespace AAPS.Infrastructure.Common.Extensions
         private static PropertyInfo[] GetAllProps(Type type) =>
             _allProps.GetOrAdd(type, t => t.GetProperties());
 
-        // ── In-memory overload (for raw SQL / stored proc results) ───────────────
+        // In-memory overload (for raw SQL / stored proc results)
         // Use this when the source is already materialized (e.g. from SqlQueryRaw).
         // Applies search, column filters, sorting, and paging entirely in memory.
         public static Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
@@ -50,7 +50,7 @@ namespace AAPS.Infrastructure.Common.Extensions
             var list = query.ToList();
             var totalCount = list.Count;
 
-            // Export — return all items
+            // Export - return all items
             if (request.PageSize == -1)
                 return Task.FromResult(new AAPS.Application.Common.Paging.PagedResult<T>(list, 1, totalCount, totalCount));
 
@@ -155,7 +155,7 @@ namespace AAPS.Infrastructure.Common.Extensions
                 : source.OrderBy(x => prop.GetValue(x));
         }
 
-        // ── Apply search + column filters without paging (used for aggregate queries) ──
+        // Apply search + column filters without paging (used for aggregate queries)
         public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, PagedRequest request, bool performSearch = true) where T : class
         {
             if (performSearch && !string.IsNullOrWhiteSpace(request.Search))
@@ -165,7 +165,7 @@ namespace AAPS.Infrastructure.Common.Extensions
             return query;
         }
 
-        // ── EF Core / IQueryable overload ────────────────────────────────────────
+        // EF Core / IQueryable overload
         public static async Task<AAPS.Application.Common.Paging.PagedResult<T>> ToPagedResultAsync<T>(
             this IQueryable<T> query,
             PagedRequest request,
@@ -178,7 +178,7 @@ namespace AAPS.Infrastructure.Common.Extensions
             if (request.ColumnFilters != null && request.ColumnFilters.Count > 0)
                 query = ApplyColumnFilters(query, request.ColumnFilters);
 
-            // Export — return everything without a separate COUNT query
+            // Export - return everything without a separate COUNT query
             if (request.PageSize == -1)
             {
                 query = ApplySort(query, request.SortBy, request.SortDir);
@@ -186,11 +186,11 @@ namespace AAPS.Infrastructure.Common.Extensions
                 return new AAPS.Application.Common.Paging.PagedResult<T>(allItems, 1, allItems.Count, allItems.Count);
             }
 
-            // Count before sorting — ORDER BY is meaningless for COUNT(*) and causes
+            // Count before sorting - ORDER BY is meaningless for COUNT(*) and causes
             // EF Core to expand complex DTO projections into the sort key, breaking translation.
             var totalCount = await query.CountAsync(ct);
 
-            // Sorting — apply after count for stable pagination
+            // Sorting - apply after count for stable pagination
             query = ApplySort(query, request.SortBy, request.SortDir);
 
             var page = request.Page < 1 ? 1 : request.Page;
@@ -294,7 +294,7 @@ namespace AAPS.Infrastructure.Common.Extensions
                 }
                 catch (Exception)
                 {
-                    // Property not translatable to SQL — skip it
+                    // Property not translatable to SQL - skip it
                     continue;
                 }
             }
@@ -322,7 +322,7 @@ namespace AAPS.Infrastructure.Common.Extensions
             }
             catch (Exception)
             {
-                // Column doesn't exist on the DTO — try Id fallback, otherwise leave unsorted
+                // Column doesn't exist on the DTO - try Id fallback, otherwise leave unsorted
                 if (hasId)
                     query = query.OrderBy("Id asc");
             }

@@ -6,7 +6,7 @@
 
 <div style="height:calc(100vh - 200px); display:flex; flex-direction:column; overflow:hidden;">
 
-    @* ── Step indicator ── *@
+    @* Step indicator *@
     <div class="d-flex align-center gap-4 mb-4">
         <StepBadge Number="1" Label="Upload" Active="@(_step >= 1)" Done="@(_step > 1)" />
         <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="mud-text-secondary" />
@@ -17,7 +17,7 @@
 
     <MudText Typo="Typo.caption" Class="mud-text-secondary mb-4">@Description</MudText>
 
-    @* ── STEP 1: Upload ── *@
+    @* STEP 1: Upload *@
     @if (_step == 1)
     {
         <div class="import-drop-zone" style="@(_isDragging ? "border-color: var(--mud-palette-primary-darken); background-color: var(--mud-palette-action-default-hover);" : "")">
@@ -47,7 +47,7 @@
         }
     }
 
-    @* ── STEP 2: Preview ── *@
+    @* STEP 2: Preview *@
     @if (_step == 2 && _preview != null)
     {
         <div class="d-flex align-center justify-space-between mb-3" style="flex-shrink:0;">
@@ -192,7 +192,7 @@
         </MudTabs>
     }
 
-    @* ── STEP 3: Done ── *@
+    @* STEP 3: Done *@
     @if (_step == 3 && _result != null)
     {
         <div class="d-flex flex-column align-center justify-center" style="flex:1;">

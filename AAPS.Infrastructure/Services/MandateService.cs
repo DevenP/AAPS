@@ -110,7 +110,7 @@ public class MandateService : IMandateService
                     };
 
 
-        // performSearch: false — search was already applied above on the raw entity
+        // performSearch: false - search was already applied above on the raw entity
         return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 

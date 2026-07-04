@@ -64,7 +64,7 @@ public class BillingRateService : IBillingRateService
         if (dto.Rate < 1)
             throw new InvalidOperationException("Rate must be at least $1.00.");
 
-        // Guard: duplicate combo (any record — active or historical — for this combo blocks insert)
+        // Guard: duplicate combo (any record - active or historical - for this combo blocks insert)
         var exists = await db.BillingRates.AnyAsync(b =>
             b.District == dto.District &&
             b.ServiceType == dto.ServiceType &&
@@ -96,7 +96,7 @@ public class BillingRateService : IBillingRateService
             entity.BillingRate_Id, dto.District, dto.ServiceType, dto.Language, dto.Rate);
 
         // Cascade bRate + bAmount to matching unpaid Sesis rows (proc: bPaid IS NULL)
-        // Duration and Actual_Size are varchar — must use raw SQL for the CONVERT
+        // Duration and Actual_Size are varchar - must use raw SQL for the CONVERT
         var sesisCount = await db.Database.ExecuteSqlRawAsync(
             @"UPDATE Sesis
               SET bRate   = @rate,
@@ -147,7 +147,7 @@ public class BillingRateService : IBillingRateService
             throw new InvalidOperationException("The new rate is the same as the current rate. No changes were made.");
         }
 
-        // Deactivate the old row (audit trail — matches proc behaviour)
+        // Deactivate the old row (audit trail - matches proc behaviour)
         existing.Active = null;
 
         // Insert new row with same combo but updated rate

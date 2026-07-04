@@ -62,7 +62,7 @@ public class SesiService : ISesiService
 
         var query = baseQuery.Select(ToDTO);
 
-        // performSearch: false — search was already applied above on the raw entity
+        // performSearch: false - search was already applied above on the raw entity
         return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
@@ -243,9 +243,9 @@ public class SesiService : ISesiService
     private static IQueryable<OperationsDTO> BuildOperationQuery(AppDbContext db, string? search)
     {
         // Mirrors the stored proc's two-step VendorPortal join:
-        //   Step 1 — MIN(VendorPortal_Id) per (Entry_Id, pSsn)
-        //   Step 2 — join back to get Assign_Id for that winning row
-        //   Step 3 — cross-check pSsn == provider's dash-stripped SSN
+        // Step 1 - MIN(VendorPortal_Id) per (Entry_Id, pSsn)
+        // Step 2 - join back to get Assign_Id for that winning row
+        // Step 3 - cross-check pSsn == provider's dash-stripped SSN
         var topAssignByEntryAndSsn = db.VendorPortals.AsNoTracking()
             .Where(v => v.Entry_Id != null && v.pSsn != null)
             .GroupBy(v => new { v.Entry_Id, v.pSsn })
@@ -375,7 +375,7 @@ public class SesiService : ISesiService
 
         bool timeSort = req.SortBy is "StartTime" or "EndTime";
 
-        // Fast path: no AssignFlag filter AND no time-column sort — let EF handle everything
+        // Fast path: no AssignFlag filter AND no time-column sort - let EF handle everything
         if (!assignFlag.HasValue && !timeSort)
             return await query.ToPagedResultAsync(req, ct, performSearch: false);
 
@@ -437,11 +437,11 @@ public class SesiService : ISesiService
 
         foreach (var e in entities)
         {
-            // CSE='2' — date only, no recalc
+            // CSE='2' - date only, no recalc
             if (dto.ApplyAll || dto.DateOfService.HasValue)
                 e.date_of_Service = dto.DateOfService;
 
-            // CSE='3' — normalize time, recalc Duration + amounts
+            // CSE='3' - normalize time, recalc Duration + amounts
             if (dto.ApplyAll || dto.StartTime != null)
             {
                 e.Start_Time = NormalizeTime(dto.StartTime);
@@ -449,7 +449,7 @@ public class SesiService : ISesiService
                 if (dur.HasValue) { e.Duration = dur.Value.ToString(); RecalcAmounts(e, dur.Value); }
             }
 
-            // CSE='4' — normalize time, recalc Duration + amounts
+            // CSE='4' - normalize time, recalc Duration + amounts
             if (dto.ApplyAll || dto.EndTime != null)
             {
                 e.End_Time = NormalizeTime(dto.EndTime);
@@ -457,7 +457,7 @@ public class SesiService : ISesiService
                 if (dur.HasValue) { e.Duration = dur.Value.ToString(); RecalcAmounts(e, dur.Value); }
             }
 
-            // CSE='5' — recalc amounts using existing Duration
+            // CSE='5' - recalc amounts using existing Duration
             if (dto.ApplyAll || dto.ActualSize != null)
             {
                 e.Actual_Size = dto.ActualSize;
@@ -465,7 +465,7 @@ public class SesiService : ISesiService
                     RecalcAmounts(e, dur);
             }
 
-            // CSE='6' — denormalize name, lookup pRate, recalc pAmount
+            // CSE='6' - denormalize name, lookup pRate, recalc pAmount
             if (dto.ApplyAll || dto.ProviderId.HasValue)
             {
                 e.Provider_Id = dto.ProviderId;
@@ -492,7 +492,7 @@ public class SesiService : ISesiService
                 }
             }
 
-            // CSE='10' — lookup pRate + bRate, recalc all amounts
+            // CSE='10' - lookup pRate + bRate, recalc all amounts
             if (dto.ApplyAll || dto.GDistrict != null)
             {
                 e.GDistrict = dto.GDistrict;
@@ -514,7 +514,7 @@ public class SesiService : ISesiService
                 }
             }
 
-            // CSE='12' — lookup pRate + bRate, recalc all amounts
+            // CSE='12' - lookup pRate + bRate, recalc all amounts
             if (dto.ApplyAll || dto.LanguageProvided != null)
             {
                 e.Language_Provided = dto.LanguageProvided;
@@ -536,14 +536,14 @@ public class SesiService : ISesiService
                 }
             }
 
-            // CSE='9' — link Entry_Id (simplified; proc validates student/group match)
+            // CSE='9' - link Entry_Id (simplified; proc validates student/group match)
             if (dto.ApplyAll || dto.EntryId.HasValue)
                 e.Entry_Id = dto.EntryId;
         }
 
-        // CSE='11' — update Mandates table for MandateStart (also sets First_Attend_Date)
-        // CSE='14' — update Mandates table for MandateEnd (normalized to 23:59)
-        // Only run when at least one date was explicitly provided — avoids wiping existing dates.
+        // CSE='11' - update Mandates table for MandateStart (also sets First_Attend_Date)
+        // CSE='14' - update Mandates table for MandateEnd (normalized to 23:59)
+        // Only run when at least one date was explicitly provided - avoids wiping existing dates.
         if (dto.MandateStart.HasValue || dto.MandateEnd.HasValue)
         {
             var entryIds = entities
@@ -576,7 +576,7 @@ public class SesiService : ISesiService
         _logger.LogInformation("BulkUpdate complete");
     }
 
-    // CSE='15' — set VoucherBalancePaid = now, only if currently null
+    // CSE='15' - set VoucherBalancePaid = now, only if currently null
     public async Task BulkMarkVoucherBalancePaidAsync(List<int> ids, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
@@ -590,7 +590,7 @@ public class SesiService : ISesiService
         await db.SaveChangesAsync(ct);
     }
 
-    // CSE='16' — clear VoucherBalancePaid, only where VoucherAmount <> bAmount and it is currently set
+    // CSE='16' - clear VoucherBalancePaid, only where VoucherAmount <> bAmount and it is currently set
     public async Task BulkUnmarkVoucherBalancePaidAsync(List<int> ids, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
@@ -621,7 +621,7 @@ public class SesiService : ISesiService
             : null;
     }
 
-    // Rate * Duration(min) / 60 / GroupSize — matches proc formula for bAmount/pAmount
+    // Rate * Duration(min) / 60 / GroupSize - matches proc formula for bAmount/pAmount
     private static void RecalcAmounts(Sesi e, int durationMinutes)
     {
         if (!int.TryParse(e.Actual_Size, out var size) || size <= 0) return;
@@ -646,7 +646,7 @@ public class SesiService : ISesiService
     public async Task<int> BulkDeleteProviderBillingAsync(List<int> ids, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        // Only delete rows with no approval linked (Entry_Id IS NULL) — mirrors WinForms behaviour
+        // Only delete rows with no approval linked (Entry_Id IS NULL) - mirrors WinForms behaviour
         var entities = await db.Seses
             .Where(s => ids.Contains(s.Sesis_Id) && s.Entry_Id == null)
             .ToListAsync(ct);

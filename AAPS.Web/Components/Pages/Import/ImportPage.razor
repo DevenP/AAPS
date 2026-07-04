@@ -13,7 +13,7 @@
 
     <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-4" @bind-ActivePanelIndex="_activeTab">
 
-        @* ── MANDATES TAB ── *@
+        @* MANDATES TAB *@
         <MudTabPanel Text="Approvals" Icon="@Icons.Material.Filled.Assignment">
             <ImportTabPanel ImportType="ImportType.Mandates"
                             Description="Mandate Detail export (.xlsx). Data starts at row 4."
@@ -21,7 +21,7 @@
                             OnImported="OnImported" />
         </MudTabPanel>
 
-        @* ── SESIS TAB ── *@
+        @* SESIS TAB *@
         <MudTabPanel Text="Provider Billing" Icon="@Icons.Material.Filled.EventNote">
             <ImportTabPanel ImportType="ImportType.Sesis"
                             Description="Sesis sessions export (.xlsx). Data starts at row 2. Only 'Service Provided' sessions are imported."
@@ -29,7 +29,7 @@
                             OnImported="OnImported" />
         </MudTabPanel>
 
-        @* ── VENDOR PORTAL TAB ── *@
+        @* VENDOR PORTAL TAB *@
         <MudTabPanel Text="Vendor Portal" Icon="@Icons.Material.Filled.Business">
             <ImportTabPanel ImportType="ImportType.VendorPortal"
                             Description="Vendor Portal CAFS report (.xlsx). One row per unique Assignment ID is imported."
@@ -37,7 +37,7 @@
                             OnImported="OnImported" />
         </MudTabPanel>
 
-        @* ── PAYMENTS TAB ── *@
+        @* PAYMENTS TAB *@
         <MudTabPanel Text="Voucher Payments" Icon="@Icons.Material.Filled.Payment">
             <ImportTabPanel ImportType="ImportType.Payments"
                             Description="Payment Detail Report (.xlsx). Updates existing Provider Billing records with voucher and payment date."
@@ -60,6 +60,6 @@
 
     private void OnImported()
     {
-        // Could reload logs or notify parent — for now just a hook
+        // Could reload logs or notify parent - for now just a hook
     }
 }

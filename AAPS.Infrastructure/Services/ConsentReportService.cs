@@ -28,7 +28,7 @@ public class ConsentReportService : IConsentReportService
     {
         return Document.Create(container =>
         {
-            // Page 1 — data
+            // Page 1 - data
             container.Page(page =>
             {
                 page.Size(PageSizes.Letter);
@@ -38,7 +38,7 @@ public class ConsentReportService : IConsentReportService
                 page.Content().Element(c => ComposePage1(c, eval));
             });
 
-            // Page 2 — static signatures
+            // Page 2 - static signatures
             container.Page(page =>
             {
                 page.Size(PageSizes.Letter);
@@ -50,9 +50,7 @@ public class ConsentReportService : IConsentReportService
         }).GeneratePdf();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  PAGE 1
-    // ─────────────────────────────────────────────────────────────────────────
+    // PAGE 1
     private void ComposePage1(IContainer container, EvalDTO eval)
     {
         container.Column(col =>
@@ -70,7 +68,7 @@ public class ConsentReportService : IConsentReportService
                .Text("STUDENT, PARENT/GUARDIAN AND INDEPENDENT EVALUATOR INFORMATION")
                .Bold().FontColor(Colors.White).FontSize(7.5f);
 
-            // Intro box — plain black thin border
+            // Intro box - plain black thin border
             col.Item().Border(0.75f).BorderColor(Colors.Black).Padding(6).Column(inner =>
             {
                 inner.Spacing(5);
@@ -104,7 +102,7 @@ public class ConsentReportService : IConsentReportService
 
             col.Item().PaddingTop(20);
 
-            // Rate line — text left, short line far right
+            // Rate line - text left, short line far right
             col.Item().Row(row =>
             {
                 row.RelativeItem().AlignBottom()
@@ -121,7 +119,7 @@ public class ConsentReportService : IConsentReportService
 
             col.Item().PaddingBottom(3);
 
-            // Footer note — bold italic indented
+            // Footer note - bold italic indented
             col.Item()
                .PaddingLeft(16)
                .Text("If the agency tax identification number is included, the payment will be made to the agency.")
@@ -129,9 +127,7 @@ public class ConsentReportService : IConsentReportService
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Logo
-    // ─────────────────────────────────────────────────────────────────────────
+    // Logo
     private void RenderLogo(IContainer container)
     {
         container.Row(row =>
@@ -155,9 +151,7 @@ public class ConsentReportService : IConsentReportService
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section I
-    // ─────────────────────────────────────────────────────────────────────────
+    // Section I
     private void RenderSectionI(IContainer container, EvalDTO eval)
     {
         var studentName = $"{eval.StudentFirstName} {eval.StudentLastName}".Trim();
@@ -196,9 +190,7 @@ public class ConsentReportService : IConsentReportService
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section II
-    // ─────────────────────────────────────────────────────────────────────────
+    // Section II
     private void RenderSectionII(IContainer container, EvalDTO eval)
     {
         var parentName = $"{eval.ParentFirstName} {eval.ParentLastName}".Trim();
@@ -228,9 +220,7 @@ public class ConsentReportService : IConsentReportService
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section III
-    // ─────────────────────────────────────────────────────────────────────────
+    // Section III
     private void RenderSectionIII(IContainer container)
     {
         container.ShowEntire().Border(0.5f).BorderColor(Colors.Grey.Medium).Column(col =>
@@ -259,7 +249,7 @@ public class ConsentReportService : IConsentReportService
                     });
                 });
 
-                // Original has the typo "Ttitle" — preserved intentionally
+                // Original has the typo "Ttitle" - preserved intentionally
                 inner.Item().Element(c => Field(c, "Ttitle/Discipline:", ""));
 
                 // Dashed line separator
@@ -277,9 +267,7 @@ public class ConsentReportService : IConsentReportService
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  PAGE 2 — static signature page
-    // ─────────────────────────────────────────────────────────────────────────
+    // PAGE 2 - static signature page
     private static void ComposePage2(IContainer container)
     {
         container.Column(col =>
@@ -326,7 +314,7 @@ public class ConsentReportService : IConsentReportService
             // Large gap
             col.Item().PaddingTop(70);
 
-            // Parent/Guardian signature block — single line spanning all three
+            // Parent/Guardian signature block - single line spanning all three
             col.Item().LineHorizontal(0.75f).LineColor(Colors.Grey.Darken2);
             col.Item().PaddingTop(2).Row(row =>
             {
@@ -337,9 +325,7 @@ public class ConsentReportService : IConsentReportService
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
     private static void SectionHeader(ColumnDescriptor col, string text)
     {
         col.Item()

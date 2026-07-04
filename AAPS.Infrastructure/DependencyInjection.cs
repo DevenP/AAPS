@@ -32,14 +32,14 @@ namespace AAPS.Infrastructure
 
             services.AddScoped<IFileExplorerService, FileExplorerService>();
 
-            // Provider files — separate root path, keyed so ProviderForm injects it independently
+            // Provider files - separate root path, keyed so ProviderForm injects it independently
             services.AddKeyedScoped<IFileExplorerService, FileExplorerService>(
                 "ProviderFiles",
                 (sp, _) => new FileExplorerService(
                     configuration["ProviderFiles:RootPath"]
                     ?? throw new InvalidOperationException("ProviderFiles:RootPath is not configured in appsettings.json")));
 
-            // Eval files — C:\AAPS\Evaluation Documents\{evalId}\
+            // Eval files - C:\AAPS\Evaluation Documents\{evalId}\
             services.AddKeyedScoped<IFileExplorerService, FileExplorerService>(
                 "EvalFiles",
                 (sp, _) => new FileExplorerService(
@@ -49,7 +49,7 @@ namespace AAPS.Infrastructure
             services.AddScoped<IImportService, ImportService>();
             services.AddScoped<IDashboardService, DashboardService>();
 
-            // Reports — logo path resolved at registration time via IWebHostEnvironment
+            // Reports - logo path resolved at registration time via IWebHostEnvironment
             services.AddScoped<IConsentReportService, ConsentReportService>();
             services.AddScoped<IStatementService, StatementService>();
 

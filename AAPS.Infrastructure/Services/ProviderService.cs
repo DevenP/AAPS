@@ -28,7 +28,7 @@ public class ProviderService : IProviderService
 
         await using var db = _factory.CreateDbContext();
         // 1. Apply global search on the raw entity BEFORE any joins/projections
-        //    so EF translates it against real indexed columns.
+        // so EF translates it against real indexed columns.
         var baseQuery = db.Providers.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -51,12 +51,12 @@ public class ProviderService : IProviderService
                 (p.Zipcode != null && p.Zipcode.Contains(term)) ||
                 (p.Langs != null && p.Langs.Contains(term)) ||
                 (p.DDInfo != null && p.DDInfo.Contains(term)));
-            // Note: Ssn intentionally excluded — it is masked in the DTO and
+            // Note: Ssn intentionally excluded - it is masked in the DTO and
             // has its own dedicated column-filter path that searches the real column.
         }
 
         // 2. Pre-compute duplicate names as a set to avoid N+1 per-row subquery.
-        //    Pull just Id+name, group in memory — EF can't translate GroupBy+SelectMany together.
+        // Pull just Id+name, group in memory - EF can't translate GroupBy+SelectMany together.
         var allProviderNames = await db.Providers
             .AsNoTracking()
             .Select(p => new { p.Provider_Id, p.LastName, p.FirstName })
@@ -196,7 +196,7 @@ public class ProviderService : IProviderService
 
         if (provider == null) return false;
 
-        // Duplicate SSN check — excludes this provider (mirrors theProvider_Ssn proc)
+        // Duplicate SSN check - excludes this provider (mirrors theProvider_Ssn proc)
         if (!string.IsNullOrWhiteSpace(dto.Ssn))
         {
             var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn == dto.Ssn, ct);
@@ -381,7 +381,7 @@ public class ProviderService : IProviderService
     private static readonly Expression<Func<Provider, ProviderDTO>> ToDTO = p => new ProviderDTO
     {
         Id = p.Provider_Id,
-        // Raw SSN — only used by GetByIdAsync for the edit form. Grid uses masked version from GetPagedAsync.
+        // Raw SSN - only used by GetByIdAsync for the edit form. Grid uses masked version from GetPagedAsync.
         Ssn = p.Ssn,
         LastName = p.LastName,
         FirstName = p.FirstName,

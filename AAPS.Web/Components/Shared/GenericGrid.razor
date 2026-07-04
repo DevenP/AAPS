@@ -130,7 +130,7 @@
         border-bottom: 1px solid var(--mud-palette-divider);
     }
 
-    /* Cell borders (layout, not density — kept here so it's scoped to this grid) */
+    /* Cell borders (layout, not density - kept here so it's scoped to this grid) */
     .sticky-table .mud-table-cell {
         border-right: 1px solid var(--mud-palette-divider);
     }
@@ -149,7 +149,7 @@
         background-color: rgba(255, 255, 255, 0.04);
     }
 
-    /* Row highlights — must target .mud-table-cell (td), not tr, to override MudBlazor stripe */
+    /* Row highlights - must target .mud-table-cell (td), not tr, to override MudBlazor stripe */
     .mud-table-row.row-selected .mud-table-cell {
         background-color: rgba(63, 81, 181, 0.15) !important;
     }
@@ -203,7 +203,7 @@
     // Parent pages can use this to clear stale row selections.
     [Parameter] public EventCallback OnFiltersChanged { get; set; }
 
-    // Called after each successful data load — use to refresh derived aggregates.
+    // Called after each successful data load - use to refresh derived aggregates.
     [Parameter] public EventCallback OnDataLoaded { get; set; }
 
     private MudTable<TItem> _table = default!;
@@ -242,7 +242,7 @@
             ColumnFilters[key.Replace("col_", "")] = query[key].ToString() ?? string.Empty;
         }
 
-        // 3. BUILD THE VISIBILITY DICTIONARY — Columns order first, then remaining browsable props
+        // 3. BUILD THE VISIBILITY DICTIONARY - Columns order first, then remaining browsable props
         _columnVisibility.Clear();
         var allProps = typeof(TItem).GetProperties();
 
@@ -429,7 +429,7 @@
         }
         catch (OperationCanceledException)
         {
-            // Previous request was superseded by a newer one — keep current data visible
+            // Previous request was superseded by a newer one - keep current data visible
             return new TableData<TItem> { TotalItems = _totalItems, Items = CurrentPageItems };
         }
         catch (Exception ex)

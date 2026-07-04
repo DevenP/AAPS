@@ -15,7 +15,7 @@ internal sealed class VendorPortalDiscrepancyRaw
     public string? Assign_Id { get; set; }
     public DateTime? pStartDate { get; set; }
     public int? Entry_Id { get; set; }
-    // Required by SqlQueryRaw — proc always returns these columns
+    // Required by SqlQueryRaw - proc always returns these columns
     public int VendorPortal_Id { get; set; }
     public string? pSsn { get; set; }
     public string? pBoro { get; set; }
@@ -55,7 +55,7 @@ public class DashboardService : IDashboardService
         var evalsPending = await db.Evals
             .CountAsync(e => e.Billed != null && e.bPaid == null, ct);
 
-        // All 8 alert flag conditions — matches Operations page flags
+        // All 8 alert flag conditions - matches Operations page flags
         var operationAlerts = await db.Seses.CountAsync(s =>
             s.Entry_Id == null ||
             s.Provider_Id == null ||

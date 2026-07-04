@@ -241,7 +241,7 @@
                 </MudFileUpload>
             </div>
 
-            @* File list — fixed height, always scrollable *@
+            @* File list - fixed height, always scrollable *@
             <div style="height:320px; overflow-y:auto; border:1px solid var(--mud-palette-divider); border-radius:4px;">
                 @if (_filesLoading)
                 {
@@ -331,12 +331,12 @@
     // Keyed injection for provider-specific file root (C:\AAPS\Provider Profiles)
     private IFileExplorerService FileExplorerService = default!;
 
-    // ── Provider Files ─────────────────────────────────────
+    // Provider Files
     private List<FileExplorerItem> _files = new();
     private bool _filesLoading = false;
     private string? _filesError;
 
-    // Relative path is just the provider ID — maps to C:\AAPS\Provider Profiles\{id}
+    // Relative path is just the provider ID - maps to C:\AAPS\Provider Profiles\{id}
     private string ProviderFolderPath => Model.Id.ToString();
 
     protected override async Task OnInitializedAsync()
@@ -372,7 +372,7 @@
         }
         catch (DirectoryNotFoundException)
         {
-            // Folder doesn't exist yet — not an error, just no files uploaded yet
+            // Folder doesn't exist yet - not an error, just no files uploaded yet
             _files = new();
         }
         catch (Exception ex)

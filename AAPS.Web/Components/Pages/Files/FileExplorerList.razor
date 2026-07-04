@@ -10,7 +10,7 @@
 
 <MudPaper Class="pa-4 d-flex flex-column" Elevation="0" Style="height:calc(100vh - 80px)">
 
-    @* ── Header ── *@
+    @* Header *@
     <div class="d-flex align-center justify-space-between mb-4">
         <div class="d-flex align-center gap-2">
             <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Primary" Size="Size.Large" />
@@ -29,7 +29,7 @@
         </MudFileUpload>
     </div>
 
-    @* ── Breadcrumbs ── *@
+    @* Breadcrumbs *@
     <div class="d-flex align-center gap-1 mb-4 flex-wrap">
         @for (int i = 0; i < _breadcrumbs.Count; i++)
         {
@@ -61,13 +61,13 @@
         }
     </div>
 
-    @* ── Error ── *@
+    @* Error *@
     @if (_error != null)
     {
         <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
     }
 
-    @* ── Table / Content Area ── *@
+    @* Table / Content Area *@
     <div style="position:relative; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
 
         @* Loading overlay *@
@@ -221,7 +221,7 @@
             </MudTable>
         </div>
 
-        @* ── Pagination ── *@
+        @* Pagination *@
         @if (TotalPages > 1)
         {
             <div class="d-flex align-center justify-space-between px-3"

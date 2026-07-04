@@ -50,7 +50,7 @@ h1:focus {
     border-color: #929292;
 }
 
-/* ── Grid toolbar + pager compaction ── */
+/* Grid toolbar + pager compaction */
 .ultra-dense .mud-table-toolbar {
     --mud-internal-toolbar-height: 40px;
 }
@@ -61,7 +61,7 @@ h1:focus {
     padding: 0 8px !important;
 }
 
-/* ── Grid density overrides (app.css loads before MudBlazor, so !important here beats everything) ── */
+/* Grid density overrides (app.css loads before MudBlazor, so !important here beats everything) */
 
 .ultra-dense .mud-table-cell {
     padding: 0 4px !important;
@@ -107,7 +107,7 @@ h1:focus {
     margin: 0 !important;
 }
 
-/* ── Nav compaction ── */
+/* Nav compaction */
 .mud-nav-link {
     height: 36px !important;
     min-height: 36px !important;
@@ -125,12 +125,7 @@ h1:focus {
     min-height: 36px !important;
 }
 
-/* ── MudTabs: keep tab headers clickable ──
-   The tab bar (.mud-tabs-tabbar) and the panel container (.mud-tabs-panels) are positioned
-   siblings at the same stacking level. Because the panels come later in the DOM, they were
-   painting AND capturing pointer events over the tab bar — so the first form fields (top of the
-   panel) blocked clicks on the tab headers above them. Raising the tab bar above the panels
-   makes the headers always receive clicks. */
+/* Keep tab headers above panel content so they stay clickable */
 .mud-tabs-tabbar {
     z-index: 2 !important;
 }

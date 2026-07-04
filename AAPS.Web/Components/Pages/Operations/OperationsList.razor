@@ -236,10 +236,10 @@
         return "";
     }
 
-    // ── Busy state ────────────────────────────────────────────────────────────
+    // Busy state
     private bool _busy = false;
 
-    // ── Selection state ──────────────────────────────────────────────────────
+    // Selection state
     private HashSet<int> _selectedIds = new();
     private bool _allSelected = false;
     private bool _shiftHeld = false;
@@ -293,7 +293,7 @@
         return Task.CompletedTask;
     }
 
-    // ── OSIS Approvals ───────────────────────────────────────────────────────
+    // OSIS Approvals
     private async Task OpenOsisDialog(OperationsDTO op)
     {
         var parameters = new DialogParameters<OsisApprovalsDialog>
@@ -307,7 +307,7 @@
             parameters, options);
     }
 
-    // ── Single-row edit ──────────────────────────────────────────────────────
+    // Single-row edit
     private async Task OpenSingleEditDialog(OperationsDTO item)
     {
         var parameters = new DialogParameters<OperationEditDialog>
@@ -324,7 +324,7 @@
             await ApplyEdit([item.Id], dto);
     }
 
-    // ── Bulk edit ────────────────────────────────────────────────────────────
+    // Bulk edit
     private async Task OpenBulkEditDialog()
     {
         var ids = _selectedIds.ToList();
@@ -364,7 +364,7 @@
         }
     }
 
-    // ── Unlink Approval ID ───────────────────────────────────────────────────
+    // Unlink Approval ID
     private async Task ConfirmUnlinkApprovalId()
     {
         var ids = _selectedIds.ToList();
@@ -398,7 +398,7 @@
         }
     }
 
-    // ── Mark / Unmark Voucher Balance Paid ───────────────────────────────────
+    // Mark / Unmark Voucher Balance Paid
     private async Task ConfirmMarkVoucherBalancePaid()
     {
         var ids = _selectedIds.ToList();
@@ -465,7 +465,7 @@
         }
     }
 
-    // ── Delete Provider Billing ──────────────────────────────────────────────
+    // Delete Provider Billing
     private async Task ConfirmDeleteProviderBilling()
     {
         var ids = _selectedIds.ToList();
