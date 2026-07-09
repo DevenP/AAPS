@@ -43,9 +43,9 @@
         _dto = Item ?? new BillingRecordDTO();
         if (!IsBulk)
         {
-            _billed         = Item.Billed;
-            _billedPaidOn   = Item.BilledPaidOn;
-            _providerPaidOn = Item.ProviderPaidOn;
+            _billed         = _dto.Billed;
+            _billedPaidOn   = _dto.BilledPaidOn;
+            _providerPaidOn = _dto.ProviderPaidOn;
         }
     }
 

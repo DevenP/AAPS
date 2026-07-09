@@ -15,7 +15,7 @@
 @if (Model != null)
 {
     <div style="min-height: 470px;">
-    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pa-4">
 
         @* Tab 1: General *@
         <MudTabPanel Text="General" Icon="@Icons.Material.Filled.Assignment">
@@ -126,8 +126,7 @@
                 <MudItem xs="12">
                     <MudTextField @bind-Value="Model.Memo"
                                   Label="Memo"
-                                  Lines="3"
-                                  AutoGrow="true" />
+                                  Lines="3" />
                 </MudItem>
             </MudGrid>
         </MudTabPanel>
@@ -231,7 +230,7 @@
                                FilesChanged="OnFilesUploaded"
                                AppendMultipleFiles="true"
                                Hidden="false"
-                               InputStyle="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:20;"
+                               InputClass="file-drop-overlay-input"
                                @ondragenter="@(() => _dragging = true)"
                                @ondragleave="@(() => _dragging = false)"
                                @ondragend="@(() => _dragging = false)"

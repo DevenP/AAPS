@@ -132,6 +132,19 @@ h1:focus {
     position: relative;
 }
 
+/* Transparent full-panel overlay of the real file input, so dropping a file
+   anywhere on the panel is captured natively by the browser. */
+.file-drop-overlay-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 20;
+}
+
 /* Keep tab headers above panel content so they stay clickable */
 .mud-tabs-tabbar {
     z-index: 2 !important;
