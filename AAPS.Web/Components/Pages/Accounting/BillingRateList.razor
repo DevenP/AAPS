@@ -51,14 +51,16 @@
     <RowTemplate Context="rate">
         <GridCell TItem="BillingRateDTO" Column="Actions">
             <div class="d-flex">
-                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                               Size="Size.Small" Color="Color.Primary"
-                               Title="Edit Rate"
-                               OnClick="@(() => OpenEditDialog(rate))" />
-                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                               Size="Size.Small" Color="Color.Error"
-                               Title="Deactivate Rate"
-                               OnClick="@(() => OnDeleteClicked(rate))" />
+                <MudTooltip Text="Edit Rate">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small" Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(rate))" />
+                </MudTooltip>
+                <MudTooltip Text="Deactivate Rate">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small" Color="Color.Error"
+                                   OnClick="@(() => OnDeleteClicked(rate))" />
+                </MudTooltip>
             </div>
         </GridCell>
         <GridCell TItem="BillingRateDTO" Column="District">@rate.District</GridCell>

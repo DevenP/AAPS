@@ -37,10 +37,14 @@
                                 @file.FileName
                             </span>
                             <span style="display:flex;align-items:center;">
-                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Secondary"
-                                               Title="Preview" OnClick="@(() => PreviewStatementFile(file))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" Color="Color.Primary"
-                                               Title="Download" OnClick="@(() => DownloadStatementFile(file))" />
+                                <MudTooltip Text="Preview">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Secondary"
+                                                   OnClick="@(() => PreviewStatementFile(file))" />
+                                </MudTooltip>
+                                <MudTooltip Text="Download">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" Color="Color.Primary"
+                                                   OnClick="@(() => DownloadStatementFile(file))" />
+                                </MudTooltip>
                             </span>
                         </div>
                     </MudListItem>

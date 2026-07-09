@@ -80,10 +80,11 @@
                 </MudMenuItem>
             </MudMenu>
 
-            <MudIconButton Icon="@Icons.Material.Filled.Deselect"
-                           Title="Clear selection"
-                           Size="Size.Small"
-                           OnClick="ClearSelection" />
+            <MudTooltip Text="Clear selection">
+                <MudIconButton Icon="@Icons.Material.Filled.Deselect"
+                               Size="Size.Small"
+                               OnClick="ClearSelection" />
+            </MudTooltip>
         }
     </CustomActionContent>
 
@@ -163,16 +164,18 @@
         </MudTd>
 
         <MudTd Style="width:80px; padding: 0 4px;">
-            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                           Size="Size.Small"
-                           Color="Color.Primary"
-                           Title="Edit Record"
-                           OnClick="@(() => OpenSingleEditDialog(op))" />
-            <MudIconButton Icon="@Icons.Material.Filled.AssignmentInd"
-                           Size="Size.Small"
-                           Color="Color.Secondary"
-                           Title="OSIS Approvals"
-                           OnClick="@(() => OpenOsisDialog(op))" />
+            <MudTooltip Text="Edit Record">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small"
+                               Color="Color.Primary"
+                               OnClick="@(() => OpenSingleEditDialog(op))" />
+            </MudTooltip>
+            <MudTooltip Text="OSIS Approvals">
+                <MudIconButton Icon="@Icons.Material.Filled.AssignmentInd"
+                               Size="Size.Small"
+                               Color="Color.Secondary"
+                               OnClick="@(() => OpenOsisDialog(op))" />
+            </MudTooltip>
         </MudTd>
 
         @* Combined Alert Icons Column *@

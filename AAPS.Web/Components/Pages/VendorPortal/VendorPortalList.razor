@@ -43,10 +43,11 @@
                 </MudMenuItem>
             </MudMenu>
 
-            <MudIconButton Icon="@Icons.Material.Filled.Deselect"
-                           Title="Clear selection"
-                           Size="Size.Small"
-                           OnClick="ClearSelection" />
+            <MudTooltip Text="Clear selection">
+                <MudIconButton Icon="@Icons.Material.Filled.Deselect"
+                               Size="Size.Small"
+                               OnClick="ClearSelection" />
+            </MudTooltip>
         }
 
     </CustomActionContent>

@@ -6,6 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
 	<AssemblyInformationalVersion>1.0.0.1-beta</AssemblyInformationalVersion>
+    <!-- CS8669: nullable annotations in auto-generated .razor.g.cs files (noise, not our code) -->
+    <NoWarn>$(NoWarn);CS8669</NoWarn>
+    <!-- Fail the build if a MudBlazor/Razor API is silently ignored (e.g. a removed
+         component template or parameter after a package upgrade), instead of degrading at runtime.
+         RZ10012 = unexpected markup element; MUD0001/MUD0002 = illegal component attribute. -->
+    <WarningsAsErrors>$(WarningsAsErrors);RZ10012;MUD0001;MUD0002</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

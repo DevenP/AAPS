@@ -39,14 +39,16 @@
     <RowTemplate Context="st">
         <GridCell TItem="ServiceTypeDTO" Column="Actions">
             <div class="d-flex">
-                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                               Size="Size.Small" Color="Color.Primary"
-                               Title="Edit Service Type"
-                               OnClick="@(() => OpenEditDialog(st))" />
-                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                               Size="Size.Small" Color="Color.Error"
-                               Title="Delete Service Type"
-                               OnClick="@(() => OnDeleteClicked(st))" />
+                <MudTooltip Text="Edit Service Type">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small" Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(st))" />
+                </MudTooltip>
+                <MudTooltip Text="Delete Service Type">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small" Color="Color.Error"
+                                   OnClick="@(() => OnDeleteClicked(st))" />
+                </MudTooltip>
             </div>
         </GridCell>
         <GridCell TItem="ServiceTypeDTO" Column="Name">@st.Name</GridCell>

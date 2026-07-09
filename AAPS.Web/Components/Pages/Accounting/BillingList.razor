@@ -28,7 +28,9 @@
         @if (_selectedIds.Count > 0)
         {
             <MudText Typo="Typo.caption" Class="mr-2 align-self-center">@_selectedIds.Count selected</MudText>
-            <MudIconButton Icon="@Icons.Material.Filled.Deselect" Title="Clear selection" Size="Size.Small" OnClick="ClearSelection" Class="mr-1" />
+            <MudTooltip Text="Clear selection">
+                <MudIconButton Icon="@Icons.Material.Filled.Deselect" Size="Size.Small" OnClick="ClearSelection" Class="mr-1" />
+            </MudTooltip>
         }
         @ActionButtons
     </CustomActionContent>
@@ -119,10 +121,11 @@
                          Size="Size.Small" />
         </MudTd>
         <GridCell TItem="BillingRecordDTO" Column="Actions">
-            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                           Size="Size.Small" Color="Color.Primary"
-                           Title="Edit Billing Dates"
-                           OnClick="@(() => OpenEditDialog(record))" />
+            <MudTooltip Text="Edit Billing Dates">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small" Color="Color.Primary"
+                               OnClick="@(() => OpenEditDialog(record))" />
+            </MudTooltip>
         </GridCell>
 
         <GridCell TItem="BillingRecordDTO" Column="DateOfService">

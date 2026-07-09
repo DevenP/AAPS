@@ -79,14 +79,18 @@
             }
         </MudMenu>
 
-        <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" OnClick="OpenFilter" Color="Color.Primary" Title="Advanced Search" />
+        <MudTooltip Text="Advanced Search">
+            <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" OnClick="OpenFilter" Color="Color.Primary" />
+        </MudTooltip>
         @if (_exporting)
         {
             <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Success" Style="margin:8px;" />
         }
         else
         {
-            <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" Title="Export to Excel" />
+            <MudTooltip Text="Export to Excel">
+                <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" />
+            </MudTooltip>
         }
     </ToolBarContent>
 
