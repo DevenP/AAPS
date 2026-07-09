@@ -133,7 +133,9 @@ h1:focus {
 }
 
 /* Transparent full-panel overlay of the real file input, so dropping a file
-   anywhere on the panel is captured natively by the browser. */
+   anywhere on the panel is captured natively by the browser. The list is not
+   an inner scroll box, so wheel events scroll the dialog itself rather than
+   being trapped by this overlay. */
 .file-drop-overlay-input {
     position: absolute;
     top: 0;

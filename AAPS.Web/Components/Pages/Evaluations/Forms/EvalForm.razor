@@ -226,39 +226,18 @@
             }
             else
             {
-                <MudFileUpload T="IReadOnlyList<IBrowserFile>"
-                               FilesChanged="OnFilesUploaded"
-                               AppendMultipleFiles="true"
-                               Hidden="false"
-                               InputClass="file-drop-overlay-input"
-                               @ondragenter="@(() => _dragging = true)"
-                               @ondragleave="@(() => _dragging = false)"
-                               @ondragend="@(() => _dragging = false)"
-                               @ondrop="@(() => _dragging = false)">
-                    <SelectedTemplate></SelectedTemplate>
-                    <CustomContent Context="fileUpload">
+                @* File count *@
+                <div class="d-flex align-center mb-2">
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        @_files.Count file(s)
+                    </MudText>
+                </div>
 
-                        @* Toolbar *@
-                        <div class="d-flex align-center justify-space-between mb-2">
-                            <MudText Typo="Typo.body2" Class="mud-text-secondary">
-                                @_files.Count file(s)
-                            </MudText>
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Upload"
-                                       Size="Size.Small"
-                                       Style="position:relative; z-index:30;"
-                                       Disabled="_filesLoading || _uploading"
-                                       OnClick="@(async () => await fileUpload.OpenFilePickerAsync())">
-                                Browse Files
-                            </MudButton>
-                        </div>
-
-                        @* File list / drop zone *@
-                        <div style="height:320px; overflow-y:auto; border:2px dashed @(_dragging ? "#3f51b5" : "var(--mud-palette-divider)"); background:@(_dragging ? "rgba(63,81,181,0.08)" : "transparent"); border-radius:6px; transition:border-color .15s, background-color .15s;">
+                @* File list - contained, scrollable (no drop overlay here) *@
+                <div style="height:300px; overflow-y:auto; border:1px solid var(--mud-palette-divider); border-radius:6px;">
                             @if (_uploading)
                             {
-                                <div class="d-flex flex-column align-center justify-center" style="height:100%;">
+                                <div class="d-flex flex-column align-center justify-center" style="min-height:200px;">
                                     <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
                                     <MudText Typo="Typo.caption" Class="mt-2 mud-text-secondary">Uploading…</MudText>
                                 </div>
@@ -275,9 +254,8 @@
                     }
                     else if (_files.Count == 0)
                     {
-                        <div class="d-flex flex-column align-center justify-center pa-4 mud-text-secondary" style="height:100%;">
-                            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" />
-                            <MudText Typo="Typo.body2" Class="mt-2">Drag files here, or use Browse</MudText>
+                        <div class="d-flex flex-column align-center justify-center pa-4 mud-text-secondary" style="min-height:200px;">
+                            <MudText Typo="Typo.body2">No files uploaded yet.</MudText>
                         </div>
                     }
                     else
@@ -335,15 +313,43 @@
                             </RowTemplate>
                         </MudTable>
                     }
+                </div>
+
+                @* Dedicated drop zone below the list *@
+                <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                               @ref="_dropUpload"
+                               FilesChanged="OnFilesUploaded"
+                               AppendMultipleFiles="true"
+                               Hidden="false"
+                               InputClass="file-drop-overlay-input"
+                               @ondragenter="@(() => _dragging = true)"
+                               @ondragleave="@(() => _dragging = false)"
+                               @ondragend="@(() => _dragging = false)"
+                               @ondrop="@(() => _dragging = false)">
+                    <SelectedTemplate></SelectedTemplate>
+                    <CustomContent Context="fileUpload">
+                        <div class="d-flex flex-column align-center justify-center mt-2"
+                             style="min-height:90px; border:2px dashed @(_dragging ? "#3f51b5" : "var(--mud-palette-divider)"); background:@(_dragging ? "rgba(63,81,181,0.08)" : "transparent"); border-radius:6px; transition:border-color .15s, background-color .15s;">
+                            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Color="Color.Primary" />
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">Drag &amp; drop files here</MudText>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Upload"
+                                       Class="mt-1"
+                                       Style="position:relative; z-index:30;"
+                                       Disabled="_filesLoading || _uploading"
+                                       OnClick="@(async () => await fileUpload.OpenFilePickerAsync())">
+                                Browse Files
+                            </MudButton>
                         </div>
-
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary mt-1 d-flex align-center" Style="gap:4px;">
-                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
-                            Files are saved as soon as you add them. No need to click Save.
-                        </MudText>
-
                     </CustomContent>
                 </MudFileUpload>
+
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mt-1 d-flex align-center" Style="gap:4px;">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                    Files are saved as soon as you add them. No need to click Save.
+                </MudText>
             }
         </MudTabPanel>
 
@@ -404,6 +410,7 @@
     private string? _filesError;
     private bool _dragging;
     private bool _uploading;
+    private MudFileUpload<IReadOnlyList<IBrowserFile>> _dropUpload = default!;
 
     private string EvalFolderPath => Model.Id.ToString();
 
@@ -511,6 +518,8 @@
         foreach (var name in failed)
             Snackbar.Add($"Could not upload {name}. Please try again.", Severity.Error);
 
+        // Reset the uploader so already-processed files aren't resubmitted on the next add
+        await _dropUpload.ClearAsync();
         await LoadEvalFiles();
     }
 
