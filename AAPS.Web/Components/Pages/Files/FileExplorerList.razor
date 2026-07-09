@@ -18,14 +18,16 @@
         </div>
 
         <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFilesUploaded">
-            <ActivatorContent>
+            <SelectedTemplate></SelectedTemplate>
+            <CustomContent Context="fileUpload">
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Upload"
-                           Size="Size.Small">
+                           Size="Size.Small"
+                           OnClick="@(() => fileUpload.OpenFilePickerAsync())">
                     Upload Files
                 </MudButton>
-            </ActivatorContent>
+            </CustomContent>
         </MudFileUpload>
     </div>
 
@@ -378,8 +380,10 @@
         {
             try
             {
-                using var stream = file.OpenReadStream(maxFileSizeBytes);
-                await FileExplorerService.SaveUploadedFileAsync(_currentPath, file.Name, stream);
+                using var buffer = new MemoryStream();
+                await file.OpenReadStream(maxFileSizeBytes).CopyToAsync(buffer);
+                buffer.Position = 0;
+                await FileExplorerService.SaveUploadedFileAsync(_currentPath, file.Name, buffer);
                 uploaded++;
             }
             catch (Exception ex)

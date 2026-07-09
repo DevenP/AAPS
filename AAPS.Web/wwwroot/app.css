@@ -125,6 +125,13 @@ h1:focus {
     min-height: 36px !important;
 }
 
+/* MudFileUpload drag-and-drop: the drop overlay is absolutely positioned at 100%,
+   so the component root must be a positioning context or custom-content drop zones
+   never capture files. */
+.mud-file-upload {
+    position: relative;
+}
+
 /* Keep tab headers above panel content so they stay clickable */
 .mud-tabs-tabbar {
     z-index: 2 !important;

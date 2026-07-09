@@ -227,25 +227,44 @@
             }
             else
             {
-                <div class="d-flex align-center justify-space-between mb-3">
-                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
-                        @_files.Count file(s)
-                    </MudText>
-                    <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFilesUploaded">
-                        <ActivatorContent>
+                <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                               FilesChanged="OnFilesUploaded"
+                               AppendMultipleFiles="true"
+                               Hidden="false"
+                               InputStyle="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:20;"
+                               @ondragenter="@(() => _dragging = true)"
+                               @ondragleave="@(() => _dragging = false)"
+                               @ondragend="@(() => _dragging = false)"
+                               @ondrop="@(() => _dragging = false)">
+                    <SelectedTemplate></SelectedTemplate>
+                    <CustomContent Context="fileUpload">
+
+                        @* Toolbar *@
+                        <div class="d-flex align-center justify-space-between mb-2">
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                                @_files.Count file(s)
+                            </MudText>
                             <MudButton Variant="Variant.Outlined"
                                        Color="Color.Primary"
                                        StartIcon="@Icons.Material.Filled.Upload"
                                        Size="Size.Small"
-                                       Disabled="_filesLoading">
-                                Upload Files
+                                       Style="position:relative; z-index:30;"
+                                       Disabled="_filesLoading || _uploading"
+                                       OnClick="@(async () => await fileUpload.OpenFilePickerAsync())">
+                                Browse Files
                             </MudButton>
-                        </ActivatorContent>
-                    </MudFileUpload>
-                </div>
+                        </div>
 
-                <div style="height:320px; overflow-y:auto; border:1px solid var(--mud-palette-divider); border-radius:4px;">
-                    @if (_filesLoading)
+                        @* File list / drop zone *@
+                        <div style="height:320px; overflow-y:auto; border:2px dashed @(_dragging ? "#3f51b5" : "var(--mud-palette-divider)"); background:@(_dragging ? "rgba(63,81,181,0.08)" : "transparent"); border-radius:6px; transition:border-color .15s, background-color .15s;">
+                            @if (_uploading)
+                            {
+                                <div class="d-flex flex-column align-center justify-center" style="height:100%;">
+                                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
+                                    <MudText Typo="Typo.caption" Class="mt-2 mud-text-secondary">Uploading…</MudText>
+                                </div>
+                            }
+                            else if (_filesLoading)
                     {
                         <div class="d-flex justify-center pa-4">
                             <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
@@ -257,9 +276,10 @@
                     }
                     else if (_files.Count == 0)
                     {
-                        <MudText Class="mud-text-secondary pa-4 d-flex justify-center" Typo="Typo.body2">
-                            No files found for this evaluation.
-                        </MudText>
+                        <div class="d-flex flex-column align-center justify-center pa-4 mud-text-secondary" style="height:100%;">
+                            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" />
+                            <MudText Typo="Typo.body2" Class="mt-2">Drag files here, or use Browse</MudText>
+                        </div>
                     }
                     else
                     {
@@ -287,7 +307,7 @@
                                     </MudText>
                                 </MudTd>
                                 <MudTd>
-                                    <div class="d-flex gap-1">
+                                    <div class="d-flex gap-1" style="position:relative; z-index:30;">
                                         @if (context.IsPreviewable)
                                         {
                                             <MudTooltip Text="Preview">
@@ -316,7 +336,15 @@
                             </RowTemplate>
                         </MudTable>
                     }
-                </div>
+                        </div>
+
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary mt-1 d-flex align-center" Style="gap:4px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                            Files are saved as soon as you add them. No need to click Save.
+                        </MudText>
+
+                    </CustomContent>
+                </MudFileUpload>
             }
         </MudTabPanel>
 
@@ -375,6 +403,8 @@
     private List<FileExplorerItem> _files = new();
     private bool _filesLoading = false;
     private string? _filesError;
+    private bool _dragging;
+    private bool _uploading;
 
     private string EvalFolderPath => Model.Id.ToString();
 
@@ -454,23 +484,33 @@
 
         const long maxFileSizeBytes = 100 * 1024 * 1024;
         var uploaded = 0;
+        var failed = new List<string>();
+
+        _uploading = true;
+        StateHasChanged();
 
         foreach (var file in files)
         {
             try
             {
-                using var stream = file.OpenReadStream(maxFileSizeBytes);
-                await _fileExplorerService.SaveUploadedFileAsync(EvalFolderPath, file.Name, stream);
+                using var buffer = new MemoryStream();
+                await file.OpenReadStream(maxFileSizeBytes).CopyToAsync(buffer);
+                buffer.Position = 0;
+                await _fileExplorerService.SaveUploadedFileAsync(EvalFolderPath, file.Name, buffer);
                 uploaded++;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Snackbar.Add($"Failed: {file.Name} — {ex.Message}", Severity.Error);
+                failed.Add(file.Name);
             }
         }
 
+        _uploading = false;
+
         if (uploaded > 0)
             Snackbar.Add($"{uploaded} file(s) uploaded.", Severity.Success);
+        foreach (var name in failed)
+            Snackbar.Add($"Could not upload {name}. Please try again.", Severity.Error);
 
         await LoadEvalFiles();
     }
