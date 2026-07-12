@@ -284,14 +284,17 @@ public class BillingService : IBillingService
                 var remFreq = m?.Remaining_Freq ?? "";
                 var (freqCount, freqType) = ParseFrequency(remFreq);
 
-                // aSes: '0' + session count
-                var aSes = "0" + freqCount;
+                // aSes: session count, zero-padded to 2 digits.
+                // (Legacy "'0' + count" only worked for single-digit counts; a full count like
+                // "40 In Total" wrongly produced "040". Pad instead so 4→"04", 40→"40".)
+                var aSes = freqCount.Length >= 2 ? freqCount : "0" + freqCount;
 
                 // aFreq: W = Weekly, M = Monthly, T = In Total
                 var aFreq = freqType;
 
-                // aGrs: '0' + Grp_Size
-                var aGrs = "0" + (m?.Grp_Size ?? "");
+                // aGrs: Grp_Size, zero-padded to 2 digits (same reasoning as aSes)
+                var grpSizeRaw = m?.Grp_Size ?? "";
+                var aGrs = grpSizeRaw.Length >= 2 ? grpSizeRaw : "0" + grpSizeRaw;
 
                 // aDur: LEFT(Mandates.Dur, 2) - mandate approval duration, not actual session duration
                 var aDur = (m?.Dur?.Length >= 2 ? m.Dur.Substring(0, 2) : m?.Dur) ?? "";

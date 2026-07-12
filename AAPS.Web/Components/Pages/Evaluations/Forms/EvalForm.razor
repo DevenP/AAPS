@@ -183,7 +183,8 @@
                                      For="@(() => Model.BillingAmount)"
                                      Format="C2"
                                      Min="0m"
-                                     Step="0.01m" />
+                                     Step="0.01m"
+                                     HelperText="Auto-filled from Billing Rates — type to override for this record" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudDatePicker @bind-Date="Model.BilledDate"
