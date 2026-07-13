@@ -20,6 +20,11 @@ public class ProviderRateValidator : AbstractValidator<ProviderRateDTO>
             .NotEmpty().WithMessage("Language is required")
             .MaximumLength(50);
 
+        // Optional: leave blank for the general rate, or set a specific group size.
+        RuleFor(x => x.GroupSize)
+            .GreaterThanOrEqualTo(1).WithMessage("Group size must be 1 or greater")
+            .When(x => x.GroupSize.HasValue);
+
         RuleFor(x => x.Rate)
             .NotNull().WithMessage("Rate is required")
             .GreaterThan(0).WithMessage("Rate must be greater than 0");

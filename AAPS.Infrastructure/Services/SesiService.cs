@@ -435,6 +435,19 @@ public class SesiService : ISesiService
             ? await db.Providers.AsNoTracking().FirstOrDefaultAsync(p => p.Provider_Id == dto.ProviderId, ct)
             : null;
 
+        // Prefer a rate set for the session's exact group size; fall back to the general rate.
+        decimal? ResolveProviderRate(int? providerId, string? serviceType, string? district, string? lang, string? actualSize)
+        {
+            int grp = int.TryParse((actualSize ?? "").TrimStart('0'), out var g) && g > 0 ? g : 1;
+            var matches = providerRates.Where(r =>
+                r.Provider_Id == providerId &&
+                r.ServiceType == serviceType &&
+                r.District == district &&
+                r.Lang == lang).ToList();
+            return (matches.FirstOrDefault(r => r.GroupSize == grp)
+                    ?? matches.FirstOrDefault(r => r.GroupSize == null))?.Rate;
+        }
+
         foreach (var e in entities)
         {
             // CSE='2' - date only, no recalc
@@ -473,12 +486,7 @@ public class SesiService : ISesiService
                 {
                     e.Provider_Last_Name = newProvider?.LastName;
                     e.Provider_First_Name = newProvider?.FirstName;
-                    var pr = providerRates.FirstOrDefault(r =>
-                        r.Provider_Id == dto.ProviderId &&
-                        r.ServiceType == e.Service_Type &&
-                        r.District == e.GDistrict &&
-                        r.Lang == e.Language_Provided);
-                    e.pRate = pr?.Rate;
+                    e.pRate = ResolveProviderRate(dto.ProviderId, e.Service_Type, e.GDistrict, e.Language_Provided, e.Actual_Size);
                     if (e.pRate.HasValue && int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
                         e.pAmount = e.pRate.Value * dur / 60.0m / sz;
                 }
@@ -496,16 +504,11 @@ public class SesiService : ISesiService
             if (dto.ApplyAll || dto.GDistrict != null)
             {
                 e.GDistrict = dto.GDistrict;
-                var pr = providerRates.FirstOrDefault(r =>
-                    r.Provider_Id == e.Provider_Id &&
-                    r.ServiceType == e.Service_Type &&
-                    r.District == dto.GDistrict &&
-                    r.Lang == e.Language_Provided);
                 var br = billingRates.FirstOrDefault(r =>
                     r.ServiceType == e.Service_Type &&
                     r.District == dto.GDistrict &&
                     r.Lang == e.Language_Provided);
-                e.pRate = pr?.Rate;
+                e.pRate = ResolveProviderRate(e.Provider_Id, e.Service_Type, dto.GDistrict, e.Language_Provided, e.Actual_Size);
                 e.bRate = br?.Rate;
                 if (int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
                 {
@@ -518,16 +521,11 @@ public class SesiService : ISesiService
             if (dto.ApplyAll || dto.LanguageProvided != null)
             {
                 e.Language_Provided = dto.LanguageProvided;
-                var pr = providerRates.FirstOrDefault(r =>
-                    r.Provider_Id == e.Provider_Id &&
-                    r.ServiceType == e.Service_Type &&
-                    r.District == e.GDistrict &&
-                    r.Lang == dto.LanguageProvided);
                 var br = billingRates.FirstOrDefault(r =>
                     r.ServiceType == e.Service_Type &&
                     r.District == e.GDistrict &&
                     r.Lang == dto.LanguageProvided);
-                e.pRate = pr?.Rate;
+                e.pRate = ResolveProviderRate(e.Provider_Id, e.Service_Type, e.GDistrict, dto.LanguageProvided, e.Actual_Size);
                 e.bRate = br?.Rate;
                 if (int.TryParse(e.Duration, out var dur) && int.TryParse(e.Actual_Size, out var sz) && sz > 0)
                 {

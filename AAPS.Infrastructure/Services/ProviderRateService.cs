@@ -34,6 +34,7 @@ public class ProviderRateService : IProviderRateService
                         ProviderLastName = prov != null ? prov.LastName : "Unknown",
                         ServiceType = rate.ServiceType,
                         District = rate.District,
+                        GroupSize = rate.GroupSize,
                         Rate = rate.Rate,
                         EffectiveDate = rate.Effective,
                         IsActive = rate.Active.HasValue ? rate.Active.Value : false,
@@ -60,6 +61,7 @@ public class ProviderRateService : IProviderRateService
                       ProviderLastName = prov != null ? prov.LastName : "Unknown",
                       ServiceType = rate.ServiceType,
                       District = rate.District,
+                      GroupSize = rate.GroupSize,
                       Rate = rate.Rate,
                       EffectiveDate = rate.Effective,
                       IsActive = rate.Active.HasValue ? rate.Active.Value : false,
@@ -81,12 +83,16 @@ public class ProviderRateService : IProviderRateService
 
     public async Task<int> CreateAsync(ProviderRateDTO dto, CancellationToken ct = default)
     {
+        var dupMessage = await CheckActiveDuplicateAsync(dto, null, ct);
+        if (dupMessage != null) throw new InvalidOperationException(dupMessage);
+
         await using var db = _factory.CreateDbContext();
         var entity = new ProviderRate
         {
             Provider_Id = dto.ProviderId,
             ServiceType = dto.ServiceType,
             District = dto.District,
+            GroupSize = dto.GroupSize,
             Rate = dto.Rate,
             Effective = dto.EffectiveDate,
             Active = dto.IsActive,
@@ -101,9 +107,14 @@ public class ProviderRateService : IProviderRateService
     {
         await using var db = _factory.CreateDbContext();
         var entity = await db.ProviderRates.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
+
+        var dupMessage = await CheckActiveDuplicateAsync(dto, id, ct);
+        if (dupMessage != null) throw new InvalidOperationException(dupMessage);
+
         entity.Provider_Id = dto.ProviderId;
         entity.ServiceType = dto.ServiceType;
         entity.District = dto.District;
+        entity.GroupSize = dto.GroupSize;
         entity.Rate = dto.Rate;
         entity.Effective = dto.EffectiveDate;
         entity.Active = dto.IsActive;
@@ -112,12 +123,39 @@ public class ProviderRateService : IProviderRateService
     }
 
 
+    // At most one active rate per provider + service type + district + language + group size.
+    // Two active rates on the same key would make rate resolution ambiguous. Inactive rows are
+    // left alone - they're history and never resolved. Returns a message when a clash exists.
+    public async Task<string?> CheckActiveDuplicateAsync(ProviderRateDTO dto, int? excludeId, CancellationToken ct = default)
+    {
+        if (!dto.IsActive) return null;
+
+        await using var db = _factory.CreateDbContext();
+        var candidates = await db.ProviderRates.AsNoTracking()
+            .Where(r => r.Active == true
+                     && r.Provider_Id == dto.ProviderId
+                     && r.ServiceType == dto.ServiceType)
+            .ToListAsync(ct);
+
+        bool clash = candidates.Any(r =>
+            r.ProviderRate_Id != excludeId &&
+            r.District == dto.District &&
+            r.Lang == dto.Language &&
+            r.GroupSize == dto.GroupSize);
+
+        if (!clash) return null;
+
+        var sizeText = dto.GroupSize.HasValue ? $"group size {dto.GroupSize}" : "the general group size";
+        return $"An active rate already exists for this provider, service type, district, and language at {sizeText}. Edit that rate or mark it inactive before adding another.";
+    }
+
     private static readonly Expression<Func<ProviderRate, ProviderRateDTO>> ToDTO = r => new ProviderRateDTO
     {
         Id = r.ProviderRate_Id,
         ProviderId = r.Provider_Id,
         ServiceType = r.ServiceType,
         District = r.District,
+        GroupSize = r.GroupSize,
         Rate = r.Rate,
         EffectiveDate = r.Effective,
         IsActive = r.Active ?? false,

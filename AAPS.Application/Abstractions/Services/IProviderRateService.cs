@@ -14,4 +14,8 @@ public interface IProviderRateService
     Task UpdateAsync(int id, ProviderRateDTO dto, CancellationToken ct = default);
 
     Task DeleteAsync(int id, CancellationToken ct = default);
+
+    // Returns a warning message if an active rate on the same key already exists, otherwise null.
+    // Pass excludeId when editing so the row doesn't clash with itself.
+    Task<string?> CheckActiveDuplicateAsync(ProviderRateDTO dto, int? excludeId, CancellationToken ct = default);
 }

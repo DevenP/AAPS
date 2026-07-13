@@ -94,6 +94,23 @@
         <MudItem xs="12" sm="6">
             @if (IsAdd)
             {
+                <MudNumericField T="int?" @bind-Value="Model.GroupSize"
+                                 Label="Group Size"
+                                 HelperText="Leave blank for the general rate; set a number for a size-specific rate"
+                                 Clearable="true"
+                                 Min="1"
+                                 Validation="@Validator"
+                                 For="@(() => Model.GroupSize)" />
+            }
+            else
+            {
+                <MudTextField Value="@(Model.GroupSize?.ToString() ?? "General")" Label="Group Size" ReadOnly="true" Disabled="true" />
+            }
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            @if (IsAdd)
+            {
                 <MudSelect T="string?" @bind-Value="Model.Language"
                            Label="Language"
                            Clearable="true"
@@ -140,7 +157,8 @@
         <MudItem xs="12">
             <MudCheckBox T="bool" @bind-Value="Model.IsActive"
                          Label="Is Active"
-                         Color="Color.Primary" />
+                         Color="Color.Primary"
+                         Style="width: fit-content;" />
         </MudItem>
 
     </MudGrid>

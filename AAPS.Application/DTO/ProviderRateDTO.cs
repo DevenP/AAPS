@@ -16,6 +16,9 @@ public record ProviderRateDTO
     [DisplayField("District")]
     public string? District { get; set; }
 
+    [DisplayField("Group Size")]
+    public int? GroupSize { get; set; }
+
     [DisplayField("Rate")]
     public decimal? Rate { get; set; }
 

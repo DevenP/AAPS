@@ -31,4 +31,7 @@ public partial class ProviderRate
     [StringLength(25)]
     [Unicode(false)]
     public string? Lang { get; set; }
+
+    // Null = general rate (any group size); a number = rate for that specific group size only.
+    public int? GroupSize { get; set; }
 }

@@ -788,12 +788,13 @@ public class ImportService : IImportService
             .GroupBy(b => b.Key, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => (decimal?)g.First().Rate, StringComparer.OrdinalIgnoreCase);
 
-        // 5. All active provider rates: "ServiceType|District|Lang|ProviderId" -> Rate
+        // 5. All active provider rates, keyed "ServiceType|District|Lang|ProviderId|GroupSize".
+        // GroupSize is blank for the general rate; a size-specific rate is preferred at lookup.
         var providerRateDict = (await db.ProviderRates
             .Where(p => p.Active == true)
-            .Select(p => new { Key = (p.ServiceType ?? "").Trim() + "|" + (p.District ?? "").Trim() + "|" + (p.Lang ?? "").Trim() + "|" + p.Provider_Id, p.Rate })
+            .Select(p => new { p.ServiceType, p.District, p.Lang, p.Provider_Id, p.GroupSize, p.Rate })
             .ToListAsync(ct))
-            .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(p => (p.ServiceType ?? "").Trim() + "|" + (p.District ?? "").Trim() + "|" + (p.Lang ?? "").Trim() + "|" + p.Provider_Id + "|" + (p.GroupSize?.ToString() ?? ""), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => (decimal?)g.First().Rate, StringComparer.OrdinalIgnoreCase);
 
         // Row processing
@@ -918,12 +919,14 @@ public class ImportService : IImportService
             string rateKey = serviceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim();
             billingRateDict.TryGetValue(rateKey, out decimal? bRate);
 
-            // Provider rate lookup
+            // Provider rate lookup - prefer a rate set for this exact group size, else the general rate
             decimal? pRate = null;
             if (providerId.HasValue)
             {
-                string pRateKey = serviceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim() + "|" + providerId.Value;
-                providerRateDict.TryGetValue(pRateKey, out pRate);
+                int grpForRate = int.TryParse(actualSize.TrimStart('0'), out var gr) && gr > 0 ? gr : 1;
+                string pRateBase = serviceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim() + "|" + providerId.Value + "|";
+                if (!providerRateDict.TryGetValue(pRateBase + grpForRate, out pRate))
+                    providerRateDict.TryGetValue(pRateBase, out pRate);
             }
 
             // Calculate amounts
