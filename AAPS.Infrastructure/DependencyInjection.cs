@@ -24,6 +24,7 @@ namespace AAPS.Infrastructure
             services.AddScoped<IProviderContactService, ProviderContactService>();
             services.AddScoped<IProviderRateService, ProviderRateService>();
             services.AddScoped<IServiceTypeService, ServiceTypeService>();
+            services.AddScoped<ISemesterService, SemesterService>();
             services.AddScoped<ISesiService, SesiService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IBillingService, BillingService>();

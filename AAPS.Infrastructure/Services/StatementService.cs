@@ -28,7 +28,7 @@ public class StatementService : IStatementService
         _footerPath = footerPath;
     }
 
-    public async Task<List<GeneratedStatementFile>> GenerateAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default)
+    public async Task<List<GeneratedStatementFile>> GenerateAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
 
@@ -39,8 +39,12 @@ public class StatementService : IStatementService
         }
         else
         {
+            // Match the grid: current filters plus the active semester date range.
             var request = new PagedRequest(search, columnFilters, PageSize: -1);
-            var matching = await BuildBaseQuery(db).ToPagedResultAsync(request, ct, performSearch: false);
+            var baseQuery = BuildBaseQuery(db);
+            if (dateFrom.HasValue) baseQuery = baseQuery.Where(r => r.DateOfService >= dateFrom);
+            if (dateTo.HasValue) baseQuery = baseQuery.Where(r => r.DateOfService <= dateTo);
+            var matching = await baseQuery.ToPagedResultAsync(request, ct, performSearch: false);
             if (matching.Items.Count == 0) return [];
             matchingIds = matching.Items.Select(r => r.SesisId).ToHashSet();
         }

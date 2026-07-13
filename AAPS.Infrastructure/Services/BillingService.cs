@@ -105,12 +105,14 @@ public class BillingService : IBillingService
     {
         await using var db = _factory.CreateDbContext();
 
+        var baseQuery = ApplySemester(BuildBaseQuery(db), request.DateFrom, request.DateTo);
+
         bool timeSort = request.SortBy is "StartTime" or "EndTime";
         if (!timeSort)
-            return await BuildBaseQuery(db).ToPagedResultAsync(request, ct);
+            return await baseQuery.ToPagedResultAsync(request, ct);
 
         // Times stored as "09:30 AM" strings - materialize and sort by parsed DateTime
-        var all = await BuildBaseQuery(db).ApplyFilters(request).ToListAsync(ct);
+        var all = await baseQuery.ApplyFilters(request).ToListAsync(ct);
         bool desc = string.Equals(request.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
         Func<BillingRecordDTO, DateTime?> key = request.SortBy == "StartTime"
             ? r => DateTime.TryParse(r.StartTime, out var dt) ? dt : (DateTime?)null
@@ -120,11 +122,11 @@ public class BillingService : IBillingService
         return await all.ToPagedResultAsync(request with { SortBy = null, Search = null, ColumnFilters = null }, ct);
     }
 
-    public async Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default)
+    public async Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
         var request = new PagedRequest(search, columnFilters);
-        var result = await BuildBaseQuery(db)
+        var result = await ApplySemester(BuildBaseQuery(db), dateFrom, dateTo)
             .ApplyFilters(request, performSearch: false)
             .Select(x => new { x.BillingAmount, x.ProviderAmount })
             .GroupBy(_ => 1)
@@ -169,13 +171,21 @@ public class BillingService : IBillingService
     public async Task<List<int>> GetIdsAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        return await BuildBaseQuery(db)
+        return await ApplySemester(BuildBaseQuery(db), request.DateFrom, request.DateTo)
             .ApplyFilters(request)
             .Select(r => r.SesisId)
             .ToListAsync(ct);
     }
 
-    public async Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default)
+    // Semester date range on the projected billing rows; nulls = no filter.
+    private static IQueryable<BillingRecordDTO> ApplySemester(IQueryable<BillingRecordDTO> query, DateTime? from, DateTime? to)
+    {
+        if (from.HasValue) query = query.Where(r => r.DateOfService >= from);
+        if (to.HasValue) query = query.Where(r => r.DateOfService <= to);
+        return query;
+    }
+
+    public async Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(_settings.OutputPath))
             throw new InvalidOperationException("Billing OutputPath is not configured in appsettings.json.");
@@ -195,9 +205,10 @@ public class BillingService : IBillingService
         }
         else
         {
-            // Resolve matching SesisIds using the same query + filters as the grid, plus bPaid IS NULL.
+            // Resolve matching SesisIds using the same query + filters as the grid, plus the
+            // active semester and bPaid IS NULL - so generation covers exactly what's on screen.
             var request = new PagedRequest(search, columnFilters, PageSize: -1);
-            var matching = await BuildBaseQuery(db, unpaidOnly: true)
+            var matching = await ApplySemester(BuildBaseQuery(db, unpaidOnly: true), dateFrom, dateTo)
                 .ToPagedResultAsync(request, ct, performSearch: false);
             if (matching.Items.Count == 0) return new BillingGenerateResult([], 0);
             matchingIds = matching.Items.Select(r => r.SesisId).ToHashSet();

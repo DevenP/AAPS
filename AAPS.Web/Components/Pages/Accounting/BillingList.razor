@@ -18,6 +18,7 @@
              RowClassFunc="BillingRowClass"
              Columns="@(new[] { "Checkbox", "Actions", "DateOfService", "StartTime", "EndTime", "Provider", "StudentId", "Student", "ServiceType", "Frequency", "Duration", "ActualSize", "EntryId", "AssignId", "Billed", "Voucher", "VoucherAmount", "UnpaidBalance", "VoucherBalancePaid", "ProviderPaidOn", "ProviderAmount", "BillingRate", "ProviderRate", "SesisId" })"
              GetData="BillingService.GetPagedAsync"
+             ShowSemesterFilter="true"
              DefaultSortLabel="DateOfService"
              OnDataLoaded="RefreshSummary"
              OnFilterRemoved="@(_ => { ClearSelection(); return Task.CompletedTask; })"
@@ -293,7 +294,8 @@
     {
         _allSelected = selected;
         if (!selected) { _selectedIds.Clear(); return; }
-        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters);
+        var (semFrom, semTo) = _grid.CurrentSemesterRange;
+        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters, DateFrom: semFrom, DateTo: semTo);
         _selectedIds = (await BillingService.GetIdsAsync(request)).ToHashSet();
     }
 
@@ -348,7 +350,8 @@
 
     private async Task RefreshSummary()
     {
-        _summary = await BillingService.GetSummaryAsync(_grid.Search, _grid.ColumnFilters);
+        var (semFrom, semTo) = _grid.CurrentSemesterRange;
+        _summary = await BillingService.GetSummaryAsync(_grid.Search, _grid.ColumnFilters, semFrom, semTo);
         StateHasChanged();
     }
 
@@ -416,7 +419,8 @@
             StatementService.SetLogoPaths(headerPath, footerPath);
 
             var selected = _selectedIds.Count > 0 ? _selectedIds.ToList() : null;
-            var statementFiles = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters, selected);
+            var (semFrom, semTo) = _grid.CurrentSemesterRange;
+            var statementFiles = await StatementService.GenerateAsync(_grid.Search, _grid.ColumnFilters, selected, semFrom, semTo);
 
             if (statementFiles.Count == 0)
             {
@@ -450,7 +454,8 @@
         try
         {
             var selected = _selectedIds.Count > 0 ? _selectedIds.ToList() : null;
-            var generateResult = await BillingService.GenerateBillingFilesAsync(_grid.Search, _grid.ColumnFilters, selected);
+            var (semFrom, semTo) = _grid.CurrentSemesterRange;
+            var generateResult = await BillingService.GenerateBillingFilesAsync(_grid.Search, _grid.ColumnFilters, selected, semFrom, semTo);
 
             if (generateResult.SkippedPaidCount > 0)
                 Snackbar.Add($"{generateResult.SkippedPaidCount} selected record(s) were already paid and were skipped.", Severity.Warning);

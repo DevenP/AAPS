@@ -85,6 +85,9 @@ public class SesiService : ISesiService
                 (s.Voucher != null && s.Voucher.Contains(term)));
         }
 
+        if (request.DateFrom.HasValue) baseQuery = baseQuery.Where(s => s.date_of_Service >= request.DateFrom);
+        if (request.DateTo.HasValue) baseQuery = baseQuery.Where(s => s.date_of_Service <= request.DateTo);
+
         if (string.IsNullOrWhiteSpace(request.SortBy))
             request = request with { SortBy = "DateOfService", SortDir = "asc" };
 
@@ -240,7 +243,7 @@ public class SesiService : ISesiService
     // Builds the full operations IQueryable with joins and projection.
     // Search is applied here on the raw Sesis entity before joining so EF uses real indexes.
     // Column filters and sort are applied by the caller via ApplyFilters / ToPagedResultAsync.
-    private static IQueryable<OperationsDTO> BuildOperationQuery(AppDbContext db, string? search)
+    private static IQueryable<OperationsDTO> BuildOperationQuery(AppDbContext db, string? search, DateTime? from = null, DateTime? to = null)
     {
         // Mirrors the stored proc's two-step VendorPortal join:
         // Step 1 - MIN(VendorPortal_Id) per (Entry_Id, pSsn)
@@ -274,6 +277,9 @@ public class SesiService : ISesiService
                 (s.Provider_First_Name != null && s.Provider_First_Name.Contains(term)) ||
                 (s.Service_Type != null && s.Service_Type.Contains(term)));
         }
+
+        if (from.HasValue) baseQuery = baseQuery.Where(s => s.date_of_Service >= from);
+        if (to.HasValue) baseQuery = baseQuery.Where(s => s.date_of_Service <= to);
 
         return
             from s in baseQuery
@@ -371,7 +377,7 @@ public class SesiService : ISesiService
             request = request with { SortBy = "DateOfService", SortDir = "asc" };
 
         var (assignFlag, req) = ExtractAssignFlagFilter(request);
-        var query = BuildOperationQuery(db, req.Search);
+        var query = BuildOperationQuery(db, req.Search, req.DateFrom, req.DateTo);
 
         bool timeSort = req.SortBy is "StartTime" or "EndTime";
 
@@ -405,7 +411,7 @@ public class SesiService : ISesiService
     {
         await using var db = _factory.CreateDbContext();
         var (assignFlag, req) = ExtractAssignFlagFilter(request);
-        var query = BuildOperationQuery(db, req.Search);
+        var query = BuildOperationQuery(db, req.Search, req.DateFrom, req.DateTo);
         var all = await query.ApplyFilters(req, performSearch: false).ToListAsync(ct);
         if (assignFlag.HasValue)
             all = all.Where(op => op.AssignFlag == assignFlag.Value).ToList();

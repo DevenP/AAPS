@@ -14,6 +14,7 @@
              RowClassFunc="VendorPortalRowClass"
              Columns="@(new[] { "Mismatch", "StudentId", "StudentLastName", "StudentFirstName", "ProviderLastName", "ProviderFirstName", "ProviderSSN", "Duration", "Frequency", "GroupSize", "School", "ApprovalStartDate", "AssignmentId", "Fund", "VenderPortalFile", "EntryId" })"
              GetData="VendorPortalService.GetPagedAsync"
+             ShowSemesterFilter="true"
              OnFilterRemoved="OnFilterRemoved"
              OnFiltersChanged="ClearSelection">
 
@@ -211,7 +212,8 @@
             return;
         }
 
-        var request = new AAPS.Application.Common.Paging.PagedRequest(_grid.Search, _grid.ColumnFilters);
+        var (semFrom, semTo) = _grid.CurrentSemesterRange;
+        var request = new AAPS.Application.Common.Paging.PagedRequest(_grid.Search, _grid.ColumnFilters, DateFrom: semFrom, DateTo: semTo);
         _selectedIds = (await VendorPortalService.GetIdsAsync(request)).ToHashSet();
     }
 

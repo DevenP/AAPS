@@ -32,6 +32,7 @@
              Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "ServiceType", "LanguageProvided", "AssignmentClaimed", "Duration", "ActualSize", "EntryId", "ProviderPaidDate", "BilledDate", "Voucher", "AssignId", "Id" })"
              DefaultSortLabel="DateOfService"
              GetData="SesiService.GetOperationsPagedAsync"
+             ShowSemesterFilter="true"
              ExportHeaders="@(new[] { DN(nameof(OperationsDTO.DateOfService)), DN(nameof(OperationsDTO.StartTime)), DN(nameof(OperationsDTO.EndTime)), DN(nameof(OperationsDTO.ProviderLastName)), DN(nameof(OperationsDTO.GDistrict)), DN(nameof(OperationsDTO.StudentId)), DN(nameof(OperationsDTO.StudentLastName)), DN(nameof(OperationsDTO.ServiceType)), DN(nameof(OperationsDTO.LanguageProvided)), DN(nameof(OperationsDTO.AssignmentClaimed)), DN(nameof(OperationsDTO.Duration)), DN(nameof(OperationsDTO.ActualSize)), DN(nameof(OperationsDTO.EntryId)), DN(nameof(OperationsDTO.ProviderPaidDate)), DN(nameof(OperationsDTO.BilledDate)), DN(nameof(OperationsDTO.Voucher)), DN(nameof(OperationsDTO.AssignId)), DN(nameof(OperationsDTO.Id)) })"
              ExportMapper="@(op => new object?[] { op.DateOfService?.ToString("MM/dd/yyyy"), op.StartTime, op.EndTime, CombineName(op.ProviderLastName, op.ProviderFirstName), op.GDistrict, op.StudentId, CombineName(op.StudentLastName, op.StudentFirstName), op.ServiceType, op.LanguageProvided, op.AssignmentClaimed, op.Duration, op.ActualSize, op.EntryId, op.ProviderPaidDate?.ToString("MM/dd/yyyy"), op.BilledDate?.ToString("MM/dd/yyyy"), op.Voucher, op.AssignId, op.Id })"
              OnFilterRemoved="OnFilterRemoved"
@@ -279,7 +280,8 @@
             return;
         }
 
-        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters);
+        var (semFrom, semTo) = _grid.CurrentSemesterRange;
+        var request = new PagedRequest(_grid.Search, _grid.ColumnFilters, DateFrom: semFrom, DateTo: semTo);
         _selectedIds = (await SesiService.GetOperationIdsAsync(request)).ToHashSet();
     }
 

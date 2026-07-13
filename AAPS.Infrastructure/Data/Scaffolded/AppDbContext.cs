@@ -35,6 +35,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<Provider_Contact> Provider_Contacts { get; set; }
 
+    public virtual DbSet<Semester> Semesters { get; set; }
+
     public virtual DbSet<ServiceType> ServiceTypes { get; set; }
 
     public virtual DbSet<Sesi> Seses { get; set; }

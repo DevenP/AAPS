@@ -47,6 +47,9 @@ public class EvalService : IEvalService
                 (ev.Status != null && ev.Status.Contains(term)));
         }
 
+        if (request.DateFrom.HasValue) baseQuery = baseQuery.Where(ev => ev.EvalDate >= request.DateFrom);
+        if (request.DateTo.HasValue) baseQuery = baseQuery.Where(ev => ev.EvalDate <= request.DateTo);
+
         // Left-join to Providers to surface provider name in the DTO
         var query = from ev in baseQuery
                     join prov in db.Providers.AsNoTracking() on ev.Provider_Id equals prov.Provider_Id into grouping

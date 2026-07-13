@@ -6,5 +6,7 @@
         string? SortBy = null,
         string SortDir = "asc",
         int Page = 1,
-        int PageSize = 25);
+        int PageSize = 25,
+        DateTime? DateFrom = null,
+        DateTime? DateTo = null);
 }

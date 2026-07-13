@@ -10,9 +10,9 @@ public record BillingSummary(int Count, decimal TotalBilling, decimal TotalProvi
 public interface IBillingService
 {
     Task<PagedResult<BillingRecordDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default);
-    Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, CancellationToken ct = default);
+    Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
     Task UpdateBillingDatesAsync(int sesisId, DateTime? billed, DateTime? billedPaidOn, DateTime? providerPaidOn, CancellationToken ct = default);
     Task BulkUpdateBillingDatesAsync(List<int> sesisIds, bool applyBilled, DateTime? billed, bool applyBilledPaid, DateTime? billedPaid, bool applyProviderPaid, DateTime? providerPaid, CancellationToken ct = default);
-    Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, CancellationToken ct = default);
+    Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
     Task<List<int>> GetIdsAsync(PagedRequest request, CancellationToken ct = default);
 }

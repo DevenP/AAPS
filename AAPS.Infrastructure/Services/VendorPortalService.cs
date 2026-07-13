@@ -94,6 +94,13 @@ namespace AAPS.Infrastructure.Services
             var raw = await FetchRawAsync(db, ct);
             if (raw.Count == 0 && ct.IsCancellationRequested)
                 return new PagedResult<VendorPortalDTO>([], request.Page, request.PageSize, 0);
+
+            // Semester filter on the approval start date (proc results are already in memory).
+            if (request.DateFrom.HasValue)
+                raw = raw.Where(r => r.pStartDate.HasValue && r.pStartDate.Value >= request.DateFrom.Value).ToList();
+            if (request.DateTo.HasValue)
+                raw = raw.Where(r => r.pStartDate.HasValue && r.pStartDate.Value <= request.DateTo.Value).ToList();
+
             return await ProjectRaw(raw).ToPagedResultAsync(request, ct);
         }
 
@@ -101,6 +108,12 @@ namespace AAPS.Infrastructure.Services
         {
             await using var db = _factory.CreateDbContext();
             var raw = await FetchRawAsync(db, ct);
+
+            if (request.DateFrom.HasValue)
+                raw = raw.Where(r => r.pStartDate.HasValue && r.pStartDate.Value >= request.DateFrom.Value).ToList();
+            if (request.DateTo.HasValue)
+                raw = raw.Where(r => r.pStartDate.HasValue && r.pStartDate.Value <= request.DateTo.Value).ToList();
+
             var allRequest = new PagedRequest(request.Search, request.ColumnFilters, PageSize: -1);
             var result = await ProjectRaw(raw).ToPagedResultAsync(allRequest, ct);
             return result.Items.Select(i => i.Id).ToList();

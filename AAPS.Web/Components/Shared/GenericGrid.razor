@@ -2,12 +2,17 @@
 @using AAPS.Application.Common.Paging
 @using AAPS.Application.Common.Helpers
 @using AAPS.Application.Common.Extensions
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
 @using AAPS.Web.Helpers
+@using AAPS.Web.State
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Reflection
 @inject NavigationManager Nav
+@inject ISemesterService Semesters
+@inject SemesterState SemState
 @inject ILogger<GenericGrid<TItem>> Logger
 
 <MudTable ServerData="ReloadData"
@@ -35,6 +40,20 @@
 
         <MudSpacer />
 
+        @if (ShowSemesterFilter)
+        {
+            <MudSelect T="string" Value="_selectedSemester" ValueChanged="OnSemesterChanged"
+                       Dense="true" Margin="Margin.Dense"
+                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.CalendarMonth"
+                       AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter"
+                       Class="mt-0 mr-4" Style="width: 150px; flex: 0 0 auto;">
+                <MudSelectItem T="string" Value="@SemesterState.All">All</MudSelectItem>
+                @foreach (var s in _semesters)
+                {
+                    <MudSelectItem T="string" Value="@s.Code">@s.Code</MudSelectItem>
+                }
+            </MudSelect>
+        }
 
         @if (ColumnFilters.Any())
         {
@@ -199,6 +218,14 @@
     [Parameter] public string Height { get; set; } = "86vh";
     [Parameter] public string DefaultSortLabel { get; set; } = "Id";
 
+    // When true, show the semester dropdown and filter results to the selected
+    // school year / summer session. Left off for reference pages with no date.
+    [Parameter] public bool ShowSemesterFilter { get; set; }
+
+    private List<SemesterDTO> _semesters = [];
+    private string? _selectedSemester;
+    private string? _urlSemester;
+
     // Called when a filter chip is removed, with the filter key that was removed.
     // Parent pages can use this to sync their own toggle state.
     [Parameter] public EventCallback<string> OnFilterRemoved { get; set; }
@@ -239,6 +266,7 @@
             _pageSize = pageSize;
         }
         if (query.TryGetValue("sortBy", out var sb)) _initialSortBy = sb.ToString() ?? string.Empty;
+        if (query.TryGetValue("semester", out var sem)) _urlSemester = sem.ToString();
 
         // 2. Load Column Filters (Data search)
         foreach (var key in query.Keys.Where(k => k.StartsWith("col_")))
@@ -267,6 +295,49 @@
             if (!prop.IsBrowsable() || _columnVisibility.ContainsKey(prop.Name)) continue;
             _columnVisibility[prop.Name] = false;
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!ShowSemesterFilter) return;
+
+        _semesters = await Semesters.GetAllAsync();
+
+        // URL wins, then whatever the user picked earlier this session, then the current semester.
+        _selectedSemester = _urlSemester ?? SemState.SelectedCode ?? CurrentSemesterCode();
+        SemState.SelectedCode = _selectedSemester;
+    }
+
+    private string CurrentSemesterCode()
+    {
+        var today = DateTime.Today;
+        var cur = _semesters.FirstOrDefault(s => today >= s.StartDate && today <= s.EndDate)
+                  ?? _semesters.Where(s => s.StartDate <= today).OrderByDescending(s => s.StartDate).FirstOrDefault()
+                  ?? _semesters.FirstOrDefault();
+        return cur?.Code ?? SemesterState.All;
+    }
+
+    // Current semester range, for pages that build their own requests (summary totals,
+    // select-all-across-pages) and need them to match the filtered view.
+    public (DateTime? From, DateTime? To) CurrentSemesterRange => SemesterRange();
+
+    // Resolve the selected semester to an inclusive date range; nulls = no date filter.
+    private (DateTime? From, DateTime? To) SemesterRange()
+    {
+        if (!ShowSemesterFilter || string.IsNullOrEmpty(_selectedSemester) || _selectedSemester == SemesterState.All)
+            return (null, null);
+
+        var sem = _semesters.FirstOrDefault(s => s.Code == _selectedSemester);
+        if (sem == null) return (null, null);
+        return (sem.StartDate.Date, sem.EndDate.Date.AddDays(1).AddTicks(-1));
+    }
+
+    private async Task OnSemesterChanged(string code)
+    {
+        _selectedSemester = code;
+        SemState.SelectedCode = code;
+        _currentPage = 0;
+        await _table.ReloadServerData();
     }
 
     public Task ReloadServerData()
@@ -312,8 +383,9 @@
             StateHasChanged();
             try
             {
-                // Fetch all matching records
-                var request = new PagedRequest(_search, ColumnFilters, PageSize: -1);
+                // Fetch all matching records (respecting the selected semester)
+                var (semFrom, semTo) = SemesterRange();
+                var request = new PagedRequest(_search, ColumnFilters, PageSize: -1, DateFrom: semFrom, DateTo: semTo);
                 var res = await GetData(request, default);
 
                 byte[] bytes;
@@ -415,8 +487,10 @@
             _isFirstLoad = false;
         }
 
+        var (semFrom, semTo) = SemesterRange();
         var request = new PagedRequest(_search, ColumnFilters, state.SortLabel,
-            state.SortDirection == SortDirection.Descending ? "desc" : "asc", state.Page + 1, state.PageSize);
+            state.SortDirection == SortDirection.Descending ? "desc" : "asc", state.Page + 1, state.PageSize,
+            semFrom, semTo);
 
         // Sync to URL
         UpdateUrl(request);
@@ -454,6 +528,7 @@
         if (req.PageSize != 50) queryParams["pageSize"] = req.PageSize.ToString();
         if (!string.IsNullOrWhiteSpace(req.SortBy)) queryParams["sortBy"] = req.SortBy;
         if (req.SortDir == "desc") queryParams["sortDir"] = "desc";
+        if (ShowSemesterFilter && !string.IsNullOrEmpty(_selectedSemester)) queryParams["semester"] = _selectedSemester;
 
         // 2. Column Filters Loop
         if (req.ColumnFilters != null)

@@ -15,6 +15,7 @@ public interface IAppDbContext
     DbSet<Provider> Providers { get; }
     DbSet<ProviderRate> ProviderRates { get; }
     DbSet<Provider_Contact> Provider_Contacts { get; }
+    DbSet<Semester> Semesters { get; }
     DbSet<ServiceType> ServiceTypes { get; }
     DbSet<Sesi> Seses { get; }
     DbSet<VendorPortal> VendorPortals { get; }

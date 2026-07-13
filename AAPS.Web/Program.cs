@@ -116,6 +116,9 @@ namespace AAPS.Web
             // Error Handling
             builder.Services.AddScoped<IErrorService, Infrastructure.Services.ErrorService>();
 
+            // Per-session UI state
+            builder.Services.AddScoped<AAPS.Web.State.SemesterState>();
+
             // Packages
             builder.Services.AddMudServices();
 

@@ -67,6 +67,14 @@ public class MandateService : IMandateService
                 (m.Parent_Email != null && m.Parent_Email.Contains(term)));
         }
 
+        // Semester filter: show approvals whose active period overlaps the range.
+        if (request.DateFrom.HasValue || request.DateTo.HasValue)
+        {
+            var from = request.DateFrom ?? DateTime.MinValue;
+            var to = request.DateTo ?? DateTime.MaxValue;
+            baseQuery = baseQuery.Where(m => m.MandateStart <= to && m.MandateEnd >= from);
+        }
+
         var query = from m in baseQuery
                     select new MandateDTO
                     {
