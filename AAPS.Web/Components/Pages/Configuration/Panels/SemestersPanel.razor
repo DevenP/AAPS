@@ -1,0 +1,156 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Configuration.Forms
+@using AAPS.Web.Components.Shared
+@inject ISemesterService SemesterService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<GenericGrid @ref="_grid" TItem="SemesterDTO"
+             Title="Semesters"
+             DefaultSortLabel="StartDate"
+             Columns="@(new[] { "Actions", "Code", "StartDate", "EndDate" })"
+             GetData="SemesterService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Code", "Start Date", "End Date" })"
+             ExportMapper="@(s => new object?[] { s.Code, s.StartDate.ToString("MM/dd/yyyy"), s.EndDate.ToString("MM/dd/yyyy") })">
+
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add Semester
+        </MudButton>
+    </CustomActionContent>
+
+    <HeaderContent>
+        <GridCell TItem="SemesterDTO" Column="Actions" IsHeader="true">Actions</GridCell>
+        <GridCell TItem="SemesterDTO" Column="Code" IsHeader="true">
+            <MudTableSortLabel SortLabel="Code" T="SemesterDTO">Code</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SemesterDTO" Column="StartDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="StartDate" T="SemesterDTO">Start Date</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SemesterDTO" Column="EndDate" IsHeader="true">
+            <MudTableSortLabel SortLabel="EndDate" T="SemesterDTO">End Date</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="s">
+        <GridCell TItem="SemesterDTO" Column="Actions">
+            <div class="d-flex">
+                <MudTooltip Text="Edit Semester">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small" Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(s))" />
+                </MudTooltip>
+                <MudTooltip Text="Delete Semester">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small" Color="Color.Error"
+                                   OnClick="@(() => OnDeleteClicked(s))" />
+                </MudTooltip>
+            </div>
+        </GridCell>
+        <GridCell TItem="SemesterDTO" Column="Code">@s.Code</GridCell>
+        <GridCell TItem="SemesterDTO" Column="StartDate">@s.StartDate.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="SemesterDTO" Column="EndDate">@s.EndDate.ToString("MM/dd/yyyy")</GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<SemesterDTO>? _grid;
+    private SemesterValidator _validator = new();
+
+    private async Task OpenEditDialog(SemesterDTO? semester = null)
+    {
+        SemesterDTO model;
+
+        if (semester == null)
+        {
+            model = new SemesterDTO();
+        }
+        else
+        {
+            var fresh = await SemesterService.GetByIdAsync(semester.Id);
+            if (fresh == null) return;
+            model = fresh;
+        }
+
+        var parameters = new DialogParameters<EntityDialog<SemesterDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, semester == null ? "Add Semester" : "Edit Semester");
+        parameters.Add(x => x.IsNew, semester == null);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (SemesterDTO dto) =>
+        {
+            var errors = (await _validator.ValidateAsync(dto)).Errors.Select(e => e.ErrorMessage).ToList();
+
+            // Only check for cross-row clashes once the dates themselves are valid.
+            if (errors.Count == 0)
+            {
+                var conflict = await SemesterService.CheckConflictAsync(dto, dto.Id == 0 ? null : dto.Id);
+                if (conflict != null) errors.Add(conflict);
+            }
+
+            return (IList<string>)errors;
+        });
+        parameters.Add(x => x.ChildContent, (SemesterDTO context) =>
+            @<SemesterForm Model="context" />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<SemesterDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is SemesterDTO saved)
+        {
+            try
+            {
+                if (semester == null)
+                {
+                    await SemesterService.CreateAsync(saved);
+                    Snackbar.Add("Semester added.", Severity.Success);
+                }
+                else
+                {
+                    await SemesterService.UpdateAsync(semester.Id, saved);
+                    Snackbar.Add("Semester updated.", Severity.Success);
+                }
+
+                await _grid!.ReloadServerData();
+            }
+            catch (InvalidOperationException ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Warning);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred while saving.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDeleteClicked(SemesterDTO semester)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Semester",
+            $"Delete \"{semester.Code}\"? It will no longer appear in the semester filter. Sessions are not affected.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed == true)
+        {
+            try
+            {
+                await SemesterService.DeleteAsync(semester.Id);
+                Snackbar.Add("Semester deleted.", Severity.Success);
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred during deletion.", Severity.Error);
+            }
+        }
+    }
+}

@@ -1,0 +1,35 @@
+@using AAPS.Application.DTO
+
+<MudGrid>
+
+    @* Name - editable on Add, read-only on Edit (matched across records by name) *@
+    <MudItem xs="12">
+        @if (_isNew)
+        {
+            <MudTextField @bind-Value="Model.Name" Label="Language" Required
+                          Validation="@Validator" For="@(() => Model.Name)"
+                          HelperText="The language name as it appears on records (e.g. Spanish)." />
+        }
+        else
+        {
+            <MudTextField Value="@Model.Name" Label="Language"
+                          ReadOnly="true" Variant="Variant.Filled"
+                          HelperText="Renaming is disabled — the name is matched across existing records." />
+        }
+    </MudItem>
+
+    @* Code - 2-letter short code, always editable *@
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Model.Code" Label="Code" MaxLength="2"
+                      Validation="@Validator" For="@(() => Model.Code)"
+                      HelperText="Optional 2-letter code (e.g. SP)." />
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter] public LanguageDTO Model { get; set; } = default!;
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>>? Validator { get; set; }
+
+    private bool _isNew => Model.Id == 0;
+}

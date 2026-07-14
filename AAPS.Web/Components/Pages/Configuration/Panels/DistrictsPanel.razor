@@ -1,0 +1,136 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Configuration.Forms
+@using AAPS.Web.Components.Shared
+@inject IGDistrictService DistrictService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<GenericGrid @ref="_grid" TItem="GDistrictDTO"
+             Title="Districts"
+             DefaultSortLabel="DistrictCode"
+             Columns="@(new[] { "Actions", "DistrictCode" })"
+             GetData="DistrictService.GetPagedAsync"
+             ExportHeaders="@(new[] { "District Code" })"
+             ExportMapper="@(d => new object?[] { d.DistrictCode })">
+
+    <CustomActionContent>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenEditDialog())"
+                   Size="Size.Small"
+                   Class="mr-4">
+            Add District
+        </MudButton>
+    </CustomActionContent>
+
+    <HeaderContent>
+        <GridCell TItem="GDistrictDTO" Column="Actions" IsHeader="true">Actions</GridCell>
+        <GridCell TItem="GDistrictDTO" Column="DistrictCode" IsHeader="true">
+            <MudTableSortLabel SortLabel="DistrictCode" T="GDistrictDTO">District Code</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="d">
+        <GridCell TItem="GDistrictDTO" Column="Actions">
+            <div class="d-flex">
+                <MudTooltip Text="Edit District">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small" Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(d))" />
+                </MudTooltip>
+                <MudTooltip Text="Delete District">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small" Color="Color.Error"
+                                   OnClick="@(() => OnDeleteClicked(d))" />
+                </MudTooltip>
+            </div>
+        </GridCell>
+        <GridCell TItem="GDistrictDTO" Column="DistrictCode">@d.DistrictCode</GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<GDistrictDTO>? _grid;
+    private GDistrictValidator _validator = new();
+
+    private async Task OpenEditDialog(GDistrictDTO? district = null)
+    {
+        GDistrictDTO model;
+
+        if (district == null)
+        {
+            model = new GDistrictDTO();
+        }
+        else
+        {
+            var fresh = await DistrictService.GetByIdAsync(district.Id);
+            if (fresh == null) return;
+            model = fresh;
+        }
+
+        var parameters = new DialogParameters<EntityDialog<GDistrictDTO>>();
+        parameters.Add(x => x.Item, model);
+        parameters.Add(x => x.Title, district == null ? "Add District" : "Edit District");
+        parameters.Add(x => x.IsNew, district == null);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (GDistrictDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
+        parameters.Add(x => x.ChildContent, (GDistrictDTO context) =>
+            @<GDistrictForm Model="context" />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<GDistrictDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is GDistrictDTO saved)
+        {
+            try
+            {
+                if (district == null)
+                {
+                    await DistrictService.CreateAsync(saved);
+                    Snackbar.Add("District added.", Severity.Success);
+                }
+                else
+                {
+                    await DistrictService.UpdateAsync(district.Id, saved);
+                    Snackbar.Add("District updated.", Severity.Success);
+                }
+
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred while saving.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OnDeleteClicked(GDistrictDTO district)
+    {
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete District",
+            $"Delete district \"{district.DistrictCode}\"? Existing records that use it are matched by value and will keep their values, but it will no longer be available to select.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed == true)
+        {
+            try
+            {
+                await DistrictService.DeleteAsync(district.Id);
+                Snackbar.Add("District deleted.", Severity.Success);
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred during deletion.", Severity.Error);
+            }
+        }
+    }
+}

@@ -1,0 +1,44 @@
+@using AAPS.Application.DTO
+
+<MudGrid>
+
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Model.Code" Label="Code" MaxLength="20" Required
+                      Validation="@Validator" For="@(() => Model.Code)"
+                      HelperText="Short label for the term (e.g. SY26, SUM26)." />
+    </MudItem>
+
+    <MudItem xs="12" sm="6">
+        <MudDatePicker Label="Start Date" @bind-Date="_start" Required
+                       Editable="true" DateFormat="MM/dd/yyyy" />
+    </MudItem>
+
+    <MudItem xs="12" sm="6">
+        <MudDatePicker Label="End Date" @bind-Date="_end" Required
+                       Editable="true" DateFormat="MM/dd/yyyy" />
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+            The date range decides which sessions fall in this term when a page is filtered to it.
+        </MudText>
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter] public SemesterDTO Model { get; set; } = default!;
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>>? Validator { get; set; }
+
+    private DateTime? _start
+    {
+        get => Model.StartDate == default ? null : Model.StartDate;
+        set => Model.StartDate = value ?? default;
+    }
+
+    private DateTime? _end
+    {
+        get => Model.EndDate == default ? null : Model.EndDate;
+        set => Model.EndDate = value ?? default;
+    }
+}

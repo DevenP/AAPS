@@ -1,0 +1,16 @@
+@using AAPS.Application.DTO
+
+<MudGrid>
+
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Model.DistrictCode" Label="District Code" MaxLength="2" Required
+                      Validation="@Validator" For="@(() => Model.DistrictCode)"
+                      HelperText="The 2-digit geographic district (e.g. 09). Records match by this value, so changing an existing code won't relabel past records." />
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter] public GDistrictDTO Model { get; set; } = default!;
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>>? Validator { get; set; }
+}

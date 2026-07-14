@@ -1,0 +1,44 @@
+@page "/configuration"
+@using AAPS.Web.Components.Pages.Configuration.Panels
+
+<PageTitle>Configuration</PageTitle>
+
+<MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-1">Configuration</MudText>
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+    Manage the reference lists the rest of the app draws from.
+</MudText>
+
+<div style="display:flex; gap:16px; align-items:flex-start;">
+
+    <MudPaper Elevation="1" Style="flex:0 0 210px; width:210px;" Class="py-2">
+        <MudList T="string" @bind-SelectedValue="_section" SelectionMode="SelectionMode.SingleSelection" Color="Color.Primary">
+            <MudListItem T="string" Value="@("languages")" Icon="@Icons.Material.Filled.Language" Text="Languages" />
+            <MudListItem T="string" Value="@("districts")" Icon="@Icons.Material.Filled.Map" Text="Districts" />
+            <MudListItem T="string" Value="@("servicetypes")" Icon="@Icons.Material.Filled.Category" Text="Service Types" />
+            <MudListItem T="string" Value="@("semesters")" Icon="@Icons.Material.Filled.CalendarMonth" Text="Semesters" />
+        </MudList>
+    </MudPaper>
+
+    <div style="flex:1 1 auto; min-width:0;">
+        @switch (_section)
+        {
+            case "languages":
+                <LanguagesPanel />
+                break;
+            case "districts":
+                <DistrictsPanel />
+                break;
+            case "servicetypes":
+                <ServiceTypesPanel />
+                break;
+            case "semesters":
+                <SemestersPanel />
+                break;
+        }
+    </div>
+
+</div>
+
+@code {
+    private string _section = "languages";
+}
