@@ -37,6 +37,14 @@ public record ImportCommitResult
     public int Skipped { get; init; }
     public List<int> SkippedRowNumbers { get; init; } = new();
     public List<ImportRowWarning> WarningRows { get; init; } = new();
+
+    // Payment import: rows that found no matching session, with their full A-R detail
+    // for the downloadable unmatched-payments export (#5). Headers come from the file's row 1.
+    public List<string> UnmatchedHeaders { get; init; } = new();
+    public List<string?[]> UnmatchedRows { get; init; } = new();
+
+    // Payment import: number of matched rows that were deductions/clawbacks (negative amount, #7).
+    public int Deductions { get; init; }
 }
 
 public interface IImportService

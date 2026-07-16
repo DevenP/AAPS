@@ -9,12 +9,18 @@
 <GenericGrid @ref="_grid" TItem="PaymentDTO"
              Title="Voucher Payments"
              DefaultSortLabel="DateOfService"
-             Columns="@(new[] { "Voucher", "Provider", "DateOfService", "StartTime", "EndTime", "AdminDbn", "ServiceType", "StudentId", "BilledAmount", "BilledOn" })"
+             Columns="@(new[] { "Voucher", "InvoiceNumber", "BatchId", "Provider", "DateOfService", "StartTime", "EndTime", "AdminDbn", "ServiceType", "ServiceSubtype", "StudentId", "BilledAmount", "VoucherAmount", "IvrConfirm", "BilledOn" })"
              GetData="PaymentService.GetPagedAsync">
 
     <HeaderContent>
         <GridCell TItem="PaymentDTO" Column="Voucher" IsHeader="true">
             <MudTableSortLabel SortLabel="Voucher" T="PaymentDTO">@_grid?.GetDisplayName("Voucher")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="InvoiceNumber" IsHeader="true">
+            <MudTableSortLabel SortLabel="InvoiceNumber" T="PaymentDTO">@_grid?.GetDisplayName("InvoiceNumber")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="BatchId" IsHeader="true">
+            <MudTableSortLabel SortLabel="BatchId" T="PaymentDTO">@_grid?.GetDisplayName("BatchId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="Provider" IsHeader="true">
             <MudTableSortLabel SortLabel="Provider" T="PaymentDTO">@_grid?.GetDisplayName("Provider")</MudTableSortLabel>
@@ -34,11 +40,20 @@
         <GridCell TItem="PaymentDTO" Column="ServiceType" IsHeader="true">
             <MudTableSortLabel SortLabel="ServiceType" T="PaymentDTO">@_grid?.GetDisplayName("ServiceType")</MudTableSortLabel>
         </GridCell>
+        <GridCell TItem="PaymentDTO" Column="ServiceSubtype" IsHeader="true">
+            <MudTableSortLabel SortLabel="ServiceSubtype" T="PaymentDTO">@_grid?.GetDisplayName("ServiceSubtype")</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="PaymentDTO" Column="StudentId" IsHeader="true">
             <MudTableSortLabel SortLabel="StudentId" T="PaymentDTO">@_grid?.GetDisplayName("StudentId")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="BilledAmount" IsHeader="true">
             <MudTableSortLabel SortLabel="BilledAmount" T="PaymentDTO">@_grid?.GetDisplayName("BilledAmount")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="VoucherAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="VoucherAmount" T="PaymentDTO">@_grid?.GetDisplayName("VoucherAmount")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="IvrConfirm" IsHeader="true">
+            <MudTableSortLabel SortLabel="IvrConfirm" T="PaymentDTO">@_grid?.GetDisplayName("IvrConfirm")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="BilledOn" IsHeader="true">
             <MudTableSortLabel SortLabel="BilledOn" T="PaymentDTO">@_grid?.GetDisplayName("BilledOn")</MudTableSortLabel>
@@ -48,6 +63,12 @@
     <RowTemplate Context="p">
         <GridCell TItem="PaymentDTO" Column="Voucher">
             <span style="font-family:monospace;">@p.Voucher</span>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="InvoiceNumber">
+            <span style="font-family:monospace;">@p.InvoiceNumber</span>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="BatchId">
+            <span style="font-family:monospace;">@p.BatchId</span>
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="Provider">
             <MudTooltip Text="@p.Provider">@p.Provider</MudTooltip>
@@ -61,9 +82,20 @@
         <GridCell TItem="PaymentDTO" Column="EndTime">@p.EndTime</GridCell>
         <GridCell TItem="PaymentDTO" Column="AdminDbn">@p.AdminDbn</GridCell>
         <GridCell TItem="PaymentDTO" Column="ServiceType">@p.ServiceType</GridCell>
+        <GridCell TItem="PaymentDTO" Column="ServiceSubtype">
+            <MudTooltip Text="@p.ServiceSubtypeLabel">
+                <span style="font-family:monospace;">@p.ServiceSubtype</span>
+            </MudTooltip>
+        </GridCell>
         <GridCell TItem="PaymentDTO" Column="StudentId">@p.StudentId</GridCell>
         <GridCell TItem="PaymentDTO" Column="BilledAmount">
             <MudText Color="Color.Success" Style="font-weight:600;">@p.BilledAmount?.ToString("C2")</MudText>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="VoucherAmount">
+            <MudText Style="font-weight:600;">@p.VoucherAmount?.ToString("C2")</MudText>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="IvrConfirm">
+            <span style="font-family:monospace;">@p.IvrConfirm</span>
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="BilledOn">
             <MudTooltip Text="@p.BilledOn?.ToLongDateString()">

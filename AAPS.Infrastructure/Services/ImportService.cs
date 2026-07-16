@@ -428,6 +428,17 @@ public class ImportService : IImportService
                 if (cell.IsEmpty()) return null;
                 try { return cell.GetDateTime(); } catch { return null; }
             }
+            decimal? GetDecimal(int col)
+            {
+                var cell = ws.Cell(i, col);
+                if (cell.IsEmpty()) return null;
+                try { return cell.GetValue<decimal>(); }
+                catch
+                {
+                    var raw = cell.GetValue<string>()?.Trim().Replace("$", "").Replace(",", "");
+                    return decimal.TryParse(raw, out var d) ? d : (decimal?)null;
+                }
+            }
             string? GetTime(int col)
             {
                 var cell = ws.Cell(i, col);
@@ -455,11 +466,16 @@ public class ImportService : IImportService
             {
                 ["Row #"] = displayRow.ToString(),
                 ["Voucher"] = voucher,
+                ["Invoice #"] = Get(2),
+                ["Batch ID"] = Get(3),
                 ["Student ID"] = Get(7),
                 ["SSN"] = Get(9),
                 ["Provider"] = Get(10),
+                ["Subtype"] = Get(11),
+                ["Amount"] = GetDecimal(14)?.ToString("C2"),
                 ["Date of Service"] = GetDate(15)?.ToString("MM/dd/yyyy"),
                 ["Start Time"] = GetTime(16),
+                ["IVR Confirm"] = Get(18),
             };
 
             if (string.IsNullOrWhiteSpace(voucher))
@@ -1202,6 +1218,43 @@ public class ImportService : IImportService
     }
 
     // COMMIT PAYMENTS
+    // One parsed row from a voucher payment file (input to the import matching loop).
+    private sealed class PaymentRow
+    {
+        public int RowNumber { get; set; }
+        public string Voucher { get; set; } = "";
+        public string? InvoiceNumber { get; set; }
+        public string? BatchId { get; set; }
+        public string? StudentId { get; set; }
+        public string? Ssn { get; set; }
+        public string? SsnLast4 { get; set; }
+        public string? Provider { get; set; }
+        public string? Subtype { get; set; }
+        public decimal? Amount { get; set; }
+        public DateTime DosDate { get; set; }
+        public string StartTimeNormalized { get; set; } = "";
+        public string? IvrConfirm { get; set; }
+    }
+
+    // Maps a payment file service-subtype code (col K) to a discipline keyword + individual/group.
+    // Individual codes end in "1" (O1/S1/P1/C1); group codes are two letters (OT/SP/PT/CO).
+    private static (string? Discipline, bool IsIndividual, bool Recognized) ParseServiceSubtype(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return (null, false, false);
+        var c = code.Trim().ToUpperInvariant();
+        string? discipline = c[0] switch
+        {
+            'O' => "Occupational",
+            'S' => "Speech",
+            'P' => "Physical",
+            'C' => "Counseling",
+            _ => null
+        };
+        if (discipline == null) return (null, false, false);
+        bool isIndividual = c.Length >= 2 && c[1] == '1';
+        return (discipline, isIndividual, true);
+    }
+
     // Updates Sesis rows: sets bPaid = now, Voucher = voucher number
     // Matches on student, date of service, start time, provider SSN last 4, provider name
     private async Task<ImportCommitResult> CommitPaymentsAsync(ImportPreviewResult preview, CancellationToken ct)
@@ -1212,12 +1265,19 @@ public class ImportService : IImportService
 
         int updated = 0;
         int noMatch = 0;
+        int deductions = 0;
         var skippedRowNumbers = new List<int>();
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
 
+        // Full A-R detail of rows that end up with no matching session, for the #5 export.
+        var unmatched = new List<string?[]>();
+        var arHeaders = Enumerable.Range(1, 18)
+            .Select(c => { var h = ws.Cell(1, c).GetValue<string>()?.Trim(); return string.IsNullOrEmpty(h) ? $"Col {c}" : h; })
+            .ToList();
+
         // Bulk lookups upfront (2 queries total instead of 2 per row)
         // Collect the date range and student IDs from the file first
-        var rowData = new List<(int RowNumber, string Voucher, string StudentId, string? Ssn, string? SsnLast4, string? Provider, DateTime DosDate, string StartTimeNormalized)>();
+        var rowData = new List<PaymentRow>();
 
         foreach (var row in preview.ValidRows)
         {
@@ -1228,6 +1288,17 @@ public class ImportService : IImportService
                 var cell = ws.Cell(i, col);
                 if (cell.IsEmpty()) return null;
                 try { return cell.GetDateTime(); } catch { return null; }
+            }
+            decimal? GetDecimal(int col)
+            {
+                var cell = ws.Cell(i, col);
+                if (cell.IsEmpty()) return null;
+                try { return cell.GetValue<decimal>(); }
+                catch
+                {
+                    var raw = cell.GetValue<string>()?.Trim().Replace("$", "").Replace(",", "");
+                    return decimal.TryParse(raw, out var d) ? d : (decimal?)null;
+                }
             }
 
             string voucher = Get(1)!;
@@ -1253,7 +1324,22 @@ public class ImportService : IImportService
             }
 
             string? ssnLast4 = ssn?.Length >= 4 ? ssn.Substring(ssn.Length - 4) : ssn;
-            rowData.Add((i, voucher, studentId, ssn, ssnLast4, provider, dateOfService.Value.Date, startTimeNormalized));
+            rowData.Add(new PaymentRow
+            {
+                RowNumber = i,
+                Voucher = voucher,
+                InvoiceNumber = Get(2),
+                BatchId = Get(3),
+                StudentId = studentId,
+                Ssn = ssn,
+                SsnLast4 = ssnLast4,
+                Provider = provider,
+                Subtype = Get(11),
+                Amount = GetDecimal(14),
+                DosDate = dateOfService.Value.Date,
+                StartTimeNormalized = startTimeNormalized,
+                IvrConfirm = Get(18),
+            });
         }
 
         if (rowData.Count == 0)
@@ -1278,6 +1364,53 @@ public class ImportService : IImportService
             .Where(p => providerIds.Contains(p.Provider_Id))
             .ToListAsync(ct);
         var providerById = allProviders.ToDictionary(p => p.Provider_Id);
+
+        // For the col-K approval auto-correct (#4): the student's approvals, plus the
+        // Vendor Portal links (Entry_Id <-> provider SSN) so a correction never crosses providers (#16).
+        var allMandates = await db.Mandates
+            .Where(m => m.Student_ID != null && studentIds.Contains(m.Student_ID.Trim()))
+            .ToListAsync(ct);
+        var mandatesByStudent = allMandates
+            .GroupBy(m => m.Student_ID!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        var entryIds = allMandates.Select(m => m.Entry_Id).Distinct().ToList();
+        var vpLinks = await db.VendorPortals
+            .Where(v => v.pSsn != null && v.Entry_Id.HasValue && entryIds.Contains(v.Entry_Id.Value))
+            .Select(v => new { EntryId = v.Entry_Id!.Value, v.pSsn })
+            .ToListAsync(ct);
+        var linkedEntryIdsBySsn = vpLinks
+            .GroupBy(v => v.pSsn!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.EntryId).ToHashSet(), StringComparer.OrdinalIgnoreCase);
+
+        // Re-point a paid session to the approval indicated by the payment's service subtype (col K),
+        // when it differs from what the session is currently linked to. Chooses among the student's
+        // approvals matching the subtype's discipline + individual/group and covering the date, and -
+        // when we know the provider's Vendor Portal links - only an approval that provider is linked to.
+        void AutoCorrectApproval(Sesi sesi, PaymentRow r, Provider prov)
+        {
+            var (discipline, isIndividual, recognized) = ParseServiceSubtype(r.Subtype);
+            if (!recognized || !mandatesByStudent.TryGetValue(r.StudentId!, out var studentMandates)) return;
+
+            HashSet<int>? linkedForProv = null;
+            var provSsn = prov.Ssn?.Replace("-", "");
+            if (provSsn != null) linkedEntryIdsBySsn.TryGetValue(provSsn, out linkedForProv);
+
+            int sessionSize = int.TryParse(sesi.Actual_Size, out var sz) ? sz : 1;
+
+            var best = studentMandates
+                .Where(m => m.Service_Type != null && m.Service_Type.Contains(discipline!, StringComparison.OrdinalIgnoreCase))
+                .Where(m => (int.TryParse(m.Grp_Size, out var g) ? g : 1) is var grp && (isIndividual ? grp == 1 : grp > 1))
+                .Where(m => m.MandateStart.HasValue && m.MandateEnd.HasValue &&
+                            r.DosDate >= m.MandateStart.Value.Date && r.DosDate <= m.MandateEnd.Value.Date)
+                .Where(m => linkedForProv == null || linkedForProv.Count == 0 || linkedForProv.Contains(m.Entry_Id))
+                .OrderBy(m => Math.Abs((int.TryParse(m.Grp_Size, out var g) ? g : 1) - sessionSize))
+                .ThenByDescending(m => m.MandateStart)
+                .FirstOrDefault();
+
+            if (best != null && sesi.Entry_Id != best.Entry_Id)
+                sesi.Entry_Id = best.Entry_Id;
+        }
 
         // In-memory matching loop
         var paymentRows = new List<Payment>();
@@ -1306,13 +1439,29 @@ public class ImportService : IImportService
                     !r.Provider.Contains(prov.LastName ?? "", StringComparison.OrdinalIgnoreCase) &&
                     !r.Provider.Contains(prov.FirstName ?? "", StringComparison.OrdinalIgnoreCase)) continue;
 
-                sesi.bPaid = DateTime.Now;
-                sesi.Voucher = r.Voucher;
+                // #7: a negative amount is a deduction/clawback. Don't (re)mark the session paid for a
+                // clawback - just net it against the running total so the real balance stays visible.
+                bool isDeduction = r.Amount.GetValueOrDefault() < 0m;
+                if (!isDeduction)
+                {
+                    sesi.bPaid = DateTime.Now;
+                    sesi.Voucher = r.Voucher;
+                }
+                sesi.VoucherAmount = (sesi.VoucherAmount ?? 0m) + (r.Amount ?? 0m);
+
+                // #4: re-point the session's approval based on the payment's service subtype (col K)
+                // when it disagrees. bPaid is now set, so OverLapMandate won't touch it afterward (locked).
+                AutoCorrectApproval(sesi, r, prov);
                 matchCount++;
 
                 paymentRows.Add(new Payment
                 {
                     Voucher = r.Voucher,
+                    InvoiceNumber = r.InvoiceNumber,
+                    BatchId = r.BatchId,
+                    ServiceSubtype = r.Subtype,
+                    IvrConfirm = r.IvrConfirm,
+                    VoucherAmount = r.Amount,
                     Student_ID = r.StudentId,
                     Ssn = r.Ssn,
                     Provider = r.Provider,
@@ -1325,9 +1474,18 @@ public class ImportService : IImportService
             }
 
             if (matchCount > 0)
+            {
                 updated += matchCount;
+                if (r.Amount.GetValueOrDefault() < 0m) deductions++;
+            }
             else
+            {
                 noMatch++;
+                // #5: keep the full A-R detail so it can be exported to Excel for investigation.
+                unmatched.Add(Enumerable.Range(1, 18)
+                    .Select(c => { var cell = ws.Cell(r.RowNumber, c); return cell.IsEmpty() ? null : cell.GetFormattedString(); })
+                    .ToArray());
+            }
         }
 
         // Single save for all changes
@@ -1349,7 +1507,10 @@ public class ImportService : IImportService
         {
             Updated = updated,
             Skipped = noMatch,
-            SkippedRowNumbers = skippedRowNumbers
+            SkippedRowNumbers = skippedRowNumbers,
+            Deductions = deductions,
+            UnmatchedHeaders = unmatched.Count > 0 ? arHeaders : new List<string>(),
+            UnmatchedRows = unmatched
         };
     }
 

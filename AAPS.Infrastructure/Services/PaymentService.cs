@@ -27,6 +27,10 @@ public class PaymentService : IPaymentService
                     {
                         VoucherId = p.Voucher_Id,
                         Voucher = p.Voucher,
+                        InvoiceNumber = p.InvoiceNumber,
+                        BatchId = p.BatchId,
+                        ServiceSubtype = p.ServiceSubtype,
+                        IvrConfirm = p.IvrConfirm,
                         StudentId = p.Student_ID,
                         Ssn = p.Ssn,
                         Provider = p.Provider,
