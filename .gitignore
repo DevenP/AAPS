@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 # Claude Code
 .claude/
+
+# Local SQL / deploy scripts (kept out of the repo)
+sql-scripts/
