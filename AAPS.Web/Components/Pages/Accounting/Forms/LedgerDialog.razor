@@ -1,0 +1,78 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@inject IPaymentTransactionService TxnService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Class="mr-2 mb-n1" />
+            Payment Trail — Session @SesisId
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_ledger == null)
+        {
+            <div class="d-flex justify-center pa-6"><MudProgressCircular Indeterminate="true" /></div>
+        }
+        else
+        {
+            <div class="d-flex align-center gap-4 mb-3">
+                <MudText Typo="Typo.body2">Billed <b>@_ledger.BilledAmount.ToString("C2")</b></MudText>
+                <MudText Typo="Typo.body2">
+                    Balance <b>@_ledger.CurrentBalance.ToString("C2")</b>
+                </MudText>
+                @if (_ledger.Status == "Loss")
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">Written off</MudChip>
+                }
+                else if (_ledger.Status == "Returned")
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Returned to DOE</MudChip>
+                }
+            </div>
+
+            <MudSimpleTable Dense="true" Bordered="true" Striped="true" Style="overflow-x:auto;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th style="text-align:right;">Amount</th>
+                        <th style="text-align:right;">Balance</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in _ledger.Entries)
+                    {
+                        <tr>
+                            <td>@e.Date?.ToString("MM/dd/yyyy")</td>
+                            <td>
+                                @e.Type
+                                @if (!string.IsNullOrEmpty(e.Reference))
+                                {
+                                    <span style="opacity:0.6;font-family:monospace;"> @e.Reference</span>
+                                }
+                            </td>
+                            <td style="text-align:right;">@e.Amount.ToString("C2")</td>
+                            <td style="text-align:right;font-weight:600;">@e.Balance.ToString("C2")</td>
+                            <td style="opacity:0.8;">@e.Note</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Close())">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int SesisId { get; set; }
+
+    private SessionLedgerDTO? _ledger;
+
+    protected override async Task OnInitializedAsync()
+        => _ledger = await TxnService.GetLedgerAsync(SesisId);
+}

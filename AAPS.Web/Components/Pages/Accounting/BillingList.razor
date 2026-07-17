@@ -6,6 +6,7 @@
 @using AAPS.Web.Components.Pages.Accounting.Forms
 @using AAPS.Web.Components.Shared
 @inject IBillingService BillingService
+@inject IPaymentTransactionService TxnService
 @inject IStatementService StatementService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -16,14 +17,14 @@
 <GenericGrid @ref="_grid" TItem="BillingRecordDTO"
              Title="Billing"
              RowClassFunc="BillingRowClass"
-             Columns="@(new[] { "Checkbox", "Actions", "DateOfService", "StartTime", "EndTime", "Provider", "StudentId", "Student", "ServiceType", "Frequency", "Duration", "ActualSize", "EntryId", "AssignId", "Billed", "Voucher", "VoucherAmount", "UnpaidBalance", "VoucherBalancePaid", "ProviderPaidOn", "ProviderAmount", "BillingRate", "ProviderRate", "SesisId" })"
+             Columns="@(new[] { "Checkbox", "Actions", "DateOfService", "StartTime", "EndTime", "Provider", "StudentId", "Student", "ServiceType", "Frequency", "Duration", "ActualSize", "EntryId", "AssignId", "Billed", "Voucher", "VoucherAmount", "UnpaidBalance", "AdjustmentStatus", "VoucherBalancePaid", "ProviderPaidOn", "ProviderAmount", "BillingRate", "ProviderRate", "SesisId" })"
              GetData="BillingService.GetPagedAsync"
              ShowSemesterFilter="true"
              DefaultSortLabel="DateOfService"
              OnDataLoaded="RefreshSummary"
              OnFilterRemoved="@(_ => { ClearSelection(); return Task.CompletedTask; })"
              OnFiltersChanged="ClearSelection"
-             ExportMapper="@(r => new object?[] { r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.StudentId, r.Student, r.ServiceType, r.Frequency, r.Duration, r.ActualSize, r.EntryId, r.AssignId, r.Billed?.ToString("MM/dd/yyyy"), r.Voucher, r.VoucherAmount, r.UnpaidBalance, r.VoucherBalancePaid?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.ProviderAmount, r.BillingRate, r.ProviderRate, r.SesisId })">
+             ExportMapper="@(r => new object?[] { r.DateOfService?.ToString("MM/dd/yyyy"), r.StartTime, r.EndTime, r.Provider, r.StudentId, r.Student, r.ServiceType, r.Frequency, r.Duration, r.ActualSize, r.EntryId, r.AssignId, r.Billed?.ToString("MM/dd/yyyy"), r.Voucher, r.VoucherAmount, r.UnpaidBalance, r.AdjustmentStatus, r.VoucherBalancePaid?.ToString("MM/dd/yyyy"), r.ProviderPaidOn?.ToString("MM/dd/yyyy"), r.ProviderAmount, r.BillingRate, r.ProviderRate, r.SesisId })">
 
     <CustomActionContent>
         @if (_selectedIds.Count > 0)
@@ -81,6 +82,9 @@
         <GridCell TItem="BillingRecordDTO" Column="UnpaidBalance" IsHeader="true">
             <MudTableSortLabel SortLabel="UnpaidBalance" T="BillingRecordDTO">@_grid.GetDisplayName("UnpaidBalance")</MudTableSortLabel>
         </GridCell>
+        <GridCell TItem="BillingRecordDTO" Column="AdjustmentStatus" IsHeader="true">
+            <MudTableSortLabel SortLabel="AdjustmentStatus" T="BillingRecordDTO">@_grid.GetDisplayName("AdjustmentStatus")</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="BillingRecordDTO" Column="VoucherBalancePaid" IsHeader="true">
             <MudTableSortLabel SortLabel="VoucherBalancePaid" T="BillingRecordDTO">@_grid.GetDisplayName("VoucherBalancePaid")</MudTableSortLabel>
         </GridCell>
@@ -122,11 +126,18 @@
                          Size="Size.Small" />
         </MudTd>
         <GridCell TItem="BillingRecordDTO" Column="Actions">
-            <MudTooltip Text="Edit Billing Dates">
-                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                               Size="Size.Small" Color="Color.Primary"
-                               OnClick="@(() => OpenEditDialog(record))" />
-            </MudTooltip>
+            <div class="d-flex">
+                <MudTooltip Text="Edit Billing Dates">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small" Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(record))" />
+                </MudTooltip>
+                <MudTooltip Text="Payment Trail">
+                    <MudIconButton Icon="@Icons.Material.Filled.ReceiptLong"
+                                   Size="Size.Small" Color="Color.Secondary"
+                                   OnClick="@(() => OpenLedger(record))" />
+                </MudTooltip>
+            </div>
         </GridCell>
 
         <GridCell TItem="BillingRecordDTO" Column="DateOfService">
@@ -179,6 +190,21 @@
 
         <GridCell TItem="BillingRecordDTO" Column="UnpaidBalance">
             @record.UnpaidBalance?.ToString("C2")
+        </GridCell>
+
+        <GridCell TItem="BillingRecordDTO" Column="AdjustmentStatus">
+            @if (record.AdjustmentStatus == "Loss")
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">Loss</MudChip>
+            }
+            else if (record.AdjustmentStatus == "Returned")
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">Returned</MudChip>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Style="opacity:0.4;">—</MudText>
+            }
         </GridCell>
 
         <GridCell TItem="BillingRecordDTO" Column="VoucherBalancePaid">
@@ -363,6 +389,10 @@
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@_summary.Count records</MudChip>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success">Billed @_summary.TotalBilling.ToString("C2")</MudChip>
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary">Providers Paid @_summary.TotalProvider.ToString("C2")</MudChip>
+                    @if (_summary.WrittenOff != 0)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error">Written Off @_summary.WrittenOff.ToString("C2")</MudChip>
+                    }
                 </span>
             }
             @if (_isBusy || _busy)
@@ -405,6 +435,25 @@
                                  OnClick="GenerateStatements">
                         Generate Statements
                     </MudMenuItem>
+                    <MudDivider />
+                    @if (_selectedIds.Count == 0)
+                    {
+                        <MudTooltip Text="Select rows to mark a loss or return">
+                            <MudMenuItem Icon="@Icons.Material.Filled.MoneyOff" Disabled="true">Mark as Loss</MudMenuItem>
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.MoneyOff" IconColor="Color.Error" OnClick="MarkLoss">
+                            Mark as Loss (@_selectedIds.Count)
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Undo" IconColor="Color.Warning" OnClick="MarkReturned">
+                            Mark Returned to DOE (@_selectedIds.Count)
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.RestartAlt" OnClick="ClearAdjustment">
+                            Clear Loss/Returned (@_selectedIds.Count)
+                        </MudMenuItem>
+                    }
                 </MudMenu>
             }
         </span>;
@@ -485,6 +534,84 @@
         finally
         {
             _generating = false;
+        }
+    }
+
+    private async Task OpenLedger(BillingRecordDTO record)
+    {
+        var parameters = new DialogParameters<LedgerDialog> { { x => x.SesisId, record.SesisId } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<LedgerDialog>(" ", parameters, options);
+    }
+
+    private async Task MarkLoss()
+    {
+        var ids = _selectedIds.ToList();
+        var parameters = new DialogParameters<AdjustmentDialog>
+        {
+            { x => x.Title, $"Mark {ids.Count} record(s) as Loss" },
+            { x => x.Message, "The remaining balance on each session is written off and excluded from owed totals. The step is kept in the trail." },
+            { x => x.ConfirmText, "Mark as Loss" },
+            { x => x.ShowAmount, false }
+        };
+        var dialog = await DialogService.ShowAsync<AdjustmentDialog>(" ", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is null || result.Canceled) return;
+
+        var (_, note) = ((decimal, string?))result.Data!;
+        await RunAdjustment(() => TxnService.MarkWriteOffAsync(ids, note), $"{ids.Count} record(s) marked as loss.");
+    }
+
+    private async Task MarkReturned()
+    {
+        var ids = _selectedIds.ToList();
+        var parameters = new DialogParameters<AdjustmentDialog>
+        {
+            { x => x.Title, $"Return funds to DOE — {ids.Count} record(s)" },
+            { x => x.Message, "Records the amount returned to the DOE so the balance reflects it. Re-bill separately once corrected." },
+            { x => x.ConfirmText, "Mark Returned" },
+            { x => x.ShowAmount, true }
+        };
+        var dialog = await DialogService.ShowAsync<AdjustmentDialog>(" ", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is null || result.Canceled) return;
+
+        var (amount, note) = ((decimal, string?))result.Data!;
+        await RunAdjustment(() => TxnService.MarkReturnedAsync(ids, amount, note), $"{ids.Count} record(s) marked returned to DOE.");
+    }
+
+    private async Task ClearAdjustment()
+    {
+        var ids = _selectedIds.ToList();
+        bool? confirmed = await DialogService.ShowMessageBoxAsync("Clear Loss / Returned",
+            $"Remove the loss/returned status and its trail entries on {ids.Count} record(s)?",
+            yesText: "Clear", cancelText: "Cancel");
+        if (confirmed != true) return;
+
+        await RunAdjustment(() => TxnService.ClearAdjustmentAsync(ids), $"Cleared on {ids.Count} record(s).");
+    }
+
+    private async Task RunAdjustment(Func<Task> action, string successMsg)
+    {
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await action();
+            Snackbar.Add(successMsg, Severity.Success);
+            ClearSelection();
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Loss/return adjustment failed");
+            Snackbar.Add($"Error: {ex.Message.Split('\n')[0].Trim()}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 

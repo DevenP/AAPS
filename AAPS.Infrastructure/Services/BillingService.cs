@@ -98,6 +98,7 @@ public class BillingService : IBillingService
                 VoucherAmount = s.VoucherAmount,
                 UnpaidBalance = s.bAmount - s.VoucherAmount,
                 VoucherBalancePaid = s.VoucherBalancePaid,
+                AdjustmentStatus = s.AdjustmentStatus,
             };
     }
 
@@ -126,13 +127,23 @@ public class BillingService : IBillingService
     {
         await using var db = _factory.CreateDbContext();
         var request = new PagedRequest(search, columnFilters);
+        // Written-off (loss) lines are kept visible in the grid but excluded from the owed totals,
+        // and reported separately as a written-off figure (#6).
         var result = await ApplySemester(BuildBaseQuery(db), dateFrom, dateTo)
             .ApplyFilters(request, performSearch: false)
-            .Select(x => new { x.BillingAmount, x.ProviderAmount })
+            .Select(x => new { x.BillingAmount, x.ProviderAmount, x.AdjustmentStatus })
             .GroupBy(_ => 1)
-            .Select(g => new { Count = g.Count(), TotalBilling = g.Sum(x => x.BillingAmount ?? 0), TotalProvider = g.Sum(x => x.ProviderAmount ?? 0) })
+            .Select(g => new
+            {
+                Count = g.Count(x => x.AdjustmentStatus != "Loss"),
+                TotalBilling = g.Sum(x => x.AdjustmentStatus != "Loss" ? (x.BillingAmount ?? 0) : 0),
+                TotalProvider = g.Sum(x => x.AdjustmentStatus != "Loss" ? (x.ProviderAmount ?? 0) : 0),
+                WrittenOff = g.Sum(x => x.AdjustmentStatus == "Loss" ? (x.BillingAmount ?? 0) : 0)
+            })
             .FirstOrDefaultAsync(ct);
-        return result == null ? new BillingSummary(0, 0, 0) : new BillingSummary(result.Count, result.TotalBilling, result.TotalProvider);
+        return result == null
+            ? new BillingSummary(0, 0, 0, 0)
+            : new BillingSummary(result.Count, result.TotalBilling, result.TotalProvider, result.WrittenOff);
     }
 
     public async Task BulkUpdateBillingDatesAsync(List<int> sesisIds, bool applyBilled, DateTime? billed, bool applyBilledPaid, DateTime? billedPaid, bool applyProviderPaid, DateTime? providerPaid, CancellationToken ct = default)

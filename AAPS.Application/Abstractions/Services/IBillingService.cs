@@ -5,7 +5,7 @@ namespace AAPS.Application.Abstractions.Services;
 
 public record GeneratedBillingFile(string FileName, string FilePath, byte[] Bytes);
 public record BillingGenerateResult(List<GeneratedBillingFile> Files, int SkippedPaidCount);
-public record BillingSummary(int Count, decimal TotalBilling, decimal TotalProvider);
+public record BillingSummary(int Count, decimal TotalBilling, decimal TotalProvider, decimal WrittenOff);
 
 public interface IBillingService
 {

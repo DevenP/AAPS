@@ -170,4 +170,10 @@ public partial class Sesi
     public bool? OverDuration { get; set; }
 
     public bool? UnderGroup { get; set; }
+
+    // Current loss/return state (#6/#20): null = normal, "Loss" = written off,
+    // "Returned" = funds returned to the DOE. Full trail lives in PaymentTransaction.
+    [StringLength(20)]
+    [Unicode(false)]
+    public string? AdjustmentStatus { get; set; }
 }

@@ -81,4 +81,8 @@ public class BillingRecordDTO
 
     [DisplayField("Voucher Paid Date", GroupName = "Billing")]
     public DateTime? VoucherBalancePaid { get; set; }
+
+    // null = normal, "Loss" = written off, "Returned" = funds returned to the DOE (#6/#20)
+    [DisplayField("Status", GroupName = "Billing")]
+    public string? AdjustmentStatus { get; set; }
 }

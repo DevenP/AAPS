@@ -1,0 +1,35 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Title</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <MudText Typo="Typo.body2" Class="mb-3">@Message</MudText>
+        }
+        @if (ShowAmount)
+        {
+            <MudNumericField @bind-Value="_amount" Label="Amount returned" Format="F2"
+                             Adornment="Adornment.Start" AdornmentText="$" Min="0m" Class="mb-3" />
+        }
+        <MudTextField @bind-Value="_note" Label="Note" Lines="2"
+                      HelperText="Kept in the session's payment trail." />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">@ConfirmText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string ConfirmText { get; set; } = "Confirm";
+    [Parameter] public bool ShowAmount { get; set; }
+
+    private decimal _amount;
+    private string? _note;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok((_amount, _note)));
+}
