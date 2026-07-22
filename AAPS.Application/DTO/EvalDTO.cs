@@ -90,4 +90,18 @@ public record EvalDTO
 
     [DisplayField("Memo", browsable: false)]
     public string? Memo { get; set; }
+
+    // Eval voucher payment (#9)
+    [DisplayField("Voucher", GroupName = "Payment")]
+    public string? Voucher { get; set; }
+
+    [DisplayField("Paid Amount", GroupName = "Payment")]
+    public decimal? PaidAmount { get; set; }
+
+    [DisplayField("Balance", GroupName = "Payment")]
+    public decimal? Balance { get; set; }
+
+    // "Unpaid" | "Partial" | "Paid" | "Overpaid" - computed from Billing Amount vs Paid Amount.
+    [DisplayField("Payment Status", GroupName = "Payment")]
+    public string? PaymentStatus { get; set; }
 }

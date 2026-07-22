@@ -45,6 +45,14 @@
                             OnImported="OnImported" />
         </MudTabPanel>
 
+        @* EVAL PAYMENTS TAB *@
+        <MudTabPanel Text="Eval Voucher Payments" Icon="@Icons.Material.Filled.FactCheck">
+            <ImportTabPanel ImportType="ImportType.EvalPayments"
+                            Description="Evaluation Payment By Voucher report (.xlsx). Applies voucher and payment amount to matching evaluations (matched on OSIS, service subtype and evaluation year)."
+                            PreviewColumns="@_evalPaymentsPreviewCols"
+                            OnImported="OnImported" />
+        </MudTabPanel>
+
     </MudTabs>
 
 </MudPaper>
@@ -57,6 +65,7 @@
     private static readonly string[] _sesisPreviewCols = ["Row #", "Student ID", "Last Name", "First Name", "DOB", "Admin DBN", "Service Type", "Language", "Session Type", "Date of Service", "Duration", "Provider Last", "Provider First"];
     private static readonly string[] _vendorPreviewCols = ["Row #", "Assign ID", "Student ID", "Boro", "District", "Duration", "Freq", "Grp Size", "Start Date", "SSN (col11)"];
     private static readonly string[] _paymentsPreviewCols = ["Row #", "Voucher", "Student ID", "SSN", "Provider", "Date of Service", "Start Time"];
+    private static readonly string[] _evalPaymentsPreviewCols = ["Row #", "Student ID", "Subtype", "Eval Year", "Payment Date", "Amount", "Voucher"];
 
     private void OnImported()
     {

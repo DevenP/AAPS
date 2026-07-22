@@ -94,4 +94,13 @@ public partial class Eval
     [StringLength(50)]
     [Unicode(false)]
     public string? Status { get; set; }
+
+    // Eval voucher payment (#9): voucher number and the net amount paid to date
+    // (payments minus deductions). Payment date reuses bPaid above.
+    [StringLength(50)]
+    [Unicode(false)]
+    public string? Voucher { get; set; }
+
+    [Column(TypeName = "decimal(9, 2)")]
+    public decimal? VoucherAmount { get; set; }
 }

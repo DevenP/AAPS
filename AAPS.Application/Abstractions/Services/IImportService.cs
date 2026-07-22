@@ -5,7 +5,8 @@ public enum ImportType
     Mandates,
     Sesis,
     VendorPortal,
-    Payments
+    Payments,
+    EvalPayments
 }
 
 public record ImportRowResult

@@ -85,6 +85,14 @@ public class EvalService : IEvalService
                         Memo = ev.Memo,
                         AppointmentDate = ev.Appointment,
                         Status = ev.Status,
+                        Voucher = ev.Voucher,
+                        PaidAmount = ev.VoucherAmount,
+                        Balance = ev.bAmount == null ? null : ev.bAmount - (ev.VoucherAmount ?? 0m),
+                        PaymentStatus = ev.bAmount == null ? null
+                            : (ev.VoucherAmount == null || ev.VoucherAmount == 0m) ? "Unpaid"
+                            : ev.VoucherAmount > ev.bAmount ? "Overpaid"
+                            : ev.VoucherAmount == ev.bAmount ? "Paid"
+                            : "Partial",
                     };
 
         // performSearch: false - search was already applied above on the raw entity
@@ -224,6 +232,14 @@ public class EvalService : IEvalService
         BilledDate = e.Billed,
         Memo = e.Memo,
         AppointmentDate = e.Appointment,
-        Status = e.Status
+        Status = e.Status,
+        Voucher = e.Voucher,
+        PaidAmount = e.VoucherAmount,
+        Balance = e.bAmount == null ? null : e.bAmount - (e.VoucherAmount ?? 0m),
+        PaymentStatus = e.bAmount == null ? null
+            : (e.VoucherAmount == null || e.VoucherAmount == 0m) ? "Unpaid"
+            : e.VoucherAmount > e.bAmount ? "Overpaid"
+            : e.VoucherAmount == e.bAmount ? "Paid"
+            : "Partial"
     };
 }

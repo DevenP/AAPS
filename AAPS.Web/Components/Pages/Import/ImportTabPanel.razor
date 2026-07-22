@@ -62,7 +62,7 @@
                 <MudText Typo="Typo.body2" Class="mud-text-secondary">
                     @_preview.FileName
                 </MudText>
-                @if (ImportType == ImportType.Payments && _preview.ValidRows.Count > 0)
+                @if (_isPaymentType && _preview.ValidRows.Count > 0)
                 {
                     var voucher = _preview.ValidRows[0].PreviewColumns.GetValueOrDefault("Voucher");
                     if (!string.IsNullOrWhiteSpace(voucher))
@@ -200,7 +200,7 @@
             <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size:4rem;" Class="mb-4" />
             <MudText Typo="Typo.h6" Class="mb-2">Import Complete</MudText>
 
-            @if (ImportType == ImportType.Payments)
+            @if (_isPaymentType)
             {
                 var voucherNum = _preview?.ValidRows.FirstOrDefault()?.PreviewColumns.GetValueOrDefault("Voucher");
                 @if (!string.IsNullOrWhiteSpace(voucherNum))
@@ -210,10 +210,10 @@
                     </MudChip>
                 }
                 <MudText Typo="Typo.body1" Class="mb-1">
-                    <b>@_result.Updated</b> Provider Billing records updated with payment info
+                    <b>@_result.Updated</b> @_recordNoun updated with payment info
                 </MudText>
                 <MudText Typo="Typo.body2" Class="mud-text-secondary mb-1">
-                    @_result.Skipped rows had no matching Provider Billing record
+                    @_result.Skipped rows had no matching @_recordNounSingular
                 </MudText>
                 @if (_result.Deductions > 0)
                 {
@@ -229,7 +229,7 @@
                                Size="Size.Small"
                                Class="mt-2 mb-4"
                                OnClick="DownloadUnmatched">
-                        Download @_result.UnmatchedRows.Count unmatched (Excel, cols A–R)
+                        Download @_result.UnmatchedRows.Count unmatched (Excel, cols A–@_unmatchedLastCol)
                     </MudButton>
                 }
                 else
@@ -239,7 +239,7 @@
                 @if (_result.Updated == 0)
                 {
                     <MudAlert Severity="Severity.Warning" Class="mb-4">
-                        No Provider Billing records were matched. Check that the correct file was uploaded and that sessions have been imported first.
+                        No @_recordNoun were matched. Check that the correct file was uploaded and that the underlying records have been imported first.
                     </MudAlert>
                 }
             }
@@ -306,6 +306,13 @@
     [Parameter] public string Description { get; set; } = "";
     [Parameter] public string[] PreviewColumns { get; set; } = [];
     [Parameter] public EventCallback OnImported { get; set; }
+
+    // Payment-style imports (session vouchers and eval vouchers) share the same "update existing
+    // records" done screen; these bits of copy are all that differ between them.
+    private bool _isPaymentType => ImportType is ImportType.Payments or ImportType.EvalPayments;
+    private string _recordNoun => ImportType == ImportType.EvalPayments ? "evaluations" : "Provider Billing records";
+    private string _recordNounSingular => ImportType == ImportType.EvalPayments ? "evaluation" : "Provider Billing record";
+    private string _unmatchedLastCol => ImportType == ImportType.EvalPayments ? "T" : "R";
 
     private int _step = 1;
     private int _previewTab = 0;
@@ -397,7 +404,8 @@
             _result.UnmatchedHeaders.ToArray(),
             row => row.Cast<object?>().ToArray());
 
-        var fileName = $"unmatched_payments_{Path.GetFileNameWithoutExtension(_preview?.FileName ?? "file")}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        var prefix = ImportType == ImportType.EvalPayments ? "unmatched_eval_payments" : "unmatched_payments";
+        var fileName = $"{prefix}_{Path.GetFileNameWithoutExtension(_preview?.FileName ?? "file")}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         await JS.InvokeVoidAsync("downloadFile", fileName,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes);
     }

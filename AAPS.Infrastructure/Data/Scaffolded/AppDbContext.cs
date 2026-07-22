@@ -19,6 +19,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
 
     public virtual DbSet<Eval> Evals { get; set; }
 
+    public virtual DbSet<EvalPayment> EvalPayments { get; set; }
+
     public virtual DbSet<GDistrict> GDistricts { get; set; }
 
     public virtual DbSet<ImportLog> ImportLogs { get; set; }

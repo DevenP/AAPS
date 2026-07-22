@@ -64,6 +64,14 @@ public class ImportService : IImportService
             [15] = "SESS",
             [16] = "START",
         },
+        [ImportType.EvalPayments] = new()
+        {
+            [1] = "FISCAL",
+            [4] = "OSIS",
+            [8] = "SUBTYPE",
+            [16] = "AMOUNT",
+            [17] = "VOUCHER",
+        },
     };
 
     public async Task<ImportPreviewResult> ParseAsync(ImportType type, string fileName, Stream fileStream)
@@ -128,6 +136,7 @@ public class ImportService : IImportService
                     ImportType.Sesis => "Provider Billing",
                     ImportType.VendorPortal => "Vendor Portal",
                     ImportType.Payments => "Voucher Payments",
+                    ImportType.EvalPayments => "Evaluation Voucher Payments",
                     _ => type.ToString()
                 };
                 throw new InvalidOperationException(
@@ -143,6 +152,7 @@ public class ImportService : IImportService
                 ImportType.Sesis => ParseSesis(ws, fileName, fileBytes),
                 ImportType.VendorPortal => ParseVendorPortal(ws, fileName, fileBytes),
                 ImportType.Payments => ParsePayments(ws, fileName, fileBytes),
+                ImportType.EvalPayments => ParseEvalPayments(ws, fileName, fileBytes),
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
 
@@ -518,6 +528,7 @@ public class ImportService : IImportService
             ImportType.Sesis => await CommitSesisAsync(preview, ct),
             ImportType.VendorPortal => await CommitVendorPortalAsync(preview, ct),
             ImportType.Payments => await CommitPaymentsAsync(preview, ct),
+            ImportType.EvalPayments => await CommitEvalPaymentsAsync(preview, ct),
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 
@@ -528,11 +539,14 @@ public class ImportService : IImportService
             ImportType.Sesis => "[Provider Billing]",
             ImportType.VendorPortal => "[Vendor Portal]",
             ImportType.Payments => "[Voucher Payments]",
+            ImportType.EvalPayments => "[Evaluation Voucher Payments]",
             _ => "[Unknown]"
         };
 
+        bool isPaymentType = type is ImportType.Payments or ImportType.EvalPayments;
+
         string importRecord;
-        if (type == ImportType.Payments)
+        if (isPaymentType)
         {
             importRecord = $"Complete Import. {result.Updated} of {result.Updated + result.Skipped} rows matched and updated.";
         }
@@ -550,7 +564,7 @@ public class ImportService : IImportService
             importRecord += " Rate Warnings (rows): " + string.Join("; ", result.WarningRows.Select(w => w.RowNumber)) + ";";
         }
 
-        if (type == ImportType.Payments)
+        if (isPaymentType)
             _logger.LogInformation("Commit complete for {FileName}: {Updated} row(s) updated, {Skipped} no match",
                 preview.FileName, result.Updated, result.Skipped);
         else
@@ -1248,6 +1262,17 @@ public class ImportService : IImportService
         public string? IvrConfirm { get; set; }
     }
 
+    private sealed class EvalPaymentRow
+    {
+        public int RowNumber { get; set; }
+        public string? StudentId { get; set; }
+        public int? SubtypeCode { get; set; }
+        public int? EvalYear { get; set; }
+        public DateTime? PaymentDate { get; set; }
+        public decimal? Amount { get; set; }
+        public string? Voucher { get; set; }
+    }
+
     // Maps a payment file service-subtype code (col K) to a discipline keyword + individual/group.
     // Individual codes end in "1" (O1/S1/P1/C1); group codes are two letters (OT/SP/PT/CO).
     private static (string? Discipline, bool IsIndividual, bool Recognized) ParseServiceSubtype(string? code)
@@ -1540,6 +1565,233 @@ public class ImportService : IImportService
         };
     }
 
+    // EVALUATION VOUCHER PAYMENTS PARSE (#9)
+    // Data starts row 2, headers on row 1. Cols A-T. Key columns:
+    //   D(4) OSIS ID, H(8) service subtype, L(12) start date, N(14) payment date,
+    //   P(16) amount, Q(17) voucher number.
+    private static ImportPreviewResult ParseEvalPayments(IXLWorksheet ws, string fileName, byte[] fileBytes)
+    {
+        var valid = new List<ImportRowResult>();
+        var skipped = new List<ImportRowResult>();
+
+        int lastRow = ws.LastRowUsed()?.RowNumber() ?? 0;
+
+        for (int i = 2; i <= lastRow; i++)
+        {
+            int displayRow = i - 1;
+
+            string? Get(int col) => ws.Cell(i, col).IsEmpty() ? null : ws.Cell(i, col).GetValue<string>()?.Trim();
+            DateTime? GetDate(int col)
+            {
+                var cell = ws.Cell(i, col);
+                if (cell.IsEmpty()) return null;
+                try { return cell.GetDateTime(); } catch { return null; }
+            }
+            decimal? GetDecimal(int col)
+            {
+                var cell = ws.Cell(i, col);
+                if (cell.IsEmpty()) return null;
+                try { return cell.GetValue<decimal>(); }
+                catch
+                {
+                    var raw = cell.GetValue<string>()?.Trim().Replace("$", "").Replace(",", "");
+                    return decimal.TryParse(raw, out var d) ? d : (decimal?)null;
+                }
+            }
+
+            string? studentId = Get(4);
+            string? subtype = Get(8);
+            string? voucher = Get(17);
+
+            var preview = new Dictionary<string, string?>
+            {
+                ["Row #"] = displayRow.ToString(),
+                ["Student ID"] = studentId,
+                ["Subtype"] = subtype,
+                ["Eval Year"] = GetDate(12)?.Year.ToString(),
+                ["Payment Date"] = GetDate(14)?.ToString("MM/dd/yyyy"),
+                ["Amount"] = GetDecimal(16)?.ToString("C2"),
+                ["Voucher"] = voucher,
+            };
+
+            if (string.IsNullOrWhiteSpace(voucher))
+            {
+                skipped.Add(new ImportRowResult { RowNumber = displayRow, IsValid = false, SkipReason = "Missing Voucher number", PreviewColumns = preview });
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(studentId))
+            {
+                skipped.Add(new ImportRowResult { RowNumber = displayRow, IsValid = false, SkipReason = "Missing OSIS ID", PreviewColumns = preview });
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(subtype))
+            {
+                skipped.Add(new ImportRowResult { RowNumber = displayRow, IsValid = false, SkipReason = "Missing service subtype", PreviewColumns = preview });
+                continue;
+            }
+
+            valid.Add(new ImportRowResult { RowNumber = i, IsValid = true, PreviewColumns = preview });
+        }
+
+        return new ImportPreviewResult { ValidRows = valid, SkippedRows = skipped, FileName = fileName, FileBytes = fileBytes };
+    }
+
+    // Pulls the leading DOE numeric code out of a value like "14=Neuropsychological",
+    // " 09=OT" or a bare "14" so file col H can be compared to our stored eval service type.
+    private static int? LeadingCode(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var digits = new string(value.Trim().TakeWhile(char.IsDigit).ToArray());
+        return int.TryParse(digits, out var n) ? n : (int?)null;
+    }
+
+    // COMMIT EVALUATION VOUCHER PAYMENTS (#8, #9)
+    // Matches each row to an existing eval by OSIS (col D) + service subtype code (col H) +
+    // the YEAR of the start date (col L) falling on our recorded Evaluation Date (#8 - we keep
+    // our date of evaluation and only apply the payment fields). Records payment date (col N),
+    // amount (col P) and voucher (col Q); accumulates payments/deductions so the running balance
+    // is always right (#7). A row that matches no eval - or two same-subtype evals in one year -
+    // is left for manual entry and surfaced in the unmatched export (cols A-T).
+    private async Task<ImportCommitResult> CommitEvalPaymentsAsync(ImportPreviewResult preview, CancellationToken ct)
+    {
+        await using var db = _factory.CreateDbContext();
+        using var workbook = new XLWorkbook(new MemoryStream(preview.FileBytes));
+        var ws = workbook.Worksheet(1);
+
+        int updated = 0;
+        int noMatch = 0;
+        int deductions = 0;
+        var skippedRowNumbers = new List<int>();
+        skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
+
+        // Full A-T detail of rows that match no eval (or are ambiguous), for the unmatched export.
+        var unmatched = new List<string?[]>();
+        var atHeaders = Enumerable.Range(1, 20)
+            .Select(c => { var h = ws.Cell(1, c).GetValue<string>()?.Trim(); return string.IsNullOrEmpty(h) ? $"Col {c}" : h; })
+            .ToList();
+
+        var rowData = new List<EvalPaymentRow>();
+        foreach (var row in preview.ValidRows)
+        {
+            int i = row.RowNumber;
+            string? Get(int col) => ws.Cell(i, col).IsEmpty() ? null : ws.Cell(i, col).GetValue<string>()?.Trim();
+            DateTime? GetDate(int col)
+            {
+                var cell = ws.Cell(i, col);
+                if (cell.IsEmpty()) return null;
+                try { return cell.GetDateTime(); } catch { return null; }
+            }
+            decimal? GetDecimal(int col)
+            {
+                var cell = ws.Cell(i, col);
+                if (cell.IsEmpty()) return null;
+                try { return cell.GetValue<decimal>(); }
+                catch
+                {
+                    var raw = cell.GetValue<string>()?.Trim().Replace("$", "").Replace(",", "");
+                    return decimal.TryParse(raw, out var d) ? d : (decimal?)null;
+                }
+            }
+
+            rowData.Add(new EvalPaymentRow
+            {
+                RowNumber = i,
+                StudentId = Get(4),
+                SubtypeCode = LeadingCode(Get(8)),
+                EvalYear = GetDate(12)?.Year,
+                PaymentDate = GetDate(14),
+                Amount = GetDecimal(16),
+                Voucher = Get(17),
+            });
+        }
+
+        if (rowData.Count == 0)
+            return new ImportCommitResult { Updated = 0, Skipped = noMatch, SkippedRowNumbers = skippedRowNumbers };
+
+        var studentIds = rowData.Select(r => r.StudentId).Where(s => s != null)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToHashSet(StringComparer.OrdinalIgnoreCase!)!;
+
+        // Tracked (not AsNoTracking) so the paid amount/voucher updates persist on SaveChanges.
+        var candidateEvals = await db.Evals
+            .Where(e => e.Student_ID != null && studentIds.Contains(e.Student_ID.Trim())
+                        && e.EvalDate.HasValue && e.ServiceType != null)
+            .ToListAsync(ct);
+
+        var evalPaymentRows = new List<EvalPayment>();
+
+        foreach (var r in rowData)
+        {
+            List<Eval> matches = (r.StudentId == null || r.SubtypeCode == null || r.EvalYear == null)
+                ? new List<Eval>()
+                : candidateEvals
+                    .Where(e => string.Equals(e.Student_ID?.Trim(), r.StudentId, StringComparison.OrdinalIgnoreCase)
+                                && LeadingCode(e.ServiceType) == r.SubtypeCode
+                                && e.EvalDate!.Value.Year == r.EvalYear)
+                    .ToList();
+
+            // Exactly one eval must match. Zero (no eval) or more than one (same subtype twice in a
+            // year) is left for manual entry per the client, and captured in the unmatched export.
+            if (matches.Count == 1)
+            {
+                var eval = matches[0];
+                bool isDeduction = r.Amount.GetValueOrDefault() < 0m;
+
+                if (!isDeduction)
+                {
+                    eval.bPaid = r.PaymentDate;   // col N - payment date (we keep EvalDate untouched, #8)
+                    eval.Voucher = r.Voucher;     // col Q
+                }
+                eval.VoucherAmount = (eval.VoucherAmount ?? 0m) + (r.Amount ?? 0m);
+
+                evalPaymentRows.Add(new EvalPayment
+                {
+                    Eval_Id = eval.Eval_Id,
+                    Voucher = r.Voucher,
+                    ServiceSubtype = r.SubtypeCode?.ToString(),
+                    PaymentDate = r.PaymentDate,
+                    Amount = r.Amount,
+                    FileName = preview.FileName,
+                    RowNumber = r.RowNumber,
+                    CreatedOn = DateTime.Now,
+                });
+
+                updated++;
+                if (isDeduction) deductions++;
+            }
+            else
+            {
+                noMatch++;
+                unmatched.Add(Enumerable.Range(1, 20)
+                    .Select(c => { var cell = ws.Cell(r.RowNumber, c); return cell.IsEmpty() ? null : cell.GetFormattedString(); })
+                    .ToArray());
+            }
+        }
+
+        if (updated > 0)
+        {
+            try
+            {
+                db.EvalPayments.AddRange(evalPaymentRows);
+                await db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CommitEvalPaymentsAsync: failed to save {Count} eval payment updates", updated);
+                throw;
+            }
+        }
+
+        return new ImportCommitResult
+        {
+            Updated = updated,
+            Skipped = noMatch,
+            SkippedRowNumbers = skippedRowNumbers,
+            Deductions = deductions,
+            UnmatchedHeaders = unmatched.Count > 0 ? atHeaders : new List<string>(),
+            UnmatchedRows = unmatched
+        };
+    }
+
     // ARCHIVE
     public async Task ArchiveFileAsync(ImportType type, string fileName, byte[] fileBytes)
     {
@@ -1549,6 +1801,7 @@ public class ImportService : IImportService
             ImportType.Sesis => _settings.SesisArchivePath,
             ImportType.VendorPortal => _settings.VendorPortalArchivePath,
             ImportType.Payments => _settings.PaymentsArchivePath,
+            ImportType.EvalPayments => _settings.EvalPaymentsArchivePath,
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 
