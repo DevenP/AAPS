@@ -478,7 +478,7 @@
 
         bool? confirmed = await DialogService.ShowMessageBoxAsync(
             "CONFIRMATION DIALOG.",
-            $"PLEASE CONFIRM TO PROCEED — this will permanently delete {count} selected record{(count == 1 ? "" : "s")} that have no Approval ID linked. Records with an Approval ID will be skipped.",
+            $"PLEASE CONFIRM TO PROCEED — this will permanently delete {count} selected record{(count == 1 ? "" : "s")} that have no Approval ID linked. Records with an Approval ID, a provider paid date, or a voucher number will be skipped.",
             yesText: "Yes, Delete",
             cancelText: "Cancel");
 
@@ -496,7 +496,7 @@
                 Snackbar.Add($"{deleted} record{(deleted == 1 ? "" : "s")} deleted.", Severity.Success);
 
             if (skipped > 0)
-                Snackbar.Add($"{skipped} record{(skipped == 1 ? " was" : "s were")} skipped — records with an Approval ID cannot be deleted.", Severity.Warning);
+                Snackbar.Add($"{skipped} record{(skipped == 1 ? " was" : "s were")} skipped — records with an Approval ID, a provider paid date, or a voucher number cannot be deleted.", Severity.Warning);
 
             await _grid.ReloadServerData();
         }

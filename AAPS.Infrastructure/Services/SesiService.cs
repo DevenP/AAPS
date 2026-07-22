@@ -650,11 +650,15 @@ public class SesiService : ISesiService
     public async Task<int> BulkDeleteProviderBillingAsync(List<int> ids, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        // Only delete rows with no approval linked (Entry_Id IS NULL) - mirrors WinForms behaviour
+        // Only delete rows with no approval linked (Entry_Id IS NULL) - mirrors WinForms behaviour.
+        // Also protect anything that has been paid or vouchered: a provider paid date or a
+        // voucher number means money has moved, so those lines are never safe to remove.
         var entities = await db.Seses
-            .Where(s => ids.Contains(s.Sesis_Id) && s.Entry_Id == null)
+            .Where(s => ids.Contains(s.Sesis_Id) && s.Entry_Id == null
+                        && s.pPaid == null
+                        && (s.Voucher == null || s.Voucher == ""))
             .ToListAsync(ct);
-        _logger.LogInformation("BulkDeleteProviderBilling: {Count} records eligible (Entry_Id IS NULL)", entities.Count);
+        _logger.LogInformation("BulkDeleteProviderBilling: {Count} records eligible (no approval, not paid/vouchered)", entities.Count);
 
         db.Seses.RemoveRange(entities);
         await db.SaveChangesAsync(ct);
