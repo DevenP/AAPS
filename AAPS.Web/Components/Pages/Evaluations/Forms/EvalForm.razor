@@ -485,6 +485,22 @@
     {
         if (files == null || files.Count == 0) return;
 
+        // #22: let the user label each document before it's saved. Cancelling drops the upload.
+        var labelParams = new DialogParameters
+        {
+            { "FileNames", files.Select(f => f.Name).ToList() }
+        };
+        var labelDialog = await DialogService.ShowAsync<EvalFileLabelDialog>(
+            "Label document(s)", labelParams,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true });
+        var labelResult = await labelDialog.Result;
+
+        if (labelResult is null || labelResult.Canceled || labelResult.Data is not List<string> labels)
+        {
+            await _dropUpload.ClearAsync();
+            return;
+        }
+
         var folderPath = _fileExplorerService.GetAbsolutePath(EvalFolderPath);
         if (!Directory.Exists(folderPath))
             Directory.CreateDirectory(folderPath);
@@ -496,14 +512,18 @@
         _uploading = true;
         StateHasChanged();
 
-        foreach (var file in files)
+        for (var i = 0; i < files.Count; i++)
         {
+            var file = files[i];
             try
             {
                 using var buffer = new MemoryStream();
                 await file.OpenReadStream(maxFileSizeBytes).CopyToAsync(buffer);
                 buffer.Position = 0;
-                await _fileExplorerService.SaveUploadedFileAsync(EvalFolderPath, file.Name, buffer);
+                // Prefix the label onto the file name so it's visible in the file list and on download.
+                var label = i < labels.Count ? labels[i] : null;
+                var savedName = string.IsNullOrWhiteSpace(label) ? file.Name : $"{label} - {file.Name}";
+                await _fileExplorerService.SaveUploadedFileAsync(EvalFolderPath, savedName, buffer);
                 uploaded++;
             }
             catch (Exception)

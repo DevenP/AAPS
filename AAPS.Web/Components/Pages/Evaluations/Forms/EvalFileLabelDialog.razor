@@ -1,0 +1,76 @@
+@* Asks the user to label each document as it's added to an evaluation (#22).
+   The chosen label is prefixed onto the saved file name so it shows in the file list. *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Label document@(FileNames.Count == 1 ? "" : "s")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-3 mud-text-secondary">
+            Choose how each document should be labeled. The label is added to the start of the file name.
+        </MudText>
+        <MudTable Items="_rows" Dense="true" Elevation="0" T="Row" Class="label-table">
+            <HeaderContent>
+                <MudTh>Document</MudTh>
+                <MudTh Style="width:260px;">Label</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Document">
+                    <MudText Typo="Typo.body2">@context.Name</MudText>
+                </MudTd>
+                <MudTd DataLabel="Label">
+                    <MudSelect T="string" @bind-Value="context.Label" Dense="true"
+                               Placeholder="Select a label" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var label in Labels)
+                        {
+                            <MudSelectItem T="string" Value="@label">@label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(!AllChosen)" OnClick="Submit">
+            Upload
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    // The names of the files being added, in order.
+    [Parameter] public List<string> FileNames { get; set; } = new();
+
+    // The document labels the client uses on evaluation uploads.
+    public static readonly string[] Labels =
+    {
+        "AA2 (original)",
+        "Parent Signed AA2",
+        "Provider Signed AA2",
+        "Signed AA2 (all parties)",
+        "AA8",
+        "Reason for Referral",
+        "Proof of Rate",
+        "Report",
+        "Revised Report",
+        "Provider Invoice",
+    };
+
+    private sealed class Row
+    {
+        public string Name { get; set; } = "";
+        public string? Label { get; set; }
+    }
+
+    private List<Row> _rows = new();
+
+    protected override void OnInitialized() =>
+        _rows = FileNames.Select(n => new Row { Name = n }).ToList();
+
+    private bool AllChosen => _rows.Count > 0 && _rows.All(r => !string.IsNullOrWhiteSpace(r.Label));
+
+    // Returns the chosen labels in the same order as FileNames.
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_rows.Select(r => r.Label!).ToList()));
+}
