@@ -1064,7 +1064,8 @@ public class ImportService : IImportService
                 m.Dur,
                 m.Remaining_Freq,
                 m.Grp_Size,
-                m.MandateStart
+                m.MandateStart,
+                m.Service_Type
             })
             .ToListAsync(ct);
 
@@ -1180,8 +1181,9 @@ public class ImportService : IImportService
             var provider = providersBySsn
                 .FirstOrDefault(p => p.Ssn?.Replace("-", "") == pSsn);
             if (provider == null) continue;
+            var provDiscipline = ServiceDiscipline(provider.ServiceType);
 
-            var matchedMandate = allMandates.FirstOrDefault(m =>
+            var candidates = allMandates.Where(m =>
             {
                 if (!string.Equals(m.Student_ID?.Trim(), (vp.Student_ID ?? "").Trim(), StringComparison.OrdinalIgnoreCase)) return false;
                 if (!int.TryParse(vp.pDur, out int vpDurInt)) return false;
@@ -1194,7 +1196,17 @@ public class ImportService : IImportService
                 if (vpGrp != mGrp) return false;
                 if (!vp.pStartDate.HasValue || !m.MandateStart.HasValue) return false;
                 return vp.pStartDate.Value.Date == m.MandateStart.Value.Date;
-            });
+            }).ToList();
+
+            // When two approvals are identical except service (e.g. OT vs Speech), prefer the one whose
+            // service matches the provider's discipline so the assignment lands on the right approval.
+            // Fall back to any match when there's no same-service approval, so single-approval cases (and
+            // providers whose record service doesn't reflect this assignment) keep working as before.
+            var matchedMandate =
+                (provDiscipline != null
+                    ? candidates.FirstOrDefault(m => ServiceDiscipline(m.Service_Type) == provDiscipline)
+                    : null)
+                ?? candidates.FirstOrDefault();
 
             if (matchedMandate != null)
                 vp.Entry_Id = matchedMandate.Entry_Id;
@@ -1253,6 +1265,20 @@ public class ImportService : IImportService
         if (discipline == null) return (null, false, false);
         bool isIndividual = c.Length >= 2 && c[1] == '1';
         return (discipline, isIndividual, true);
+    }
+
+    // Normalizes a free-text service type (from a provider or a mandate) to a discipline, so the
+    // two can be compared even when the wording differs ("Speech Therapy" vs "Speech-Language
+    // Therapy"). Returns null when it can't tell - callers treat null as "don't block the match".
+    private static string? ServiceDiscipline(string? serviceType)
+    {
+        if (string.IsNullOrWhiteSpace(serviceType)) return null;
+        var s = serviceType.ToUpperInvariant();
+        if (s.Contains("OCCUPATIONAL")) return "OT";
+        if (s.Contains("SPEECH")) return "SPEECH";
+        if (s.Contains("PHYSICAL")) return "PT";
+        if (s.Contains("COUNSEL")) return "COUNSELING";
+        return null;
     }
 
     // Updates Sesis rows: sets bPaid = now, Voucher = voucher number
