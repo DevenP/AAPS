@@ -1185,6 +1185,18 @@ public class ImportService : IImportService
             .Where(v => v.Entry_Id == null && v.VPFile == preview.FileName)
             .ToListAsync(ct);
 
+        // Map each Assign_Id to its service subtype (col O) from the file, so the backfill can match
+        // on the service of the line itself rather than the provider's profile service.
+        var subtypeByAssign = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in preview.ValidRows)
+        {
+            var aid = ws.Cell(row.RowNumber, 23).GetValue<string>()?.Trim();
+            if (string.IsNullOrEmpty(aid) || subtypeByAssign.ContainsKey(aid)) continue;
+            subtypeByAssign[aid] = ws.Cell(row.RowNumber, 15).IsEmpty()
+                ? null
+                : ws.Cell(row.RowNumber, 15).GetValue<string>()?.Trim();
+        }
+
         foreach (var vp in newRows)
         {
             if (string.IsNullOrWhiteSpace(vp.pSsn)) continue;
@@ -1192,10 +1204,10 @@ public class ImportService : IImportService
             string pSsn = vp.pSsn;
             string pFreq4 = (vp.pFreq?.Length >= 4) ? vp.pFreq[..4] : (vp.pFreq ?? "");
 
+            // The provider named on the line is authoritative - never link when we can't verify them (#16).
             var provider = providersBySsn
                 .FirstOrDefault(p => p.Ssn?.Replace("-", "") == pSsn);
             if (provider == null) continue;
-            var provDiscipline = ServiceDiscipline(provider.ServiceType);
 
             var candidates = allMandates.Where(m =>
             {
@@ -1212,15 +1224,24 @@ public class ImportService : IImportService
                 return vp.pStartDate.Value.Date == m.MandateStart.Value.Date;
             }).ToList();
 
-            // When two approvals are identical except service (e.g. OT vs Speech), prefer the one whose
-            // service matches the provider's discipline so the assignment lands on the right approval.
-            // Fall back to any match when there's no same-service approval, so single-approval cases (and
-            // providers whose record service doesn't reflect this assignment) keep working as before.
-            var matchedMandate =
-                (provDiscipline != null
-                    ? candidates.FirstOrDefault(m => ServiceDiscipline(m.Service_Type) == provDiscipline)
-                    : null)
-                ?? candidates.FirstOrDefault();
+            // Decide which approval this assignment links to, service first.
+            // Preferred signal is the line's own service subtype (col O). When two approvals are
+            // identical except service (OT vs Speech), this lands the assignment on the matching one;
+            // and because it's the line's service - not the provider's profile - it stays correct even
+            // when a provider bills a discipline their profile isn't labelled for. With that reliable
+            // signal we're firm: no same-service approval means leave it unassigned (Missing Approval)
+            // rather than forcing it onto the wrong one.
+            var lineDiscipline = SubtypeDiscipline(subtypeByAssign.GetValueOrDefault(vp.Assign_Id ?? ""));
+
+            var matchedMandate = lineDiscipline != null
+                // Firm: match the line's service, or leave unassigned.
+                ? candidates.FirstOrDefault(m => ServiceDiscipline(m.Service_Type) == lineDiscipline)
+                // No usable subtype on the line - fall back to the provider's profile service, then to
+                // any date/duration/frequency/group match, so single-approval cases keep working.
+                : ((ServiceDiscipline(provider.ServiceType) is string provDiscipline
+                        ? candidates.FirstOrDefault(m => ServiceDiscipline(m.Service_Type) == provDiscipline)
+                        : null)
+                   ?? candidates.FirstOrDefault());
 
             if (matchedMandate != null)
                 vp.Entry_Id = matchedMandate.Entry_Id;
@@ -1290,6 +1311,23 @@ public class ImportService : IImportService
         if (discipline == null) return (null, false, false);
         bool isIndividual = c.Length >= 2 && c[1] == '1';
         return (discipline, isIndividual, true);
+    }
+
+    // The service subtype code on a Vendor Portal line (col O: O1/OT, S1/SP, P1/PT, C1/CO) -> discipline.
+    // This is the service of the line itself, so it's a more reliable signal than the provider's
+    // profile service (a provider labelled Speech can legitimately bill an OT line). Returns null
+    // when the code is missing/unrecognized so the caller can fall back to the provider's service.
+    private static string? SubtypeDiscipline(string? subtype)
+    {
+        if (string.IsNullOrWhiteSpace(subtype)) return null;
+        return char.ToUpperInvariant(subtype.Trim()[0]) switch
+        {
+            'O' => "OT",
+            'S' => "SPEECH",
+            'P' => "PT",
+            'C' => "COUNSELING",
+            _ => null
+        };
     }
 
     // Normalizes a free-text service type (from a provider or a mandate) to a discipline, so the
