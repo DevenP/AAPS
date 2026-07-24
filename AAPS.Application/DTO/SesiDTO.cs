@@ -121,7 +121,7 @@ public record SesiDTO
     [DisplayField("Billed Date", GroupName = "Billing")]
     public DateTime? BilledDate { get; set; }
 
-    [DisplayField("Billed Paid Date", browsable: false)]
+    [DisplayField("Billed Paid Date", GroupName = "Billing")]
     public DateTime? BilledPaidDate { get; set; }
 
     [DisplayField("Provider Rate", browsable: false)]
