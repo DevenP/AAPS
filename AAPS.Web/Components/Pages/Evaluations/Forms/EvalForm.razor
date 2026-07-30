@@ -1,7 +1,9 @@
 @using AAPS.Application.Abstractions.Services
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Pages.Files
+@using Microsoft.Extensions.Configuration
 
+@inject IConfiguration Configuration
 @inject IProviderService ProviderService
 @inject IServiceTypeService ServiceTypeService
 @inject IBillingRateService BillingRateService
@@ -485,20 +487,29 @@
     {
         if (files == null || files.Count == 0) return;
 
-        // #22: let the user label each document before it's saved. Cancelling drops the upload.
-        var labelParams = new DialogParameters
+        // #22: optionally prompt the user to label each document before it's saved. Turned off for
+        // now (Evaluations:PromptForDocumentLabel = false) so heavy upload days aren't slowed down by
+        // the prompt; when off, files keep their original name. Set the setting to true to bring the
+        // label prompt back. Defaults to off when the setting is absent.
+        List<string>? labels = null;
+        if (Configuration.GetValue("Evaluations:PromptForDocumentLabel", false))
         {
-            { "FileNames", files.Select(f => f.Name).ToList() }
-        };
-        var labelDialog = await DialogService.ShowAsync<EvalFileLabelDialog>(
-            "Label document(s)", labelParams,
-            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true });
-        var labelResult = await labelDialog.Result;
+            var labelParams = new DialogParameters
+            {
+                { "FileNames", files.Select(f => f.Name).ToList() }
+            };
+            var labelDialog = await DialogService.ShowAsync<EvalFileLabelDialog>(
+                "Label document(s)", labelParams,
+                new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true });
+            var labelResult = await labelDialog.Result;
 
-        if (labelResult is null || labelResult.Canceled || labelResult.Data is not List<string> labels)
-        {
-            await _dropUpload.ClearAsync();
-            return;
+            // Cancelling drops the upload.
+            if (labelResult is null || labelResult.Canceled || labelResult.Data is not List<string> chosen)
+            {
+                await _dropUpload.ClearAsync();
+                return;
+            }
+            labels = chosen;
         }
 
         var folderPath = _fileExplorerService.GetAbsolutePath(EvalFolderPath);
@@ -521,7 +532,8 @@
                 await file.OpenReadStream(maxFileSizeBytes).CopyToAsync(buffer);
                 buffer.Position = 0;
                 // Prefix the label onto the file name so it's visible in the file list and on download.
-                var label = i < labels.Count ? labels[i] : null;
+                // When labeling is turned off, labels is null and the file keeps its original name.
+                var label = labels != null && i < labels.Count ? labels[i] : null;
                 var savedName = string.IsNullOrWhiteSpace(label) ? file.Name : $"{label} - {file.Name}";
                 await _fileExplorerService.SaveUploadedFileAsync(EvalFolderPath, savedName, buffer);
                 uploaded++;
