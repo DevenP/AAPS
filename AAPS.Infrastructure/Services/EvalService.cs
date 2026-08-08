@@ -60,6 +60,7 @@ public class EvalService : IEvalService
                         StudentFirstName = ev.StudentFirst,
                         StudentLastName = ev.StudentLast,
                         StudentId = ev.Student_ID,
+                        DateOfBirth = ev.DOB,
                         Phone = ev.Phone,
                         Email = ev.Email,
                         ParentFirstName = ev.ParentFirst,
@@ -117,6 +118,7 @@ public class EvalService : IEvalService
             StudentFirst = dto.StudentFirstName,
             StudentLast = dto.StudentLastName,
             Student_ID = dto.StudentId,
+            DOB = dto.DateOfBirth,
             Phone = dto.Phone,
             Email = dto.Email,
             ParentFirst = dto.ParentFirstName,
@@ -162,6 +164,7 @@ public class EvalService : IEvalService
         entity.StudentFirst = dto.StudentFirstName;
         entity.StudentLast = dto.StudentLastName;
         entity.Student_ID = dto.StudentId;
+        entity.DOB = dto.DateOfBirth;
         entity.Phone = dto.Phone;
         entity.Email = dto.Email;
         entity.ParentFirst = dto.ParentFirstName;
@@ -210,6 +213,7 @@ public class EvalService : IEvalService
         StudentFirstName = e.StudentFirst,
         StudentLastName = e.StudentLast,
         StudentId = e.Student_ID,
+        DateOfBirth = e.DOB,
         Phone = e.Phone,
         Email = e.Email,
         ParentFirstName = e.ParentFirst,

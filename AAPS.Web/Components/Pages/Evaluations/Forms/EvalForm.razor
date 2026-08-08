@@ -41,6 +41,9 @@
                                   Label="Student ID (OSIS)" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="Model.DateOfBirth" Label="Date of Birth" Clearable="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
                     <MudSelect T="string?" @bind-Value="Model.Status"
                                Label="Status"
                                AnchorOrigin="Origin.BottomCenter">
@@ -114,7 +117,7 @@
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="Model.Phone"
                                   Label="Phone"
-                                  Mask="@(new PatternMask("(000) 000-0000"))" />
+                                  Mask="@(new PatternMask("000-000-0000"))" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="Model.Email" Label="Email" />

@@ -16,6 +16,9 @@ public record EvalDTO
     [DisplayField("Student ID", GroupName = "Student")]
     public string? StudentId { get; set; }
 
+    [DisplayField("Date of Birth", GroupName = "Student")]
+    public DateTime? DateOfBirth { get; set; }
+
     [DisplayField("District", GroupName = "Student")]
     public string? District { get; set; }
 

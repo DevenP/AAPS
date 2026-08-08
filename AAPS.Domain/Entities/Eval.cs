@@ -21,6 +21,9 @@ public partial class Eval
     [Unicode(false)]
     public string? Student_ID { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? DOB { get; set; }
+
     [StringLength(12)]
     [Unicode(false)]
     public string? Phone { get; set; }
