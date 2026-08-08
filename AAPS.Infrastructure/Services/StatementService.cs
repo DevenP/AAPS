@@ -57,6 +57,7 @@ public class StatementService : IStatementService
                 p => p.Provider_Id,
                 (s, p) => new StatementRow
                 {
+                    ProviderId = s.Provider_Id,
                     ProviderLast = s.Provider_Last_Name ?? "",
                     ProviderFirst = s.Provider_First_Name ?? "",
                     ProviderAddress = p.Address ?? "",
@@ -86,13 +87,17 @@ public class StatementService : IStatementService
         if (rows.Count == 0)
             return [];
 
+        // Group by the provider's ID, not their name text. The name is denormalized onto each
+        // session row and can carry stray whitespace ("Godson" vs "Godson "), which would otherwise
+        // split one provider into two statements. The trimmed name is used only for the file name.
         var providerGroups = rows
-            .GroupBy(r => (r.ProviderLast, r.ProviderFirst))
+            .GroupBy(r => r.ProviderId)
             .ToList();
 
         return providerGroups.Select(group =>
         {
-            var safeName = $"{SanitizeFileName(group.Key.ProviderLast)}_{SanitizeFileName(group.Key.ProviderFirst)}.pdf";
+            var first = group.First();
+            var safeName = $"{SanitizeFileName(first.ProviderLast.Trim())}_{SanitizeFileName(first.ProviderFirst.Trim())}.pdf";
             var bytes = GeneratePdf(group);
             return new GeneratedStatementFile(safeName, bytes);
         }).ToList();
@@ -170,7 +175,7 @@ public class StatementService : IStatementService
             };
     }
 
-    private byte[] GeneratePdf(IGrouping<(string Last, string First), StatementRow> group)
+    private byte[] GeneratePdf(IEnumerable<StatementRow> group)
     {
         var headerBytes = LoadImage(_headerPath);
         var footerBytes = LoadImage(_footerPath);
@@ -180,7 +185,7 @@ public class StatementService : IStatementService
         {
             var rows = group.ToList();
             var first = rows[0];
-            var providerName = $"{first.ProviderLast}, {first.ProviderFirst}";
+            var providerName = $"{first.ProviderLast.Trim()}, {first.ProviderFirst.Trim()}";
             var cityStateZip = $"{first.ProviderCity}, {first.ProviderState} {first.ProviderZip}".Trim().TrimEnd(',').Trim();
             var total = rows.Sum(r => r.BillingAmount ?? 0);
 
@@ -324,6 +329,7 @@ public class StatementService : IStatementService
 
     private sealed class StatementRow
     {
+        public int? ProviderId { get; set; }
         public string ProviderLast { get; set; } = "";
         public string ProviderFirst { get; set; } = "";
         public string ProviderAddress { get; set; } = "";
