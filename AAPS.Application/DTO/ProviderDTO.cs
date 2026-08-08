@@ -52,7 +52,7 @@ public record ProviderDTO
     [DisplayField("Has PETS", browsable: false)]
     public bool HasPets { get; set; }
 
-    [DisplayField("W9 Date", browsable: false)]
+    [DisplayField("W9 / W4 Date", browsable: false)]
     public DateTime? W9Date { get; set; }
 
     [DisplayField("Direct Deposit Date", browsable: false)]
