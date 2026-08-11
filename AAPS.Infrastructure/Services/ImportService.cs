@@ -1178,13 +1178,6 @@ public class ImportService : IImportService
 
         await FlushBatchAsync();
 
-        // Entry_Id backfill pass
-        // Now that rows are inserted and have VendorPortal_Ids, link Entry_Id
-        // Only process rows that were successfully inserted (no Entry_Id yet)
-        var newRows = await db.VendorPortals
-            .Where(v => v.Entry_Id == null && v.VPFile == preview.FileName)
-            .ToListAsync(ct);
-
         // Map each Assign_Id to its service subtype (col O) from the file, so the backfill can match
         // on the service of the line itself rather than the provider's profile service.
         var subtypeByAssign = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -1196,6 +1189,17 @@ public class ImportService : IImportService
                 ? null
                 : ws.Cell(row.RowNumber, 15).GetValue<string>()?.Trim();
         }
+
+        // Entry_Id backfill pass. Link every still-unlinked assignment that appears in this file -
+        // both the rows just inserted AND rows that were skipped as duplicates but never got linked.
+        // That covers the case where an assignment was imported before its approval existed: it came
+        // in unlinked, and a plain re-import would skip it as a duplicate and never retry the link.
+        // Because the assignment is in this file, its col-O service is known, so the service match
+        // below stays firm.
+        var assignIdsInFile = subtypeByAssign.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var newRows = await db.VendorPortals
+            .Where(v => v.Entry_Id == null && v.Assign_Id != null && assignIdsInFile.Contains(v.Assign_Id.Trim()))
+            .ToListAsync(ct);
 
         foreach (var vp in newRows)
         {
