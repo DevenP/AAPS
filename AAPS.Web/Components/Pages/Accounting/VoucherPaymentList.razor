@@ -9,7 +9,7 @@
 <GenericGrid @ref="_grid" TItem="PaymentDTO"
              Title="Voucher Payments"
              DefaultSortLabel="DateOfService"
-             Columns="@(new[] { "Voucher", "InvoiceNumber", "BatchId", "Provider", "DateOfService", "StartTime", "EndTime", "AdminDbn", "ServiceType", "ServiceSubtype", "StudentId", "BilledAmount", "VoucherAmount", "IvrConfirm", "BilledOn" })"
+             Columns="@(new[] { "Voucher", "InvoiceNumber", "BatchId", "Provider", "DateOfService", "StartTime", "EndTime", "AdminDbn", "ServiceType", "ServiceSubtype", "StudentId", "BilledAmount", "VoucherAmount", "UnpaidBalance", "IvrConfirm", "BilledOn" })"
              GetData="PaymentService.GetPagedAsync">
 
     <HeaderContent>
@@ -51,6 +51,9 @@
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="VoucherAmount" IsHeader="true">
             <MudTableSortLabel SortLabel="VoucherAmount" T="PaymentDTO">@_grid?.GetDisplayName("VoucherAmount")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="PaymentDTO" Column="UnpaidBalance" IsHeader="true">
+            <MudTableSortLabel SortLabel="UnpaidBalance" T="PaymentDTO">@_grid?.GetDisplayName("UnpaidBalance")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="PaymentDTO" Column="IvrConfirm" IsHeader="true">
             <MudTableSortLabel SortLabel="IvrConfirm" T="PaymentDTO">@_grid?.GetDisplayName("IvrConfirm")</MudTableSortLabel>
@@ -94,6 +97,7 @@
         <GridCell TItem="PaymentDTO" Column="VoucherAmount">
             <MudText Style="font-weight:600;">@p.VoucherAmount?.ToString("C2")</MudText>
         </GridCell>
+        <GridCell TItem="PaymentDTO" Column="UnpaidBalance">@p.UnpaidBalance?.ToString("C2")</GridCell>
         <GridCell TItem="PaymentDTO" Column="IvrConfirm">
             <span style="font-family:monospace;">@p.IvrConfirm</span>
         </GridCell>

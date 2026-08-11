@@ -44,6 +44,10 @@ public class PaymentService : IPaymentService
                         AdminDbn = s != null ? s.Admin_DBN : null,
                         ServiceType = s != null ? s.Service_Type : null,
                         BilledAmount = s != null ? s.bAmount : null,
+                        // Balance still owed on the session = billed minus everything paid to date
+                        // (the session's running total, so it matches the Billing page). Missing
+                        // payment counts as $0 so an unpaid line shows the full amount, not blank.
+                        UnpaidBalance = s != null ? s.bAmount - (s.VoucherAmount ?? 0) : null,
                         BilledOn = s != null ? s.Billed : null,
                     };
 

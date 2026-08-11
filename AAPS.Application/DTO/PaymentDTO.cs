@@ -49,6 +49,9 @@ public record PaymentDTO
     [DisplayField("Paid Amount")]
     public decimal? VoucherAmount { get; set; }
 
+    [DisplayField("Unpaid Balance")]
+    public decimal? UnpaidBalance { get; set; }
+
     [DisplayField("IVR Confirm")]
     public string? IvrConfirm { get; set; }
 

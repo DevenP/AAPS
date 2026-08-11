@@ -96,7 +96,9 @@ public class BillingService : IBillingService
                 EntryId = s.Entry_Id,
                 Voucher = s.Voucher,
                 VoucherAmount = s.VoucherAmount,
-                UnpaidBalance = s.bAmount - s.VoucherAmount,
+                // Treat a missing payment as $0 paid - otherwise (billed - NULL) is NULL and the
+                // balance shows blank on every unpaid line instead of the full amount owed.
+                UnpaidBalance = s.bAmount - (s.VoucherAmount ?? 0),
                 VoucherBalancePaid = s.VoucherBalancePaid,
                 AdjustmentStatus = s.AdjustmentStatus,
             };
