@@ -20,12 +20,15 @@ public record EvalDTO
     public DateTime? DateOfBirth { get; set; }
 
     [DisplayField("District", GroupName = "Student")]
+    [FilterOptionsSource(FilterSource.District)]
     public string? District { get; set; }
 
     [DisplayField("Service Type", GroupName = "Service")]
+    [FilterOptionsSource(FilterSource.ServiceType)]
     public string? ServiceType { get; set; }
 
     [DisplayField("Language", GroupName = "Service")]
+    [FilterOptionsSource(FilterSource.Language)]
     public string? Language { get; set; }
 
     [DisplayField("Phone", GroupName = "Contact")]
@@ -70,7 +73,8 @@ public record EvalDTO
     [DisplayField("Report Submitted", GroupName = "Dates")]
     public DateTime? ReportSubmittedDate { get; set; }
 
-    [DisplayField("Status", GroupName = "Dates")]
+    [DisplayField("Status", GroupName = "Service")]
+    [FilterOptions("Open", "Canceled", "Completed")]
     public string? Status { get; set; }
 
     [DisplayField("DoE Contact", GroupName = "Contact")]
@@ -106,5 +110,6 @@ public record EvalDTO
 
     // "Unpaid" | "Partial" | "Paid" | "Overpaid" - computed from Billing Amount vs Paid Amount.
     [DisplayField("Payment Status", GroupName = "Payment")]
+    [FilterOptions("Unpaid", "Partial", "Paid", "Overpaid")]
     public string? PaymentStatus { get; set; }
 }

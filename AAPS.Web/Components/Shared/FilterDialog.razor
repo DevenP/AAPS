@@ -3,6 +3,11 @@
 @using System.Reflection
 @using AAPS.Application.Common.Extensions
 @using AAPS.Application.Common.Attributes
+@using AAPS.Application.Common.Paging
+@using AAPS.Application.Abstractions.Services
+@inject IServiceTypeService ServiceTypeService
+@inject IGDistrictService GDistrictService
+@inject ILanguageService LanguageService
 
 <MudDialog>
     <DialogContent>
@@ -99,8 +104,8 @@
                                             }
                                             else
                                             {
-                                                var filterOptions = prop.GetCustomAttribute<FilterOptionsAttribute>();
-                                                @if (filterOptions != null)
+                                                var options = GetOptionsFor(prop);
+                                                @if (options != null)
                                                 {
                                                     <MudItem xs="6">
                                                         <MudSelect T="string"
@@ -110,7 +115,7 @@
                                                                    Margin="Margin.Dense"
                                                                    Variant="Variant.Outlined"
                                                                    Clearable="true">
-                                                            @foreach (var option in filterOptions.Options)
+                                                            @foreach (var option in options)
                                                             {
                                                                 <MudSelectItem Value="@option">@option</MudSelectItem>
                                                             }
@@ -221,8 +226,8 @@
                             }
                             else
                             {
-                                var filterOptions = prop.GetCustomAttribute<FilterOptionsAttribute>();
-                                @if (filterOptions != null)
+                                var options = GetOptionsFor(prop);
+                                @if (options != null)
                                 {
                                     <MudItem xs="6">
                                         <MudSelect T="string"
@@ -232,7 +237,7 @@
                                                    Margin="Margin.Dense"
                                                    Variant="Variant.Outlined"
                                                    Clearable="true">
-                                            @foreach (var option in filterOptions.Options)
+                                            @foreach (var option in options)
                                             {
                                                 <MudSelectItem Value="@option">@option</MudSelectItem>
                                             }
@@ -271,8 +276,10 @@
 
     private Dictionary<string, string> _localFilters = new();
     private List<string> _groups = [];
+    // Options loaded from lookup tables for properties marked with [FilterOptionsSource].
+    private readonly Dictionary<string, IReadOnlyList<string>> _dynamicOptions = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (InitialFilters != null)
         {
@@ -285,6 +292,44 @@
             .Where(g => g != null)
             .Distinct()
             .ToList()!;
+
+        await LoadDynamicOptionsAsync();
+    }
+
+    // Loads the live lookup lists for any property whose filter should be a source-backed dropdown.
+    // Only the sources actually referenced by this grid's columns are queried.
+    private async Task LoadDynamicOptionsAsync()
+    {
+        var sourced = GetFilteredProperties()
+            .Select(p => (p.Name, Source: p.GetCustomAttribute<FilterOptionsSourceAttribute>()?.Source))
+            .Where(x => x.Source != null)
+            .ToList();
+        if (sourced.Count == 0) return;
+
+        var all = new PagedRequest(PageSize: -1);
+        foreach (var (name, source) in sourced)
+        {
+            var options = source switch
+            {
+                FilterSource.ServiceType => (await ServiceTypeService.GetPagedAsync(all)).Items
+                    .Select(s => s.Name).Where(n => !string.IsNullOrWhiteSpace(n)).OrderBy(n => n),
+                FilterSource.District => (await GDistrictService.GetPagedAsync(all)).Items
+                    .Select(d => d.DistrictCode).Where(c => !string.IsNullOrWhiteSpace(c)).OrderBy(c => c),
+                FilterSource.Language => (await LanguageService.GetPagedAsync(all)).Items
+                    .Select(l => l.Name).Where(n => !string.IsNullOrWhiteSpace(n)).OrderBy(n => n),
+                _ => Enumerable.Empty<string?>()
+            };
+            _dynamicOptions[name] = options.Select(o => o!).Distinct().ToList();
+        }
+    }
+
+    // The dropdown choices for a string property: a fixed set ([FilterOptions]) or a loaded lookup
+    // list ([FilterOptionsSource]). Returns null when the property should stay a free-text box.
+    private IReadOnlyList<string>? GetOptionsFor(PropertyInfo prop)
+    {
+        var fixedOptions = prop.GetCustomAttribute<FilterOptionsAttribute>()?.Options;
+        if (fixedOptions is { Length: > 0 }) return fixedOptions;
+        return _dynamicOptions.TryGetValue(prop.Name, out var dyn) ? dyn : null;
     }
 
     private string? GetGroup(PropertyInfo p) =>
