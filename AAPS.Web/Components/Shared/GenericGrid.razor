@@ -88,7 +88,7 @@
                       Class="mt-0 mr-4" />
 
 
-        <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Label="Columns" Color="Color.Inherit" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Dense="true" Class="mr-2" MaxHeight="800">
+        <MudMenu Icon="@Icons.Material.Filled.ViewColumn" Label="Columns" Color="Color.Inherit" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Dense="true" Class="mr-2" MaxHeight="800" PopoverClass="column-toggle-menu">
             @foreach (var col in _columnVisibility)
             {
                 <MudMenuItem AutoClose="false">
@@ -136,6 +136,18 @@
 </MudTable>
 
 <style>
+    /* Column toggle menu: wide enough that labels sit on one line, with a little vertical room
+       so the checklist doesn't read as cramped. */
+    .column-toggle-menu {
+        min-width: 240px;
+    }
+
+    .column-toggle-menu .mud-menu-item {
+        white-space: nowrap;
+        padding-top: 3px;
+        padding-bottom: 3px;
+    }
+
     .sticky-table .mud-table-container {
         display: flex;
         flex-direction: column;
