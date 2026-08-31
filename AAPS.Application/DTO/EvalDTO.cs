@@ -74,7 +74,7 @@ public record EvalDTO
     public DateTime? ReportSubmittedDate { get; set; }
 
     [DisplayField("Status", GroupName = "Service")]
-    [FilterOptions("Open", "Canceled", "Completed")]
+    [FilterOptions("Open", "Awaiting", "Pending", "Completed", "Canceled")]
     public string? Status { get; set; }
 
     [DisplayField("DoE Contact", GroupName = "Contact")]
