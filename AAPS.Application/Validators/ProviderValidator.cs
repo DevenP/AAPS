@@ -17,9 +17,8 @@ public class ProviderValidator : AbstractValidator<ProviderDTO>
             .EmailAddress().When(x => !string.IsNullOrEmpty(x.Email))
             .WithMessage("Please enter a valid work email.");
 
-        RuleFor(x => x.Ssn)
-            .NotEmpty().WithMessage("Ssn is required");
-
+        // SSN is optional when adding a provider, but must be unique when supplied
+        // (uniqueness is enforced server-side in ProviderService on create/update).
     }
 
     // This helper makes MudBlazor happy
