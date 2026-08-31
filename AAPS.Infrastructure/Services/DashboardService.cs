@@ -79,11 +79,13 @@ public class DashboardService : IDashboardService
         var expiringApprovals = await db.Mandates.CountAsync(m =>
             m.MandateEnd != null && m.MandateEnd >= today && m.MandateEnd <= cutoff, ct);
 
-        // Providers with a license expiring within 60 days (or already expired)
+        // Active providers with a license or liability expiring within 60 days (or already expired)
         var licenseCutoff = today.AddDays(60);
         var expiringLicenses = await db.Providers.CountAsync(p =>
-            (p.License1Exp != null && p.License1Exp <= licenseCutoff) ||
-            (p.License2Exp != null && p.License2Exp <= licenseCutoff), ct);
+            p.Status == "Active" &&
+            ((p.License1Exp != null && p.License1Exp <= licenseCutoff) ||
+             (p.License2Exp != null && p.License2Exp <= licenseCutoff) ||
+             (p.Liability != null && p.Liability <= licenseCutoff)), ct);
 
         var stats = new DashboardStats
         {
@@ -213,14 +215,15 @@ public class DashboardService : IDashboardService
 
         var cutoff = DateTime.Today.AddDays(daysAhead);
 
-        // Flatten License1 and License2 into one list, take the soonest per provider
+        // Only active providers, and flatten License 1/2 and Liability into one list.
         var license1 = await db.Providers
             .AsNoTracking()
-            .Where(p => p.License1Exp != null && p.License1Exp <= cutoff)
+            .Where(p => p.Status == "Active" && p.License1Exp != null && p.License1Exp <= cutoff)
             .Select(p => new ExpiringLicenseItem
             {
                 LastName = p.LastName,
                 FirstName = p.FirstName,
+                DocumentType = "License",
                 LicenseNumber = p.License1,
                 ExpirationDate = p.License1Exp!.Value
             })
@@ -228,18 +231,33 @@ public class DashboardService : IDashboardService
 
         var license2 = await db.Providers
             .AsNoTracking()
-            .Where(p => p.License2Exp != null && p.License2Exp <= cutoff)
+            .Where(p => p.Status == "Active" && p.License2Exp != null && p.License2Exp <= cutoff)
             .Select(p => new ExpiringLicenseItem
             {
                 LastName = p.LastName,
                 FirstName = p.FirstName,
+                DocumentType = "License",
                 LicenseNumber = p.License2,
                 ExpirationDate = p.License2Exp!.Value
             })
             .ToListAsync(ct);
 
+        var liability = await db.Providers
+            .AsNoTracking()
+            .Where(p => p.Status == "Active" && p.Liability != null && p.Liability <= cutoff)
+            .Select(p => new ExpiringLicenseItem
+            {
+                LastName = p.LastName,
+                FirstName = p.FirstName,
+                DocumentType = "Liability",
+                LicenseNumber = null,
+                ExpirationDate = p.Liability!.Value
+            })
+            .ToListAsync(ct);
+
         return license1
             .Concat(license2)
+            .Concat(liability)
             .OrderBy(x => x.ExpirationDate)
             .Take(limit)
             .ToList();

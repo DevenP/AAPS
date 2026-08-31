@@ -61,6 +61,9 @@ public record ExpiringLicenseItem
 {
     public string? LastName { get; init; }
     public string? FirstName { get; init; }
+    // "License" or "Liability" - which document is expiring.
+    public string? DocumentType { get; init; }
+    // The license number for a license; null for Liability (no number kept).
     public string? LicenseNumber { get; init; }
     public DateTime ExpirationDate { get; init; }
 }

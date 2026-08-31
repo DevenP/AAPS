@@ -110,7 +110,7 @@ else
 
         <MudItem xs="6" sm="4" md="3">
             <MudPaper Class="pa-4" Elevation="1" Style="@WarningCardStyle(_stats.ExpiringLicenses > 0)">
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">Expiring Licenses (60d)</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Licenses &amp; Liability (60d)</MudText>
                 <div class="d-flex align-center justify-space-between mt-1">
                     <MudText Typo="Typo.h4" Color="@(_stats.ExpiringLicenses > 0 ? Color.Warning : Color.Default)">
                         <b>@_stats.ExpiringLicenses</b>
@@ -305,19 +305,28 @@ else
         {
             <MudItem xs="12" sm="6" md="4">
                 <MudText Typo="Typo.h6" Class="mb-2">
-                    Expiring Licenses
+                    Expiring Licenses &amp; Liability
                     <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ml-2">@_stats!.ExpiringLicenses within 60 days</MudChip>
                 </MudText>
                 <MudPaper Elevation="1">
                     <MudTable Items="_expiringLicenses" Dense="true" Hover="true" Striped="true" Elevation="0">
                         <HeaderContent>
                             <MudTh>Provider</MudTh>
-                            <MudTh>License</MudTh>
+                            <MudTh>Document</MudTh>
                             <MudTh>Expires</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd Style="white-space:nowrap;">@context.LastName, @context.FirstName</MudTd>
-                            <MudTd>@context.LicenseNumber</MudTd>
+                            <MudTd>
+                                @if (context.DocumentType == "Liability")
+                                {
+                                    <span>Liability</span>
+                                }
+                                else
+                                {
+                                    <span>License@(string.IsNullOrWhiteSpace(context.LicenseNumber) ? "" : $" {context.LicenseNumber}")</span>
+                                }
+                            </MudTd>
                             <MudTd Style="white-space:nowrap;">
                                 @{
                                     var expired = context.ExpirationDate < DateTime.Today;
