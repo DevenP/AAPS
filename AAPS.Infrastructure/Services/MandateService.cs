@@ -227,6 +227,10 @@ public class MandateService : IMandateService
         entity.Service_Start_Date = dto.ServiceStartDate;
         await db.SaveChangesAsync(ct);
 
+        // Recompute the operations alert flags - changing an approval's dates can pull sessions
+        // in or out of its authorized window, which drives the Over Duration flag.
+        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+
         _logger.LogInformation("Mandate {Id} updated", id);
     }
 
