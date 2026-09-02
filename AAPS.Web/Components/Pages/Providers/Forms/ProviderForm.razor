@@ -52,7 +52,8 @@
                 <MudTextField @bind-Value="Model.Ssn"
                               Label="SSN"
                               Variant="Variant.Text"
-                              Mask="@(new PatternMask("000-00-0000"))"
+                              Placeholder="000-00-0000"
+                              MaxLength="11"
                               Validation="@Validator"
                               For="@(() => Model.Ssn)"
                               Clearable="true"
@@ -94,7 +95,7 @@
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.Phone" Label="Phone" Variant="Variant.Text"
-                              Mask="@(new PatternMask("000-000-0000"))" />
+                              Placeholder="000-000-0000" MaxLength="12" />
             </MudItem>
             <MudItem xs="12">
                 <MudTextField @bind-Value="Model.Address" Label="Address" />

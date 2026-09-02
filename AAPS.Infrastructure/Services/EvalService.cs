@@ -1,4 +1,5 @@
 using AAPS.Application.Abstractions.Services;
+using AAPS.Application.Common;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
@@ -119,7 +120,7 @@ public class EvalService : IEvalService
             StudentLast = dto.StudentLastName,
             Student_ID = dto.StudentId,
             DOB = dto.DateOfBirth,
-            Phone = dto.Phone,
+            Phone = InputFormat.Phone(dto.Phone),
             Email = dto.Email,
             ParentFirst = dto.ParentFirstName,
             ParentLast = dto.ParentLastName,
@@ -165,7 +166,7 @@ public class EvalService : IEvalService
         entity.StudentLast = dto.StudentLastName;
         entity.Student_ID = dto.StudentId;
         entity.DOB = dto.DateOfBirth;
-        entity.Phone = dto.Phone;
+        entity.Phone = InputFormat.Phone(dto.Phone);
         entity.Email = dto.Email;
         entity.ParentFirst = dto.ParentFirstName;
         entity.ParentLast = dto.ParentLastName;

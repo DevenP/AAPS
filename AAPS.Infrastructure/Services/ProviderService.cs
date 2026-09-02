@@ -1,4 +1,5 @@
 using AAPS.Application.Abstractions.Services;
+using AAPS.Application.Common;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
@@ -171,12 +172,14 @@ public class ProviderService : IProviderService
         await using var db = _factory.CreateDbContext();
         var entity = new Provider { Status = ProviderStatus.Active };
         ApplyDto(entity, dto);
-        entity.Ssn = dto.Ssn;
+        entity.Ssn = InputFormat.Ssn(dto.Ssn);
 
-        // Duplicate SSN check (mirrors theProvider_Ssn proc: other providers with same SSN)
+        // Duplicate SSN check (mirrors theProvider_Ssn proc: other providers with same SSN).
+        // Compared on digits so a stored value with dashes still matches.
         if (!string.IsNullOrWhiteSpace(entity.Ssn))
         {
-            var duplicate = await db.Providers.AnyAsync(p => p.Ssn == entity.Ssn, ct);
+            var digits = InputFormat.Digits(entity.Ssn);
+            var duplicate = await db.Providers.AnyAsync(p => p.Ssn != null && p.Ssn.Replace("-", "") == digits, ct);
             if (duplicate)
                 throw new InvalidOperationException("Another provider already has this SSN.");
         }
@@ -197,15 +200,19 @@ public class ProviderService : IProviderService
 
         if (provider == null) return false;
 
-        // Duplicate SSN check - excludes this provider (mirrors theProvider_Ssn proc)
-        if (!string.IsNullOrWhiteSpace(dto.Ssn))
+        var ssn = InputFormat.Ssn(dto.Ssn);
+
+        // Duplicate SSN check - excludes this provider (mirrors theProvider_Ssn proc).
+        // Compared on digits so a stored value with dashes still matches.
+        if (!string.IsNullOrWhiteSpace(ssn))
         {
-            var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn == dto.Ssn, ct);
+            var digits = InputFormat.Digits(ssn);
+            var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn != null && p.Ssn.Replace("-", "") == digits, ct);
             if (duplicate)
                 throw new InvalidOperationException("Another provider already has this SSN.");
         }
         ApplyDto(provider, dto);
-        provider.Ssn = dto.Ssn;
+        provider.Ssn = ssn;
         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
 
         // 3. Save Changes
@@ -228,13 +235,26 @@ public class ProviderService : IProviderService
                 _logger.LogInformation("Saving provider {Id} ({FirstName} {LastName}), isNew={IsNew}, contacts={ContactCount}",
                     dto.Id, dto.FirstName, dto.LastName, isNew, contacts.Count);
 
+                var ssn = InputFormat.Ssn(dto.Ssn);
+
+                // Duplicate SSN check - excludes this provider (mirrors theProvider_Ssn proc).
+                // This is the save path the provider form actually uses, so the check has to live
+                // here too. Compared on digits so a stored value with dashes still matches.
+                if (!string.IsNullOrWhiteSpace(ssn))
+                {
+                    var digits = InputFormat.Digits(ssn);
+                    var duplicate = await db.Providers.AnyAsync(p => p.Provider_Id != dto.Id && p.Ssn != null && p.Ssn.Replace("-", "") == digits);
+                    if (duplicate)
+                        throw new InvalidOperationException("Another provider already has this SSN.");
+                }
+
                 // 1. Update/Add the Provider
                 int providerId;
                 if (dto.Id == 0)
                 {
                     var entity = new Provider { Status = ProviderStatus.Active };
                     ApplyDto(entity, dto);
-                    entity.Ssn = dto.Ssn;
+                    entity.Ssn = ssn;
                     db.Providers.Add(entity);
                     await db.SaveChangesAsync();
                     providerId = entity.Provider_Id;
@@ -246,7 +266,7 @@ public class ProviderService : IProviderService
                     if (provider != null)
                     {
                         ApplyDto(provider, dto);
-                        provider.Ssn = dto.Ssn;
+                        provider.Ssn = ssn;
                         provider.Status = (dto.IsActive ?? false) ? ProviderStatus.Active : ProviderStatus.Inactive;
                     }
                 }
@@ -339,14 +359,11 @@ public class ProviderService : IProviderService
         return deleted;
     }
 
-    private static string? StripPhone(string? phone) =>
-        phone?.Replace("(", "").Replace(")", "").Replace(" ", "").Replace("-", "");
-
     private static void ApplyDto(Provider p, ProviderDTO dto)
     {
         p.FirstName = dto.FirstName;
         p.LastName = dto.LastName;
-        p.Phone = StripPhone(dto.Phone);
+        p.Phone = InputFormat.Phone(dto.Phone);
         p.Email = dto.Email;
         p.TaxId = dto.TaxId;
         p.NpiNumber = dto.NpiNumber;
