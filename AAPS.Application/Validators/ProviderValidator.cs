@@ -25,6 +25,12 @@ public class ProviderValidator : AbstractValidator<ProviderDTO>
             .Must(s => InputFormat.Digits(s).Length == 9)
             .When(x => !string.IsNullOrWhiteSpace(x.Ssn))
             .WithMessage("SSN must be 9 digits.");
+
+        // Phone is optional, but a full 10 digits if entered (the mask used to guarantee it).
+        RuleFor(x => x.Phone)
+            .Must(p => InputFormat.Digits(p).Length == 10)
+            .When(x => !string.IsNullOrWhiteSpace(x.Phone))
+            .WithMessage("Phone must be 10 digits.");
     }
 
     // This helper makes MudBlazor happy
