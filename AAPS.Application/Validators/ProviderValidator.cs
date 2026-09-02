@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using AAPS.Application.DTO;
+using AAPS.Application.Common;
 
 public class ProviderValidator : AbstractValidator<ProviderDTO>
 {
@@ -17,8 +18,13 @@ public class ProviderValidator : AbstractValidator<ProviderDTO>
             .EmailAddress().When(x => !string.IsNullOrEmpty(x.Email))
             .WithMessage("Please enter a valid work email.");
 
-        // SSN is optional when adding a provider, but must be unique when supplied
-        // (uniqueness is enforced server-side in ProviderService on create/update).
+        // SSN is optional when adding a provider, but if one is entered it has to be a full
+        // 9 digits (the input mask used to guarantee this; it's a plain field now). Uniqueness
+        // is enforced server-side in ProviderService on save.
+        RuleFor(x => x.Ssn)
+            .Must(s => InputFormat.Digits(s).Length == 9)
+            .When(x => !string.IsNullOrWhiteSpace(x.Ssn))
+            .WithMessage("SSN must be 9 digits.");
     }
 
     // This helper makes MudBlazor happy
