@@ -120,7 +120,12 @@ namespace AAPS.Web
             builder.Services.AddScoped<AAPS.Web.State.SemesterState>();
 
             // Packages
-            builder.Services.AddMudServices();
+            builder.Services.AddMudServices(config =>
+            {
+                // Show snackbars bottom-right so they don't sit on top of the
+                // "Recalculating alerts…" indicator in the top toolbar.
+                config.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.BottomRight;
+            });
 
             // Background services
             builder.Services.AddHostedService<LogCleanupService>();
