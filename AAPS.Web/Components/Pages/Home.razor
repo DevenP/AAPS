@@ -1,10 +1,21 @@
 @page "/"
 @using AAPS.Application.Abstractions.Services
 @inject IDashboardService DashboardService
+@inject IFlagRecalculationService FlagRecalc
+@implements IDisposable
 
 <PageTitle>Home — AAPS</PageTitle>
 
-<MudText Typo="Typo.h5" Class="mb-1">Dashboard</MudText>
+<div style="display:flex;align-items:center;gap:12px;" class="mb-1">
+    <MudText Typo="Typo.h5">Dashboard</MudText>
+    @if (FlagRecalc.IsRunning)
+    {
+        <span style="display:inline-flex;align-items:center;gap:6px;">
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+            <MudText Typo="Typo.caption" Color="Color.Primary">Recalculating alerts…</MudText>
+        </span>
+    }
+</div>
 <MudText Typo="Typo.body2" Class="mud-text-secondary mb-5">Welcome to the AAPS Portal</MudText>
 
 @* Stat Cards *@
@@ -388,6 +399,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        FlagRecalc.StateChanged += OnFlagStateChanged;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
         var statsTask       = DashboardService.GetStatsAsync();
         var alertsTask      = DashboardService.GetOperationAlertsAsync(15);
         var discrepancyTask = DashboardService.GetVendorPortalDiscrepanciesAsync(15);
@@ -404,4 +421,15 @@ else
         _expiringApprovals = await expiringTask;
         _expiringLicenses  = await licensesTask;
     }
+
+    // When a background flag recompute finishes, reload the dashboard so the alert counts/lists
+    // reflect the new flags.
+    private void OnFlagStateChanged() => _ = InvokeAsync(async () =>
+    {
+        if (!FlagRecalc.IsRunning)
+            await LoadAsync();
+        StateHasChanged();
+    });
+
+    public void Dispose() => FlagRecalc.StateChanged -= OnFlagStateChanged;
 }

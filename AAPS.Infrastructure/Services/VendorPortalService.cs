@@ -39,11 +39,13 @@ namespace AAPS.Infrastructure.Services
     {
         private readonly IDbContextFactory<AppDbContext> _factory;
         private readonly ILogger<VendorPortalService> _logger;
+        private readonly IFlagRecalculationService _flagRecalc;
 
-        public VendorPortalService(IDbContextFactory<AppDbContext> factory, ILogger<VendorPortalService> logger)
+        public VendorPortalService(IDbContextFactory<AppDbContext> factory, ILogger<VendorPortalService> logger, IFlagRecalculationService flagRecalc)
         {
             _factory = factory;
             _logger = logger;
+            _flagRecalc = flagRecalc;
         }
 
         private static IEnumerable<VendorPortalDTO> ProjectRaw(IEnumerable<VendorPortalRaw> raw) =>
@@ -155,6 +157,7 @@ namespace AAPS.Infrastructure.Services
 
             _logger.LogInformation("Vendor portal record {Id} created for assign {AssignId}", entity.VendorPortal_Id, dto.AssignmentId);
 
+            _flagRecalc.Request();
             return entity.VendorPortal_Id;
         }
 
@@ -182,6 +185,7 @@ namespace AAPS.Infrastructure.Services
 
             await db.SaveChangesAsync(ct);
 
+            _flagRecalc.Request();
             _logger.LogInformation("Vendor portal record {Id} updated", id);
         }
 
@@ -195,6 +199,7 @@ namespace AAPS.Infrastructure.Services
                 db.VendorPortals.Remove(entity);
                 await db.SaveChangesAsync(ct);
                 _logger.LogInformation("Vendor portal record {Id} deleted", id);
+                _flagRecalc.Request();
             }
         }
 
@@ -210,6 +215,7 @@ namespace AAPS.Infrastructure.Services
             db.VendorPortals.RemoveRange(entities);
             await db.SaveChangesAsync(ct);
             _logger.LogInformation("Deleted {Count} vendor portal records", entities.Count);
+            _flagRecalc.Request();
         }
 
         public async Task ReplaceEntryIdAsync(IEnumerable<int> ids, int newEntryId, CancellationToken ct = default)
@@ -223,6 +229,7 @@ namespace AAPS.Infrastructure.Services
                 entity.Entry_Id = newEntryId;
             await db.SaveChangesAsync(ct);
 
+            _flagRecalc.Request();
             _logger.LogInformation("Replaced Entry_Id with {NewEntryId} on {Count} vendor portal records", newEntryId, entities.Count);
         }
 

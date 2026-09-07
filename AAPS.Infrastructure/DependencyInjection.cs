@@ -51,6 +51,9 @@ namespace AAPS.Infrastructure
             services.AddScoped<IImportService, ImportService>();
             services.AddScoped<IDashboardService, DashboardService>();
 
+            // Background alert-flag recompute - singleton so one coalesced worker serves everyone.
+            services.AddSingleton<IFlagRecalculationService, FlagRecalculationService>();
+
             // Reports - logo path resolved at registration time via IWebHostEnvironment
             services.AddScoped<IConsentReportService, ConsentReportService>();
             services.AddScoped<IStatementService, StatementService>();

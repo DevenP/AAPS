@@ -10,6 +10,8 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject ILogger<OperationsList> Logger
+@inject IFlagRecalculationService FlagRecalc
+@implements IDisposable
 
 <div style="position:sticky;top:0;z-index:200;background:var(--mud-palette-surface);border-bottom:1px solid var(--mud-palette-divider);padding:2px 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
     <MudText Typo="Typo.caption" Style="font-weight:700;opacity:0.5;letter-spacing:.05em;">ALERT LEGEND</MudText>
@@ -22,6 +24,13 @@
     <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.MoneyOff"        Color="Color.Warning" Size="Size.Small" /><MudText Typo="Typo.caption">Missing Billing Rate</MudText></span>
     <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.MoneyOff"        Color="Color.Warning" Size="Size.Small" /><MudText Typo="Typo.caption">Missing Provider Rate</MudText></span>
     <span style="display:inline-flex;align-items:center;gap:4px;"><MudIcon Icon="@Icons.Material.Filled.LinkOff"         Color="Color.Info"    Size="Size.Small" /><MudText Typo="Typo.caption">Missing Assignment ID</MudText></span>
+    @if (FlagRecalc.IsRunning)
+    {
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;">
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+            <MudText Typo="Typo.caption" Color="Color.Primary">Recalculating alerts…</MudText>
+        </span>
+    }
 </div>
 
 <GenericGrid TItem="OperationsDTO"
@@ -229,6 +238,19 @@
 
 @code {
     private GenericGrid<OperationsDTO> _grid = default!;
+
+    protected override void OnInitialized() => FlagRecalc.StateChanged += OnFlagStateChanged;
+
+    // Fired (on a background thread) when a recompute starts or finishes. Marshal back to the
+    // circuit: refresh the grid so the flags update once it's done, and repaint the chip either way.
+    private void OnFlagStateChanged() => _ = InvokeAsync(async () =>
+    {
+        if (!FlagRecalc.IsRunning && _grid is not null)
+            await _grid.ReloadServerData();
+        StateHasChanged();
+    });
+
+    public void Dispose() => FlagRecalc.StateChanged -= OnFlagStateChanged;
 
     private static string DN(string prop) =>
         typeof(OperationsDTO).GetProperty(prop)?.GetDisplayName() ?? prop;

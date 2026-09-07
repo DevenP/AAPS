@@ -14,11 +14,13 @@ public class SesiService : ISesiService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly ILogger<SesiService> _logger;
+    private readonly IFlagRecalculationService _flagRecalc;
 
-    public SesiService(IDbContextFactory<AppDbContext> factory, ILogger<SesiService> logger)
+    public SesiService(IDbContextFactory<AppDbContext> factory, ILogger<SesiService> logger, IFlagRecalculationService flagRecalc)
     {
         _factory = factory;
         _logger = logger;
+        _flagRecalc = flagRecalc;
     }
 
     public async Task<PagedResult<SesiDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
@@ -165,6 +167,7 @@ public class SesiService : ISesiService
 
         _logger.LogInformation("Sesi {Id} created for student {StudentId}", entity.Sesis_Id, dto.StudentId);
 
+        _flagRecalc.Request();
         return entity.Sesis_Id;
     }
 
@@ -224,6 +227,7 @@ public class SesiService : ISesiService
 
         await db.SaveChangesAsync(ct);
 
+        _flagRecalc.Request();
         _logger.LogInformation("Sesi {Id} updated", id);
     }
 
@@ -237,6 +241,7 @@ public class SesiService : ISesiService
             db.Seses.Remove(entity);
             await db.SaveChangesAsync(ct);
             _logger.LogInformation("Sesi {Id} deleted", id);
+            _flagRecalc.Request();
         }
     }
 
@@ -576,7 +581,7 @@ public class SesiService : ISesiService
         }
 
         await db.SaveChangesAsync(ct);
-        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        _flagRecalc.Request();
         _logger.LogInformation("BulkUpdate complete");
     }
 
@@ -643,7 +648,7 @@ public class SesiService : ISesiService
             e.Entry_Id = null;
 
         await db.SaveChangesAsync(ct);
-        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        _flagRecalc.Request();
         _logger.LogInformation("BulkUnlinkApprovalId complete");
     }
 
@@ -662,7 +667,7 @@ public class SesiService : ISesiService
 
         db.Seses.RemoveRange(entities);
         await db.SaveChangesAsync(ct);
-        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        _flagRecalc.Request();
         _logger.LogInformation("BulkDeleteProviderBilling complete");
         return entities.Count;
     }
@@ -734,6 +739,7 @@ public class SesiService : ISesiService
 
         db.Mandates.Remove(mandate);
         await db.SaveChangesAsync(ct);
+        _flagRecalc.Request();
     }
 
     public async Task<(DateTime? Start, DateTime? End)?> GetMandateDatesAsync(int entryId, CancellationToken ct = default)

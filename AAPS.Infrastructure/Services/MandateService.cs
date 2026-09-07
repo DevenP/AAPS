@@ -14,11 +14,13 @@ public class MandateService : IMandateService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly ILogger<MandateService> _logger;
+    private readonly IFlagRecalculationService _flagRecalc;
 
-    public MandateService(IDbContextFactory<AppDbContext> factory, ILogger<MandateService> logger)
+    public MandateService(IDbContextFactory<AppDbContext> factory, ILogger<MandateService> logger, IFlagRecalculationService flagRecalc)
     {
         _factory = factory;
         _logger = logger;
+        _flagRecalc = flagRecalc;
     }
 
     public async Task<PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
@@ -181,6 +183,7 @@ public class MandateService : IMandateService
 
         _logger.LogInformation("Mandate {Id} created for student {StudentId}", entity.Entry_Id, dto.StudentId);
 
+        _flagRecalc.Request();
         return entity.Entry_Id;
     }
 
@@ -227,9 +230,9 @@ public class MandateService : IMandateService
         entity.Service_Start_Date = dto.ServiceStartDate;
         await db.SaveChangesAsync(ct);
 
-        // Recompute the operations alert flags - changing an approval's dates can pull sessions
-        // in or out of its authorized window, which drives the Over Duration flag.
-        await db.Database.ExecuteSqlRawAsync("EXEC OverLapMandate", ct);
+        // Recompute the operations alert flags in the background - changing an approval's dates can
+        // pull sessions in or out of its authorized window, which drives the Over Duration flag.
+        _flagRecalc.Request();
 
         _logger.LogInformation("Mandate {Id} updated", id);
     }
@@ -245,6 +248,7 @@ public class MandateService : IMandateService
             db.Mandates.Remove(entity);
             await db.SaveChangesAsync(ct);
             _logger.LogInformation("Mandate {Id} deleted", id);
+            _flagRecalc.Request();
         }
     }
 
