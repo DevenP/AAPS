@@ -41,7 +41,7 @@
                                   Label="Student ID (OSIS)" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.DateOfBirth" Label="Date of Birth" Clearable="true" />
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.DateOfBirth" Label="Date of Birth" Clearable="true" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudSelect T="string?" @bind-Value="Model.Status"
@@ -143,40 +143,40 @@
         <MudTabPanel Text="Dates" Icon="@Icons.Material.Filled.CalendarMonth">
             <MudGrid>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.EvalReceivedDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.EvalReceivedDate"
                                    Label="Referral Received"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.AssignedDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.AssignedDate"
                                    Label="Assigned"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.AppointmentDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.AppointmentDate"
                                    Label="Appointment"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.EvalDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.EvalDate"
                                    Label="Eval Date"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.ReportReceivedDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.ReportReceivedDate"
                                    Label="Report Received"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.ReportSubmittedDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.ReportSubmittedDate"
                                    Label="Report Submitted"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
             </MudGrid>
         </MudTabPanel>
@@ -195,17 +195,17 @@
                                      HelperText="Auto-filled from Billing Rates — type to override for this record" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.BilledDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.BilledDate"
                                    Label="Billed Date"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker Date="Model.BillPaidDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" Date="Model.BillPaidDate"
                                    DateChanged="@OnBillPaidDateChanged"
                                    Label="Bill Paid Date"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudNumericField T="decimal?" @bind-Value="Model.ProviderPaidAmount"
@@ -217,10 +217,10 @@
                                      Step="0.01m" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDatePicker @bind-Date="Model.ProviderPaidDate"
+                    <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="Model.ProviderPaidDate"
                                    Label="Provider Paid Date"
                                    Clearable="true"
-                                   DateFormat="MM/dd/yyyy" />
+                                   />
                 </MudItem>
             </MudGrid>
         </MudTabPanel>

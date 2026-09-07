@@ -17,9 +17,9 @@
             </MudStack>
         }
 
-        <MudDatePicker @bind-Date="_billed" Label="Billed On" Clearable="true" DateFormat="MM/dd/yyyy" Class="mb-2" />
-        <MudDatePicker @bind-Date="_billedPaidOn" Label="Bill Paid On" Clearable="true" DateFormat="MM/dd/yyyy" Class="mb-2" />
-        <MudDatePicker @bind-Date="_providerPaidOn" Label="Provider Paid On" Clearable="true" DateFormat="MM/dd/yyyy" />
+        <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="_billed" Label="Billed On" Clearable="true" Class="mb-2" />
+        <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="_billedPaidOn" Label="Bill Paid On" Clearable="true" Class="mb-2" />
+        <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="_providerPaidOn" Label="Provider Paid On" Clearable="true" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>

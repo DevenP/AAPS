@@ -95,10 +95,10 @@
 
         <MudGrid Spacing="2">
             <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="_dateOfService"
+                <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="_dateOfService"
                                Label="Date of Service"
                                Clearable="true"
-                               DateFormat="MM/dd/yyyy" />
+                               />
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudTextField @bind-Value="_startTime" Label="Start Time" Clearable="true" />
@@ -135,16 +135,16 @@
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="_mandateStart"
+                <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="_mandateStart"
                                Label="Approval Start Date"
                                Clearable="true"
-                               DateFormat="MM/dd/yyyy" />
+                               />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="_mandateEnd"
+                <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" @bind-Date="_mandateEnd"
                                Label="Approval End Date"
                                Clearable="true"
-                               DateFormat="MM/dd/yyyy" />
+                               />
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudNumericField T="int?"

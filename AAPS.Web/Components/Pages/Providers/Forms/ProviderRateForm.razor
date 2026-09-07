@@ -141,7 +141,7 @@
         <MudItem xs="12" sm="6">
             @if (IsAdd)
             {
-                <MudDatePicker Date="_effectiveDate"
+                <MudDatePicker Editable="true" DateFormat="MM/dd/yyyy" Date="_effectiveDate"
                                DateChanged="@(d => { _effectiveDate = d; Model.EffectiveDate = d; })"
                                Label="Effective Date"
                                Clearable="true"
