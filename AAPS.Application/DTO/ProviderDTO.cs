@@ -31,7 +31,7 @@ public record ProviderDTO
     [DisplayField("NPI", GroupName = "Info")]
     public string? NpiNumber { get; set; }
 
-    [DisplayField("Liability Insurance Date", GroupName = "Compliance")]
+    [DisplayField("Liability Insurance Date", GroupName = "HR & Payroll")]
     public DateTime? LiabilityInsuranceDate { get; set; }
 
     [DisplayField("License", GroupName = "Info")]
@@ -52,28 +52,28 @@ public record ProviderDTO
     [DisplayField("Has PETS", browsable: false)]
     public bool HasPets { get; set; }
 
-    [DisplayField("W9 / W4 Date", GroupName = "Compliance")]
+    [DisplayField("W9 / W4 Date", GroupName = "HR & Payroll")]
     public DateTime? W9Date { get; set; }
 
-    [DisplayField("Direct Deposit Date", GroupName = "Compliance")]
+    [DisplayField("Direct Deposit Date", GroupName = "HR & Payroll")]
     public DateTime? DirectDepositDate { get; set; }
 
-    [DisplayField("Contract Date", GroupName = "Compliance")]
+    [DisplayField("Contract Date", GroupName = "HR & Payroll")]
     public DateTime? ContractDate { get; set; }
 
-    [DisplayField("Photo ID Date", GroupName = "Compliance")]
+    [DisplayField("Photo ID Date", GroupName = "HR & Payroll")]
     public DateTime? PhotoIdDate { get; set; }
 
-    [DisplayField("Resume Date", GroupName = "Compliance")]
+    [DisplayField("Resume Date", GroupName = "HR & Payroll")]
     public DateTime? ResumeDate { get; set; }
 
-    [DisplayField("HR Bundle Date", GroupName = "Compliance")]
+    [DisplayField("HR Bundle Date", GroupName = "HR & Payroll")]
     public DateTime? HrBundleDate { get; set; }
 
-    [DisplayField("Proof of Corp Date", GroupName = "Compliance")]
+    [DisplayField("Proof of Corp Date", GroupName = "HR & Payroll")]
     public DateTime? ProofOfCorpDate { get; set; }
 
-    [DisplayField("Policies Date", GroupName = "Compliance")]
+    [DisplayField("Policies Date", GroupName = "HR & Payroll")]
     public DateTime? PoliciesDate { get; set; }
 
     [DisplayField("Medicaid Date", GroupName = "Compliance")]
