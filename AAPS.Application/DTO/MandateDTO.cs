@@ -40,6 +40,7 @@ public record MandateDTO
     [DisplayField("D75", GroupName = "Student")]
     public string? D75 { get; set; }
 
+    [FilterOptionsSource(FilterSource.ServiceType)]
     [DisplayField("Service Type", GroupName = "Service")]
     public string? ServiceType { get; set; }
 

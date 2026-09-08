@@ -115,6 +115,9 @@ public class ProviderService : IProviderService
                         PoliciesDate = p.Policies,
                         MedicaidDate = p.Medicaid,
                         SexualHarassmentTrainingDate = p.SexualHarassment,
+                        I9Date = p.I9,
+                        ParaHealthAideCertDate = p.ParaHealthAideCert,
+                        HighSchoolDiplomaDate = p.HighSchoolDiploma,
                         CorporationName = p.CorpName,
                         ServiceType = p.ServiceType,
                         IsActive = p.Status == ProviderStatus.Active ? true : false,
@@ -391,6 +394,9 @@ public class ProviderService : IProviderService
         p.Policies = dto.PoliciesDate;
         p.Medicaid = dto.MedicaidDate;
         p.SexualHarassment = dto.SexualHarassmentTrainingDate;
+        p.I9 = dto.I9Date;
+        p.ParaHealthAideCert = dto.ParaHealthAideCertDate;
+        p.HighSchoolDiploma = dto.HighSchoolDiplomaDate;
         p.BlExt = dto.BlExtDate;
         p.Langs = dto.Languages;
         p.DDInfo = dto.DirectDepositInfo;
@@ -425,6 +431,9 @@ public class ProviderService : IProviderService
         PoliciesDate = p.Policies,
         MedicaidDate = p.Medicaid,
         SexualHarassmentTrainingDate = p.SexualHarassment,
+        I9Date = p.I9,
+        ParaHealthAideCertDate = p.ParaHealthAideCert,
+        HighSchoolDiplomaDate = p.HighSchoolDiploma,
         CorporationName = p.CorpName,
         ServiceType = p.ServiceType,
         IsActive = p.Status == ProviderStatus.Active ? true : false,

@@ -31,60 +31,70 @@ public record ProviderDTO
     [DisplayField("NPI", GroupName = "Info")]
     public string? NpiNumber { get; set; }
 
-    [DisplayField("Liability Insurance Date", browsable: false)]
+    [DisplayField("Liability Insurance Date", GroupName = "Compliance")]
     public DateTime? LiabilityInsuranceDate { get; set; }
 
     [DisplayField("License", GroupName = "Info")]
     public string? License1 { get; set; }
 
-    [DisplayField("License 1 Expiration", browsable: false)]
+    [DisplayField("License 1 Expiration", GroupName = "Compliance")]
     public DateTime? License1Expiration { get; set; }
 
     [DisplayField("License 2", browsable: false)]
     public string? License2 { get; set; }
 
-    [DisplayField("License 2 Expiration", browsable: false)]
+    [DisplayField("License 2 Expiration", GroupName = "Compliance")]
     public DateTime? License2Expiration { get; set; }
 
-    [DisplayField("Medical Date", browsable: false)]
+    [DisplayField("Medical Date", GroupName = "Compliance")]
     public DateTime? MedicalDate { get; set; }
 
     [DisplayField("Has PETS", browsable: false)]
     public bool HasPets { get; set; }
 
-    [DisplayField("W9 / W4 Date", browsable: false)]
+    [DisplayField("W9 / W4 Date", GroupName = "Compliance")]
     public DateTime? W9Date { get; set; }
 
-    [DisplayField("Direct Deposit Date", browsable: false)]
+    [DisplayField("Direct Deposit Date", GroupName = "Compliance")]
     public DateTime? DirectDepositDate { get; set; }
 
-    [DisplayField("Contract Date", browsable: false)]
+    [DisplayField("Contract Date", GroupName = "Compliance")]
     public DateTime? ContractDate { get; set; }
 
-    [DisplayField("Photo ID Date", browsable: false)]
+    [DisplayField("Photo ID Date", GroupName = "Compliance")]
     public DateTime? PhotoIdDate { get; set; }
 
-    [DisplayField("Resume Date", browsable: false)]
+    [DisplayField("Resume Date", GroupName = "Compliance")]
     public DateTime? ResumeDate { get; set; }
 
-    [DisplayField("HR Bundle Date", browsable: false)]
+    [DisplayField("HR Bundle Date", GroupName = "Compliance")]
     public DateTime? HrBundleDate { get; set; }
 
-    [DisplayField("Proof of Corp Date", browsable: false)]
+    [DisplayField("Proof of Corp Date", GroupName = "Compliance")]
     public DateTime? ProofOfCorpDate { get; set; }
 
-    [DisplayField("Policies Date", browsable: false)]
+    [DisplayField("Policies Date", GroupName = "Compliance")]
     public DateTime? PoliciesDate { get; set; }
 
-    [DisplayField("Medicaid Date", browsable: false)]
+    [DisplayField("Medicaid Date", GroupName = "Compliance")]
     public DateTime? MedicaidDate { get; set; }
 
-    [DisplayField("Sexual Harassment Training Date", browsable: false)]
+    [DisplayField("Sexual Harassment Training Date", GroupName = "Compliance")]
     public DateTime? SexualHarassmentTrainingDate { get; set; }
+
+    [DisplayField("I-9 Date", GroupName = "Compliance")]
+    public DateTime? I9Date { get; set; }
+
+    [DisplayField("Para / Health Aide Training Certificate Date", GroupName = "Compliance")]
+    public DateTime? ParaHealthAideCertDate { get; set; }
+
+    [DisplayField("High School Diploma Date", GroupName = "Compliance")]
+    public DateTime? HighSchoolDiplomaDate { get; set; }
 
     [DisplayField("Corp Name", GroupName = "Info")]
     public string? CorporationName { get; set; }
 
+    [FilterOptionsSource(FilterSource.ServiceType)]
     [DisplayField("Service Type", GroupName = "Service")]
     public string? ServiceType { get; set; }
 
@@ -103,7 +113,7 @@ public record ProviderDTO
     [DisplayField("Zipcode", browsable: false)]
     public string? Zipcode { get; set; }
 
-    [DisplayField("BL Ext Date", browsable: false)]
+    [DisplayField("BL Ext Date", GroupName = "Compliance")]
     public DateTime? BlExtDate { get; set; }
 
     [DisplayField("Languages", browsable: false)]

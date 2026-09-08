@@ -92,6 +92,15 @@ public partial class Provider
     [Column(TypeName = "datetime")]
     public DateTime? SexualHarassment { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? I9 { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? ParaHealthAideCert { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? HighSchoolDiploma { get; set; }
+
     [StringLength(50)]
     [Unicode(false)]
     public string? CorpName { get; set; }

@@ -37,6 +37,7 @@ public record ProviderBillingDTO
     [DisplayField("Duration", GroupName = "Service")]
     public string? Duration { get; set; }
 
+    [FilterOptionsSource(FilterSource.ServiceType)]
     [DisplayField("Service Type", GroupName = "Service")]
     public string? ServiceType { get; set; }
 

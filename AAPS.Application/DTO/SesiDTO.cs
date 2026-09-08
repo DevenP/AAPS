@@ -64,6 +64,7 @@ public record SesiDTO
     [DisplayField("Service Date", GroupName = "Service")]
     public DateTime? DateOfService { get; set; }
 
+    [FilterOptionsSource(FilterSource.ServiceType)]
     [DisplayField("Service Type", GroupName = "Service")]
     public string? ServiceType { get; set; }
 
