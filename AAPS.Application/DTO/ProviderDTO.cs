@@ -49,7 +49,7 @@ public record ProviderDTO
     [DisplayField("Medical Date", GroupName = "Compliance")]
     public DateTime? MedicalDate { get; set; }
 
-    [DisplayField("Has PETS", browsable: false)]
+    [DisplayField("Has PETS", GroupName = "Info")]
     public bool HasPets { get; set; }
 
     [DisplayField("W9 / W4 Date", GroupName = "HR & Payroll")]

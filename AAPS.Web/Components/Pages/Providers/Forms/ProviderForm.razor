@@ -83,6 +83,12 @@
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.NpiNumber" Label="NPI Number" MaxLength="10" />
             </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="Model.HasPets" T="bool" Label="Has PETS" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="bool" Value="true">Yes</MudSelectItem>
+                    <MudSelectItem T="bool" Value="false">No</MudSelectItem>
+                </MudSelect>
+            </MudItem>
         </MudGrid>
     </MudTabPanel>
 
@@ -183,9 +189,6 @@
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Model.Languages" Label="Languages" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudCheckBox @bind-Value="Model.HasPets" Label="Has PETS?" Color="Color.Primary" />
             </MudItem>
         </MudGrid>
     </MudTabPanel>
