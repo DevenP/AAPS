@@ -13,10 +13,10 @@
 <GenericGrid @ref="_grid" TItem="EvalDTO"
              Title="Evaluations"
              DefaultSortLabel="StudentLastName"
-             Columns="@(new[] { "Actions", "StudentLastName", "StudentFirstName", "StudentId", "District", "ServiceType", "Language", "Phone", "ParentLastName", "ParentFirstName", "EvalReceivedDate", "ProviderLastName", "AssignedDate", "AppointmentDate", "ReportReceivedDate", "EvalDate", "ReportSubmittedDate", "Status", "Contact", "BillPaidDate", "Voucher", "PaidAmount", "Balance", "PaymentStatus" })"
+             Columns="@(new[] { "Actions", "StudentLastName", "StudentFirstName", "StudentId", "District", "ServiceType", "Language", "Phone", "ParentLastName", "ParentFirstName", "EvalReceivedDate", "ProviderLastName", "ProviderFirstName", "AssignedDate", "AppointmentDate", "ReportReceivedDate", "EvalDate", "ReportSubmittedDate", "Status", "Contact", "BillPaidDate", "Voucher", "PaidAmount", "Balance", "PaymentStatus" })"
              GetData="EvalService.GetPagedAsync"
              ShowSemesterFilter="true"
-             ExportHeaders="@(new[] { DN(nameof(EvalDTO.StudentLastName)), DN(nameof(EvalDTO.StudentFirstName)), DN(nameof(EvalDTO.StudentId)), DN(nameof(EvalDTO.District)), DN(nameof(EvalDTO.ServiceType)), DN(nameof(EvalDTO.Language)), DN(nameof(EvalDTO.Phone)), DN(nameof(EvalDTO.ParentLastName)), DN(nameof(EvalDTO.ParentFirstName)), DN(nameof(EvalDTO.EvalReceivedDate)), DN(nameof(EvalDTO.ProviderLastName)), DN(nameof(EvalDTO.AssignedDate)), DN(nameof(EvalDTO.AppointmentDate)), DN(nameof(EvalDTO.ReportReceivedDate)), DN(nameof(EvalDTO.EvalDate)), DN(nameof(EvalDTO.ReportSubmittedDate)), DN(nameof(EvalDTO.Status)), DN(nameof(EvalDTO.Contact)), DN(nameof(EvalDTO.BillPaidDate)), DN(nameof(EvalDTO.Voucher)), DN(nameof(EvalDTO.PaidAmount)), DN(nameof(EvalDTO.Balance)), DN(nameof(EvalDTO.PaymentStatus)) })"
+             ExportHeaders="@(new[] { DN(nameof(EvalDTO.StudentLastName)), DN(nameof(EvalDTO.StudentFirstName)), DN(nameof(EvalDTO.StudentId)), DN(nameof(EvalDTO.District)), DN(nameof(EvalDTO.ServiceType)), DN(nameof(EvalDTO.Language)), DN(nameof(EvalDTO.Phone)), DN(nameof(EvalDTO.ParentLastName)), DN(nameof(EvalDTO.ParentFirstName)), DN(nameof(EvalDTO.EvalReceivedDate)), "Provider", DN(nameof(EvalDTO.AssignedDate)), DN(nameof(EvalDTO.AppointmentDate)), DN(nameof(EvalDTO.ReportReceivedDate)), DN(nameof(EvalDTO.EvalDate)), DN(nameof(EvalDTO.ReportSubmittedDate)), DN(nameof(EvalDTO.Status)), DN(nameof(EvalDTO.Contact)), DN(nameof(EvalDTO.BillPaidDate)), DN(nameof(EvalDTO.Voucher)), DN(nameof(EvalDTO.PaidAmount)), DN(nameof(EvalDTO.Balance)), DN(nameof(EvalDTO.PaymentStatus)) })"
              ExportMapper="@(e => new object?[] { e.StudentLastName, e.StudentFirstName, e.StudentId, e.District, e.ServiceType, e.Language, e.Phone, e.ParentLastName, e.ParentFirstName, e.EvalReceivedDate?.ToString("MM/dd/yyyy"), ProviderDisplay(e), e.AssignedDate?.ToString("MM/dd/yyyy"), e.AppointmentDate?.ToString("MM/dd/yyyy"), e.ReportReceivedDate?.ToString("MM/dd/yyyy"), e.EvalDate?.ToString("MM/dd/yyyy"), e.ReportSubmittedDate?.ToString("MM/dd/yyyy"), e.Status, e.Contact, e.BillPaidDate?.ToString("MM/dd/yyyy"), e.Voucher, e.PaidAmount, e.Balance, e.PaymentStatus })">
 
     <CustomActionContent>
@@ -63,7 +63,7 @@
             <MudTableSortLabel SortLabel="EvalReceivedDate" T="EvalDTO">@_grid?.GetDisplayName("EvalReceivedDate")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="EvalDTO" Column="ProviderLastName" IsHeader="true">
-            <MudTableSortLabel SortLabel="ProviderLastName" T="EvalDTO">@_grid?.GetDisplayName("ProviderLastName")</MudTableSortLabel>
+            <MudTableSortLabel SortLabel="ProviderLastName" T="EvalDTO">Provider</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="EvalDTO" Column="AssignedDate" IsHeader="true">
             <MudTableSortLabel SortLabel="AssignedDate" T="EvalDTO">@_grid?.GetDisplayName("AssignedDate")</MudTableSortLabel>

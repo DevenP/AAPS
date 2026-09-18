@@ -45,7 +45,10 @@ public class EvalService : IEvalService
                 (ev.ServiceType != null && ev.ServiceType.Contains(term)) ||
                 (ev.Contact != null && ev.Contact.Contains(term)) ||
                 (ev.Memo != null && ev.Memo.Contains(term)) ||
-                (ev.Status != null && ev.Status.Contains(term)));
+                (ev.Status != null && ev.Status.Contains(term)) ||
+                db.Providers.Any(p => p.Provider_Id == ev.Provider_Id &&
+                    ((p.FirstName != null && p.FirstName.Contains(term)) ||
+                     (p.LastName != null && p.LastName.Contains(term)))));
         }
 
         if (request.DateFrom.HasValue) baseQuery = baseQuery.Where(ev => ev.EvalDate >= request.DateFrom);

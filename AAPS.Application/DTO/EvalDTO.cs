@@ -49,10 +49,10 @@ public record EvalDTO
     [DisplayField("Provider ID", browsable: false)]
     public int? ProviderId { get; set; }
 
-    [DisplayField("Provider First Name", browsable: false)]
+    [DisplayField("Provider First Name", GroupName = "Provider")]
     public string? ProviderFirstName { get; set; }
 
-    [DisplayField("Provider", GroupName = "Provider")]
+    [DisplayField("Provider Last Name", GroupName = "Provider")]
     public string? ProviderLastName { get; set; }
 
     [DisplayField("Unassigned Provider", GroupName = "Provider")]
