@@ -202,6 +202,7 @@ else
                                     @if (context.IsOverMandate)  { <MudTooltip Text="Over Mandate"><MudIcon Icon="@Icons.Material.Filled.LibraryAddCheck" Color="Color.Error" Size="Size.Small" /></MudTooltip> }
                                     @if (context.IsOverDuration) { <MudTooltip Text="Over Duration"><MudIcon Icon="@Icons.Material.Filled.TimerOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
                                     @if (context.IsUnderGroup)   { <MudTooltip Text="Under Group Size"><MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Small" /></MudTooltip> }
+                                    @if (context.IsOverDailyCap) { <MudTooltip Text="Over Daily Cap"><MudIcon Icon="@Icons.Material.Filled.HourglassDisabled" Color="Color.Error" Size="Size.Small" /></MudTooltip> }
                                     @if (context.BRateFlag)      { <MudTooltip Text="Missing Billing Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
                                     @if (context.PRateFlag)      { <MudTooltip Text="Missing Provider Rate"><MudIcon Icon="@Icons.Material.Filled.MoneyOff" Color="Color.Warning" Size="Size.Small" /></MudTooltip> }
                                 </div>

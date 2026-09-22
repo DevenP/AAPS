@@ -154,4 +154,7 @@ public record SesiDTO
 
     [DisplayField("Under Group Size", GroupName = "Alerts")]
     public bool IsUnderGroup { get; set; }
+
+    [DisplayField("Over Daily Cap", GroupName = "Alerts")]
+    public bool IsOverDailyCap { get; set; }
 }

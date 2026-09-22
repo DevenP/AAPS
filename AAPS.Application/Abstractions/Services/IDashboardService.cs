@@ -25,6 +25,7 @@ public record OperationAlertItem
     public bool IsOverMandate { get; init; }
     public bool IsOverDuration { get; init; }
     public bool IsUnderGroup { get; init; }
+    public bool IsOverDailyCap { get; init; }
     public bool BRateFlag { get; init; }
     public bool PRateFlag { get; init; }
 }

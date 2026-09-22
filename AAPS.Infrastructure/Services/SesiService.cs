@@ -335,6 +335,7 @@ public class SesiService : ISesiService
                 IsOverlap = s.Overlap ?? false,
                 IsOverMandate = s.OverMandate ?? false,
                 IsUnderGroup = s.UnderGroup ?? false,
+                IsOverDailyCap = s.OverDailyCap ?? false,
 
                 LanguageProvided = s.Language_Provided,
                 ActualSize = s.Actual_Size,
@@ -828,7 +829,8 @@ public class SesiService : ISesiService
         VoucherBalancePaid = s.VoucherBalancePaid,
         IsOverMandate = s.OverMandate ?? false,
         IsOverDuration = s.OverDuration ?? false,
-        IsUnderGroup = s.UnderGroup ?? false
+        IsUnderGroup = s.UnderGroup ?? false,
+        IsOverDailyCap = s.OverDailyCap ?? false
     };
 
 }
