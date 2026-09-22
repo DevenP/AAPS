@@ -53,6 +53,9 @@ public record MandateDTO
     [DisplayField("Dur", GroupName = "Service")]
     public string? Duration { get; set; }
 
+    [DisplayField("Daily Cap (min)", GroupName = "Service")]
+    public int? DailyCapMinutes { get; set; }
+
     [DisplayField("Service Location", GroupName = "Service")]
     public string? ServiceLocation { get; set; }
 

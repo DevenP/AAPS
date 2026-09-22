@@ -116,6 +116,7 @@ public class MandateService : IMandateService
                         FileName = m.FileName,
                         RowNumber = m.RowNumber,
                         ServiceStartDate = m.Service_Start_Date,
+                        DailyCapMinutes = m.DailyCapMinutes,
                         IsMismatched = !assignedIds.Contains(m.Entry_Id)
                     };
 
@@ -173,7 +174,8 @@ public class MandateService : IMandateService
             MandateEnd = dto.MandateEnd,
             FileName = dto.FileName,
             RowNumber = dto.RowNumber,
-            Service_Start_Date = dto.ServiceStartDate
+            Service_Start_Date = dto.ServiceStartDate,
+            DailyCapMinutes = dto.DailyCapMinutes
         };
         _logger.LogInformation("Creating mandate for student {StudentId} ({LastName}, {FirstName})",
             dto.StudentId, dto.LastName, dto.FirstName);
@@ -228,6 +230,7 @@ public class MandateService : IMandateService
         entity.FileName = dto.FileName;
         entity.RowNumber = dto.RowNumber;
         entity.Service_Start_Date = dto.ServiceStartDate;
+        entity.DailyCapMinutes = dto.DailyCapMinutes;
         await db.SaveChangesAsync(ct);
 
         // Recompute the operations alert flags in the background - changing an approval's dates can
@@ -290,6 +293,7 @@ public class MandateService : IMandateService
         FileName = m.FileName,
         RowNumber = m.RowNumber,
         ServiceStartDate = m.Service_Start_Date,
+        DailyCapMinutes = m.DailyCapMinutes,
     };
 
 }

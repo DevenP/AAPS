@@ -1,0 +1,46 @@
+@using AAPS.Application.DTO
+
+<MudDialog>
+    <DialogContent>
+        @if (Item != null)
+        {
+            <MudStack Spacing="0" Class="mb-3">
+                <MudText Typo="Typo.subtitle2">@CombineName(Item.LastName, Item.FirstName)</MudText>
+                <MudText Typo="Typo.body2">
+                    @Item.StudentId &nbsp;|&nbsp; @Item.ServiceType &nbsp;|&nbsp; @Item.Duration
+                </MudText>
+            </MudStack>
+
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                This is the most minutes that may be billed in a single day for this approval.
+                Any day that goes over is held in full until the cap is raised; once alerts recalculate,
+                days that now fit within the cap become billable again.
+            </MudAlert>
+
+            <MudNumericField @bind-Value="_cap" Label="Daily Cap (minutes)" Min="0" Max="1440"
+                             Variant="Variant.Outlined" HideSpinButtons="false" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    /// <summary>The approval whose daily cap is being edited.</summary>
+    [Parameter] public MandateDTO? Item { get; set; }
+
+    private int? _cap;
+
+    protected override void OnInitialized() => _cap = Item?.DailyCapMinutes;
+
+    private static string CombineName(string? last, string? first) =>
+        string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(_cap));
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -3,19 +3,25 @@
 @using AAPS.Application.Common.Extensions
 @using AAPS.Application.DTO
 @using AAPS.Web.Components.Shared
+@using AAPS.Web.Components.Pages.Mandates.Forms
 @using System.Reflection
 @inject IMandateService MandateService
+@inject IDialogService DialogService
+@inject IFlagRecalculationService FlagRecalc
+@inject ISnackbar Snackbar
+@inject ILogger<MandateList> Logger
 
 <GenericGrid @ref="_grid" TItem="MandateDTO"
              Title="Approvals"
              DefaultSortLabel="LastName"
-             Columns="@(new[] { "IsMismatched", "ConferenceDate", "StudentId", "LastName", "HomeDistrict", "Cse", "CseDistrict", "Grade", "DateOfBirth", "AdminDbn", "D75", "ServiceType", "Language", "GroupSize", "Duration", "ServiceLocation", "RemainingFrequency", "Provider", "FirstAttendDate", "MandateId", "PrimaryPhone1", "PrimaryPhone2", "MandateStart", "MandateEnd", "FileName", "RowNumber", "ServiceStartDate", "IepType", "SchoolName", "AgencyName", "AuthPhysicalDbn", "AssignmentId", "ParentLastName", "ParentEmail" })"
+             Columns="@(new[] { "Actions", "IsMismatched", "ConferenceDate", "StudentId", "LastName", "HomeDistrict", "Cse", "CseDistrict", "Grade", "DateOfBirth", "AdminDbn", "D75", "ServiceType", "Language", "GroupSize", "Duration", "DailyCap", "ServiceLocation", "RemainingFrequency", "Provider", "FirstAttendDate", "MandateId", "PrimaryPhone1", "PrimaryPhone2", "MandateStart", "MandateEnd", "FileName", "RowNumber", "ServiceStartDate", "IepType", "SchoolName", "AgencyName", "AuthPhysicalDbn", "AssignmentId", "ParentLastName", "ParentEmail" })"
              GetData="MandateService.GetPagedAsync"
              ShowSemesterFilter="true"
-             ExportHeaders="@(new[] { DN(nameof(MandateDTO.IsMismatched)), DN(nameof(MandateDTO.ConferenceDate)), DN(nameof(MandateDTO.StudentId)), DN(nameof(MandateDTO.LastName)), DN(nameof(MandateDTO.HomeDistrict)), DN(nameof(MandateDTO.Cse)), DN(nameof(MandateDTO.CseDistrict)), DN(nameof(MandateDTO.Grade)), DN(nameof(MandateDTO.DateOfBirth)), DN(nameof(MandateDTO.AdminDbn)), DN(nameof(MandateDTO.D75)), DN(nameof(MandateDTO.ServiceType)), DN(nameof(MandateDTO.Language)), DN(nameof(MandateDTO.GroupSize)), DN(nameof(MandateDTO.Duration)), DN(nameof(MandateDTO.ServiceLocation)), DN(nameof(MandateDTO.RemainingFrequency)), DN(nameof(MandateDTO.Provider)), DN(nameof(MandateDTO.FirstAttendDate)), DN(nameof(MandateDTO.MandateId)), DN(nameof(MandateDTO.PrimaryPhone1)), DN(nameof(MandateDTO.PrimaryPhone2)), DN(nameof(MandateDTO.MandateStart)), DN(nameof(MandateDTO.MandateEnd)), DN(nameof(MandateDTO.FileName)), DN(nameof(MandateDTO.RowNumber)), DN(nameof(MandateDTO.ServiceStartDate)), DN(nameof(MandateDTO.IepType)), DN(nameof(MandateDTO.SchoolName)), DN(nameof(MandateDTO.AgencyName)), DN(nameof(MandateDTO.AuthPhysicalDbn)), DN(nameof(MandateDTO.AssignmentId)), DN(nameof(MandateDTO.ParentLastName)), DN(nameof(MandateDTO.ParentEmail)) })"
-             ExportMapper="@(m => new object?[] { m.IsMismatched, m.ConferenceDate?.ToString("MM/dd/yyyy"), m.StudentId, CombineName(m.LastName, m.FirstName), m.HomeDistrict, m.Cse, m.CseDistrict, m.Grade, m.DateOfBirth?.ToString("MM/dd/yyyy"), m.AdminDbn, m.D75, m.ServiceType, m.Language, m.GroupSize, m.Duration, m.ServiceLocation, m.RemainingFrequency, m.Provider, m.FirstAttendDate?.ToString("MM/dd/yyyy"), m.MandateId, m.PrimaryPhone1, m.PrimaryPhone2, m.MandateStart?.ToString("MM/dd/yyyy"), m.MandateEnd?.ToString("MM/dd/yyyy"), m.FileName, m.RowNumber, m.ServiceStartDate?.ToString("MM/dd/yyyy"), m.IepType, m.SchoolName, m.AgencyName, m.AuthPhysicalDbn, m.AssignmentId, CombineName(m.ParentLastName, m.ParentFirstName), m.ParentEmail })">
+             ExportHeaders="@(new[] { DN(nameof(MandateDTO.IsMismatched)), DN(nameof(MandateDTO.ConferenceDate)), DN(nameof(MandateDTO.StudentId)), DN(nameof(MandateDTO.LastName)), DN(nameof(MandateDTO.HomeDistrict)), DN(nameof(MandateDTO.Cse)), DN(nameof(MandateDTO.CseDistrict)), DN(nameof(MandateDTO.Grade)), DN(nameof(MandateDTO.DateOfBirth)), DN(nameof(MandateDTO.AdminDbn)), DN(nameof(MandateDTO.D75)), DN(nameof(MandateDTO.ServiceType)), DN(nameof(MandateDTO.Language)), DN(nameof(MandateDTO.GroupSize)), DN(nameof(MandateDTO.Duration)), DN(nameof(MandateDTO.DailyCapMinutes)), DN(nameof(MandateDTO.ServiceLocation)), DN(nameof(MandateDTO.RemainingFrequency)), DN(nameof(MandateDTO.Provider)), DN(nameof(MandateDTO.FirstAttendDate)), DN(nameof(MandateDTO.MandateId)), DN(nameof(MandateDTO.PrimaryPhone1)), DN(nameof(MandateDTO.PrimaryPhone2)), DN(nameof(MandateDTO.MandateStart)), DN(nameof(MandateDTO.MandateEnd)), DN(nameof(MandateDTO.FileName)), DN(nameof(MandateDTO.RowNumber)), DN(nameof(MandateDTO.ServiceStartDate)), DN(nameof(MandateDTO.IepType)), DN(nameof(MandateDTO.SchoolName)), DN(nameof(MandateDTO.AgencyName)), DN(nameof(MandateDTO.AuthPhysicalDbn)), DN(nameof(MandateDTO.AssignmentId)), DN(nameof(MandateDTO.ParentLastName)), DN(nameof(MandateDTO.ParentEmail)) })"
+             ExportMapper="@(m => new object?[] { m.IsMismatched, m.ConferenceDate?.ToString("MM/dd/yyyy"), m.StudentId, CombineName(m.LastName, m.FirstName), m.HomeDistrict, m.Cse, m.CseDistrict, m.Grade, m.DateOfBirth?.ToString("MM/dd/yyyy"), m.AdminDbn, m.D75, m.ServiceType, m.Language, m.GroupSize, m.Duration, m.DailyCapMinutes, m.ServiceLocation, m.RemainingFrequency, m.Provider, m.FirstAttendDate?.ToString("MM/dd/yyyy"), m.MandateId, m.PrimaryPhone1, m.PrimaryPhone2, m.MandateStart?.ToString("MM/dd/yyyy"), m.MandateEnd?.ToString("MM/dd/yyyy"), m.FileName, m.RowNumber, m.ServiceStartDate?.ToString("MM/dd/yyyy"), m.IepType, m.SchoolName, m.AgencyName, m.AuthPhysicalDbn, m.AssignmentId, CombineName(m.ParentLastName, m.ParentFirstName), m.ParentEmail })">
 
     <HeaderContent>
+        <GridCell TItem="MandateDTO" Column="Actions" IsHeader="true"></GridCell>
         <GridCell TItem="MandateDTO" Column="IsMismatched" IsHeader="true">
             <MudTableSortLabel SortLabel="IsMismatched" T="MandateDTO">@_grid?.GetDisplayName("IsMismatched")</MudTableSortLabel>
         </GridCell>
@@ -60,6 +66,9 @@
         </GridCell>
         <GridCell TItem="MandateDTO" Column="Duration" IsHeader="true">
             <MudTableSortLabel SortLabel="Duration" T="MandateDTO">@_grid?.GetDisplayName("Duration")</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="MandateDTO" Column="DailyCap" IsHeader="true">
+            <MudTableSortLabel SortLabel="DailyCapMinutes" T="MandateDTO">@_grid?.GetDisplayName("DailyCapMinutes")</MudTableSortLabel>
         </GridCell>
         <GridCell TItem="MandateDTO" Column="ServiceLocation" IsHeader="true">
             <MudTableSortLabel SortLabel="ServiceLocation" T="MandateDTO">@_grid?.GetDisplayName("ServiceLocation")</MudTableSortLabel>
@@ -121,6 +130,17 @@
     </HeaderContent>
 
     <RowTemplate Context="m">
+        <GridCell TItem="MandateDTO" Column="Actions">
+            @if (m.DailyCapMinutes.HasValue)
+            {
+                <MudTooltip Text="Edit Daily Cap">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => OpenCapDialog(m))" />
+                </MudTooltip>
+            }
+        </GridCell>
         <GridCell TItem="MandateDTO" Column="IsMismatched">@m.IsMismatched</GridCell>
         <GridCell TItem="MandateDTO" Column="ConferenceDate">@m.ConferenceDate?.ToString("MM/dd/yyyy")</GridCell>
         <GridCell TItem="MandateDTO" Column="StudentId">@m.StudentId</GridCell>
@@ -136,6 +156,7 @@
         <GridCell TItem="MandateDTO" Column="Language">@m.Language</GridCell>
         <GridCell TItem="MandateDTO" Column="GroupSize">@m.GroupSize</GridCell>
         <GridCell TItem="MandateDTO" Column="Duration">@m.Duration</GridCell>
+        <GridCell TItem="MandateDTO" Column="DailyCap">@m.DailyCapMinutes</GridCell>
         <GridCell TItem="MandateDTO" Column="ServiceLocation">@m.ServiceLocation</GridCell>
         <GridCell TItem="MandateDTO" Column="RemainingFrequency">@m.RemainingFrequency</GridCell>
         <GridCell TItem="MandateDTO" Column="Provider">@m.Provider</GridCell>
@@ -166,4 +187,41 @@
 
     private static string CombineName(string? last, string? first) =>
         string.IsNullOrEmpty(first) ? last ?? "" : $"{last}, {first}";
+
+    private async Task OpenCapDialog(MandateDTO m)
+    {
+        var parameters = new DialogParameters<MandateCapDialog> { { x => x.Item, m } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<MandateCapDialog>("Edit Daily Cap", parameters, options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled) return;
+
+        var newCap = result.Data as int?;
+        if (newCap == m.DailyCapMinutes) return;
+
+        try
+        {
+            var full = await MandateService.GetByIdAsync(m.Id);
+            if (full is null)
+            {
+                Snackbar.Add("That approval could no longer be found.", Severity.Warning);
+                return;
+            }
+
+            full.DailyCapMinutes = newCap;
+            await MandateService.UpdateAsync(m.Id, full);
+
+            // The daily-cap flag is computed by the overlap/mandate recompute, so kick it off to
+            // release (or hold) days against the new cap.
+            FlagRecalc.Request();
+
+            Snackbar.Add("Daily cap updated. Alerts will refresh in a moment.", Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update daily cap for mandate {Id}", m.Id);
+            Snackbar.Add("Could not update the daily cap.", Severity.Error);
+        }
+    }
 }
