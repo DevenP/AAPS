@@ -15,6 +15,8 @@ public partial class AppDbContext : DbContext, IAppDbContext
     {
     }
 
+    public virtual DbSet<SystemSetting> SystemSettings { get; set; }
+
     public virtual DbSet<BillingRate> BillingRates { get; set; }
 
     public virtual DbSet<Eval> Evals { get; set; }

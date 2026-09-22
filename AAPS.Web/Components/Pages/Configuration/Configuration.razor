@@ -16,6 +16,7 @@
             <MudListItem T="string" Value="@("districts")" Icon="@Icons.Material.Filled.Map" Text="Districts" />
             <MudListItem T="string" Value="@("servicetypes")" Icon="@Icons.Material.Filled.Category" Text="Service Types" />
             <MudListItem T="string" Value="@("semesters")" Icon="@Icons.Material.Filled.CalendarMonth" Text="Semesters" />
+            <MudListItem T="string" Value="@("general")" Icon="@Icons.Material.Filled.Settings" Text="General" />
         </MudList>
     </MudPaper>
 
@@ -33,6 +34,9 @@
                 break;
             case "semesters":
                 <SemestersPanel />
+                break;
+            case "general":
+                <GeneralSettingsPanel />
                 break;
         }
     </div>

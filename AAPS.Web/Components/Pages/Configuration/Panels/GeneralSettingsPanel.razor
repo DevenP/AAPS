@@ -1,0 +1,85 @@
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Pages.Configuration.Forms
+@using AAPS.Web.Components.Shared
+@inject ISettingsService SettingsService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<GenericGrid @ref="_grid" TItem="SettingDTO"
+             Title="General Settings"
+             DefaultSortLabel="Key"
+             Columns="@(new[] { "Actions", "Key", "Value", "Description" })"
+             GetData="SettingsService.GetPagedAsync"
+             ExportHeaders="@(new[] { "Key", "Value", "Description" })"
+             ExportMapper="@(s => new object?[] { s.Key, s.Value, s.Description })">
+
+    <HeaderContent>
+        <GridCell TItem="SettingDTO" Column="Actions" IsHeader="true">Actions</GridCell>
+        <GridCell TItem="SettingDTO" Column="Key" IsHeader="true">
+            <MudTableSortLabel SortLabel="Key" T="SettingDTO">Key</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SettingDTO" Column="Value" IsHeader="true">
+            <MudTableSortLabel SortLabel="Value" T="SettingDTO">Value</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="SettingDTO" Column="Description" IsHeader="true">
+            <MudTableSortLabel SortLabel="Description" T="SettingDTO">Description</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="s">
+        <GridCell TItem="SettingDTO" Column="Actions">
+            <MudTooltip Text="Edit Value">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small" Color="Color.Primary"
+                               OnClick="@(() => OpenEditDialog(s))" />
+            </MudTooltip>
+        </GridCell>
+        <GridCell TItem="SettingDTO" Column="Key">@s.Key</GridCell>
+        <GridCell TItem="SettingDTO" Column="Value">@s.Value</GridCell>
+        <GridCell TItem="SettingDTO" Column="Description">@s.Description</GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<SettingDTO>? _grid;
+    private SettingValidator _validator = new();
+
+    private async Task OpenEditDialog(SettingDTO setting)
+    {
+        var fresh = await SettingsService.GetByKeyAsync(setting.Key);
+        if (fresh == null) return;
+
+        var parameters = new DialogParameters<EntityDialog<SettingDTO>>();
+        parameters.Add(x => x.Item, fresh);
+        parameters.Add(x => x.Title, "Edit Setting");
+        parameters.Add(x => x.IsNew, false);
+        parameters.Add(x => x.Validator, _validator.ValidateValue);
+        parameters.Add(x => x.ValidateModel, async (SettingDTO dto) =>
+        {
+            var result = await _validator.ValidateAsync(dto);
+            return (IList<string>)result.Errors.Select(e => e.ErrorMessage).ToList();
+        });
+        parameters.Add(x => x.ChildContent, (SettingDTO context) =>
+            @<SettingForm Model="context" />);
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EntityDialog<SettingDTO>>(" ", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is SettingDTO saved)
+        {
+            try
+            {
+                await SettingsService.SetAsync(saved.Key, saved.Value);
+                Snackbar.Add("Setting updated.", Severity.Success);
+                await _grid!.ReloadServerData();
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("A system error occurred while saving.", Severity.Error);
+            }
+        }
+    }
+}

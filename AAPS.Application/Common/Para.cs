@@ -12,6 +12,9 @@ public static class Para
     // general mandate the DOE bills against.
     public const int FullDayMinutes = 420;
 
+    // Settings key for the configurable 100% school-day length (falls back to FullDayMinutes).
+    public const string FullDayMinutesSettingKey = "Para.FullDayMinutes";
+
     // A service type is a para if it starts with "Para" - covers the approval wording
     // ("Para - Health", "Para - Behavior Support") and the encounter wording ("Paraprofessional").
     public static bool IsPara(string? serviceType) =>
@@ -30,14 +33,15 @@ public static class Para
         return int.TryParse(digits, out var percent) ? percent : null;
     }
 
-    // The minutes a para may bill per day for a given percent duration (100% -> 420, 80% -> 336).
-    // Null when the duration isn't a percent.
-    public static int? DailyCapMinutes(string? duration)
+    // The minutes a para may bill per day for a given percent duration. The 100% basis defaults to
+    // FullDayMinutes (420) but can be overridden with the value configured in Settings
+    // (e.g. 100% -> 420, 80% -> 336). Null when the duration isn't a percent.
+    public static int? DailyCapMinutes(string? duration, int fullDayMinutes = FullDayMinutes)
     {
         var percent = ParsePercent(duration);
         return percent is null
             ? null
-            : (int)Math.Round(FullDayMinutes * percent.Value / 100m, MidpointRounding.AwayFromZero);
+            : (int)Math.Round(fullDayMinutes * percent.Value / 100m, MidpointRounding.AwayFromZero);
     }
 
     // The DOE billing code for a para type. Seeded with the two the client uses so far

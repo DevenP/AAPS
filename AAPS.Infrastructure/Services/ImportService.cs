@@ -15,13 +15,15 @@ public class ImportService : IImportService
 {
     private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly IImportLogService _importLogService;
+    private readonly ISettingsService _settingsService;
     private readonly ImportSettings _settings;
     private readonly ILogger<ImportService> _logger;
 
-    public ImportService(IDbContextFactory<AppDbContext> factory, IImportLogService importLogService, IOptions<ImportSettings> settings, ILogger<ImportService> logger)
+    public ImportService(IDbContextFactory<AppDbContext> factory, IImportLogService importLogService, ISettingsService settingsService, IOptions<ImportSettings> settings, ILogger<ImportService> logger)
     {
         _factory = factory;
         _importLogService = importLogService;
+        _settingsService = settingsService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -612,6 +614,9 @@ public class ImportService : IImportService
             .Select(n => n.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        // The 100% para school-day length is configurable in Settings; the daily cap is a percent of it.
+        int paraFullDay = await _settingsService.GetIntAsync(Para.FullDayMinutesSettingKey, Para.FullDayMinutes, ct);
+
         foreach (var row in preview.ValidRows)
         {
             int i = row.RowNumber; // actual Excel row index
@@ -724,8 +729,9 @@ public class ImportService : IImportService
                     FileName = preview.FileName,
                     RowNumber = i,
                     // Para approvals carry a percent duration (e.g. "100 Percent") - turn it into the
-                    // daily minute cap now. Null for normal minute-based durations.
-                    DailyCapMinutes = Para.DailyCapMinutes(dur)
+                    // daily minute cap now, using the configured 100% day length. Null for normal
+                    // minute-based durations.
+                    DailyCapMinutes = Para.DailyCapMinutes(dur, paraFullDay)
                 };
 
                 db.Mandates.Add(entity);

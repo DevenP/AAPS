@@ -1,0 +1,26 @@
+@using AAPS.Application.DTO
+
+<MudGrid>
+
+    @* The setting itself isn't editable - only its value. *@
+    <MudItem xs="12">
+        <MudTextField Value="@Model.Key" Label="Key"
+                      ReadOnly="true" Variant="Variant.Filled" />
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudTextField Value="@Model.Description" Label="Description"
+                      ReadOnly="true" Variant="Variant.Filled" Lines="2" />
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Model.Value" Label="Value" Required
+                      Validation="@Validator" For="@(() => Model.Value)" />
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    [Parameter] public SettingDTO Model { get; set; } = default!;
+    [CascadingParameter] public Func<object, string, Task<IEnumerable<string>>>? Validator { get; set; }
+}
