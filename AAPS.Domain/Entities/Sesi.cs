@@ -171,6 +171,10 @@ public partial class Sesi
 
     public bool? UnderGroup { get; set; }
 
+    // Para only: the day's billed minutes went over the approval's daily cap, so the whole day is
+    // held as un-billable until the cap is raised.
+    public bool? OverDailyCap { get; set; }
+
     // Current loss/return state (#6/#20): null = normal, "Loss" = written off,
     // "Returned" = funds returned to the DOE. Full trail lives in PaymentTransaction.
     [StringLength(20)]

@@ -146,4 +146,8 @@ public partial class Mandate
 
     [Column(TypeName = "datetime")]
     public DateTime? Service_Start_Date { get; set; }
+
+    // Para only: minutes a para may bill per day for this approval. Set on import from the
+    // approval's percent (100% = 420 min) and adjustable per case. Null for non-para approvals.
+    public int? DailyCapMinutes { get; set; }
 }

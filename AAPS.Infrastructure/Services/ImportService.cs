@@ -1,4 +1,5 @@
 using AAPS.Application.Abstractions.Services;
+using AAPS.Application.Common;
 using AAPS.Application.Common.Settings;
 using AAPS.Application.DTO;
 using AAPS.Domain.Entities;
@@ -192,8 +193,11 @@ public class ImportService : IImportService
                 try { return cell.GetDateTime(); } catch { return null; }
             }
 
-            // Required columns
-            var required = new[] { 6, 7, 8, 13, 21, 23, 25, 27, 29, 32, 41, 43 };
+            // Required columns. Para approvals arrive without a First Attend Date (col 41) - they
+            // haven't started attending yet - so it isn't required for them.
+            var required = Para.IsPara(Get(21))
+                ? new[] { 6, 7, 8, 13, 21, 23, 25, 27, 29, 32, 43 }
+                : new[] { 6, 7, 8, 13, 21, 23, 25, 27, 29, 32, 41, 43 };
             bool anyNull = required.Any(col => ws.Cell(i, col).IsEmpty());
 
             var preview = new Dictionary<string, string?>
@@ -272,7 +276,11 @@ public class ImportService : IImportService
                 try { return cell.GetDateTime(); } catch { return null; }
             }
 
-            var required = new[] { 1, 2, 3, 5, 13, 25, 28, 30, 31, 32, 34, 35, 36, 41, 42 };
+            // Para sessions carry no session note (col 31) - the DOE doesn't require one for para -
+            // so it isn't a required field for them.
+            var required = Para.IsPara(Get(26))
+                ? new[] { 1, 2, 3, 5, 13, 25, 28, 30, 32, 34, 35, 36, 41, 42 }
+                : new[] { 1, 2, 3, 5, 13, 25, 28, 30, 31, 32, 34, 35, 36, 41, 42 };
             bool anyNull = required.Any(col => ws.Cell(i, col).IsEmpty());
 
             string? sessionType = Get(30);
@@ -620,8 +628,10 @@ public class ImportService : IImportService
                 string mandateId = Get(43)!;
                 string provider = Get(32)!;
 
-                // Calculate MandateStart / MandateEnd (needed for duplicate check)
-                DateTime? firstAttendDate = GetDate(41) ?? DateTime.Now;
+                // Calculate MandateStart / MandateEnd (needed for duplicate check). Para approvals
+                // have no First Attend Date, so fall back to the Service Start Date (col 39) so the
+                // approval's date window still reflects when the service begins.
+                DateTime? firstAttendDate = GetDate(41) ?? GetDate(39) ?? DateTime.Now;
                 DateTime mandateStart = firstAttendDate.Value.Date;
                 DateTime mandateEnd;
 
@@ -686,7 +696,10 @@ public class ImportService : IImportService
                     MandateStart = mandateStart,
                     MandateEnd = mandateEnd,
                     FileName = preview.FileName,
-                    RowNumber = i
+                    RowNumber = i,
+                    // Para approvals carry a percent duration (e.g. "100 Percent") - turn it into the
+                    // daily minute cap now. Null for normal minute-based durations.
+                    DailyCapMinutes = Para.DailyCapMinutes(dur)
                 };
 
                 db.Mandates.Add(entity);
@@ -911,42 +924,72 @@ public class ImportService : IImportService
             // We only accept a mandate if the billing provider (cols AO/AP) has a VendorPortal
             // entry for it - prevents attaching to another provider's approval ID.
             int? entryId = null;
+            // Para rates are keyed by the para type (e.g. "Para - Health"), but the encounter file
+            // labels every para session "Paraprofessional". Once a para session is matched to its
+            // approval, use the approval's service type for the rate lookups below.
+            string rateServiceType = serviceType;
             if (int.TryParse(duration, out int durInt) && dateOfService.HasValue)
             {
-                int actualSizeInt = int.TryParse(actualSize.TrimStart('0'), out var a) ? a : 1;
-                if (actualSizeInt == 0) actualSizeInt = 1;
-
-                var candidates = allMandates
-                    .Where(m =>
-                        string.Equals(m.Service_Type?.Trim(), serviceType.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                        string.Equals(m.Student_ID?.Trim(), studentId.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                        m.MandateStart <= dateOfService &&
-                        m.MandateEnd >= dateOfService)
-                    .Where(m =>
-                    {
-                        if (!int.TryParse(m.Dur?.Split(' ').FirstOrDefault(), out int mDur)) return false;
-                        if (mDur != durInt) return false;
-                        int mGrp = int.TryParse(m.Grp_Size, out var g) ? g : 0;
-                        return (mGrp == 1 && actualSizeInt == 1) || (mGrp > 1 && mGrp >= actualSizeInt);
-                    });
-
-                // Only attach to an approval the billing provider (cols AO/AP) is linked to in
-                // VendorPortal; otherwise leave Entry_Id null so the row shows as unassigned.
-                if (providerId.HasValue && providerSsnDict.TryGetValue(providerId.Value, out var ssnStripped) && !string.IsNullOrEmpty(ssnStripped))
+                if (Para.IsPara(serviceType))
                 {
-                    // Prefer the approval whose group size matches the session, then the closest
-                    // accommodating group, then the most recent.
-                    entryId = candidates
-                        .Where(m => vpEntryProviders.Contains((m.Entry_Id, ssnStripped)))
-                        .OrderBy(m => Math.Abs((int.TryParse(m.Grp_Size, out var mg) ? mg : 0) - actualSizeInt))
-                        .ThenByDescending(m => m.MandateStart)
-                        .Select(m => (int?)m.Entry_Id)
-                        .FirstOrDefault();
+                    // Para: the encounter wording ("Paraprofessional") and the percent-vs-minutes
+                    // duration don't line up with the approval, so match on student + is-para + date
+                    // (a child has one para). Still only attach to an approval the billing provider is
+                    // linked to in VendorPortal.
+                    if (providerId.HasValue && providerSsnDict.TryGetValue(providerId.Value, out var ssnPara) && !string.IsNullOrEmpty(ssnPara))
+                    {
+                        var matchedPara = allMandates
+                            .Where(m => Para.IsPara(m.Service_Type) &&
+                                string.Equals(m.Student_ID?.Trim(), studentId.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                                m.MandateStart <= dateOfService &&
+                                m.MandateEnd >= dateOfService &&
+                                vpEntryProviders.Contains((m.Entry_Id, ssnPara)))
+                            .OrderByDescending(m => m.MandateStart)
+                            .FirstOrDefault();
+                        if (matchedPara != null)
+                        {
+                            entryId = matchedPara.Entry_Id;
+                            rateServiceType = matchedPara.Service_Type ?? serviceType;
+                        }
+                    }
+                }
+                else
+                {
+                    int actualSizeInt = int.TryParse(actualSize.TrimStart('0'), out var a) ? a : 1;
+                    if (actualSizeInt == 0) actualSizeInt = 1;
+
+                    var candidates = allMandates
+                        .Where(m =>
+                            string.Equals(m.Service_Type?.Trim(), serviceType.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(m.Student_ID?.Trim(), studentId.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                            m.MandateStart <= dateOfService &&
+                            m.MandateEnd >= dateOfService)
+                        .Where(m =>
+                        {
+                            if (!int.TryParse(m.Dur?.Split(' ').FirstOrDefault(), out int mDur)) return false;
+                            if (mDur != durInt) return false;
+                            int mGrp = int.TryParse(m.Grp_Size, out var g) ? g : 0;
+                            return (mGrp == 1 && actualSizeInt == 1) || (mGrp > 1 && mGrp >= actualSizeInt);
+                        });
+
+                    // Only attach to an approval the billing provider (cols AO/AP) is linked to in
+                    // VendorPortal; otherwise leave Entry_Id null so the row shows as unassigned.
+                    if (providerId.HasValue && providerSsnDict.TryGetValue(providerId.Value, out var ssnStripped) && !string.IsNullOrEmpty(ssnStripped))
+                    {
+                        // Prefer the approval whose group size matches the session, then the closest
+                        // accommodating group, then the most recent.
+                        entryId = candidates
+                            .Where(m => vpEntryProviders.Contains((m.Entry_Id, ssnStripped)))
+                            .OrderBy(m => Math.Abs((int.TryParse(m.Grp_Size, out var mg) ? mg : 0) - actualSizeInt))
+                            .ThenByDescending(m => m.MandateStart)
+                            .Select(m => (int?)m.Entry_Id)
+                            .FirstOrDefault();
+                    }
                 }
             }
 
             // Billing rate lookup
-            string rateKey = serviceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim();
+            string rateKey = rateServiceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim();
             billingRateDict.TryGetValue(rateKey, out decimal? bRate);
 
             // Provider rate lookup - prefer a rate set for this exact group size, else the general rate
@@ -954,7 +997,7 @@ public class ImportService : IImportService
             if (providerId.HasValue)
             {
                 int grpForRate = int.TryParse(actualSize.TrimStart('0'), out var gr) && gr > 0 ? gr : 1;
-                string pRateBase = serviceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim() + "|" + providerId.Value + "|";
+                string pRateBase = rateServiceType.Trim() + "|" + gDistrict.Trim() + "|" + language.Trim() + "|" + providerId.Value + "|";
                 if (!providerRateDict.TryGetValue(pRateBase + grpForRate, out pRate))
                     providerRateDict.TryGetValue(pRateBase, out pRate);
             }
