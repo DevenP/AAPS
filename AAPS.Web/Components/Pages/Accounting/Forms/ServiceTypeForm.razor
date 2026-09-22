@@ -26,6 +26,13 @@
         </MudText>
     </MudItem>
 
+    @* Billing code - used for paraprofessional invoicing *@
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Model.BillingCode" Label="Billing Code"
+                      Immediate="true" MaxLength="10"
+                      HelperText="DOE code used on paraprofessional invoices (Health Para = HP, Crisis Para = CP). Leave blank for regular related services." />
+    </MudItem>
+
 </MudGrid>
 
 @code {

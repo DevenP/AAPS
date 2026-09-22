@@ -12,4 +12,7 @@ public record ServiceTypeDTO
 
     [DisplayField("Is Evaluation")]
     public bool IsEvaluation { get; set; }
+
+    [DisplayField("Billing Code")]
+    public string? BillingCode { get; set; }
 }

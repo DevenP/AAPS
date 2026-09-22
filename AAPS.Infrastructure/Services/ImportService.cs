@@ -637,7 +637,14 @@ public class ImportService : IImportService
                 // more than one para, so each "Para - X" is its own billable type).
                 if (Para.IsPara(serviceType) && knownServiceTypes.Add(serviceType.Trim()))
                 {
-                    db.ServiceTypes.Add(new ServiceType { ServiceType1 = serviceType.Trim(), Eval = false });
+                    // Seed the DOE billing code from the known para types (Health = HP, Crisis = CP);
+                    // it stays editable under Configuration > Service Types for anything new.
+                    db.ServiceTypes.Add(new ServiceType
+                    {
+                        ServiceType1 = serviceType.Trim(),
+                        Eval = false,
+                        BillingCode = Para.CodeFor(serviceType)
+                    });
                     await db.SaveChangesAsync(ct);
                 }
 

@@ -9,10 +9,10 @@
 <GenericGrid @ref="_grid" TItem="ServiceTypeDTO"
              Title="Service Types"
              DefaultSortLabel="Name"
-             Columns="@(new[] { "Actions", "Name", "IsEvaluation" })"
+             Columns="@(new[] { "Actions", "Name", "IsEvaluation", "BillingCode" })"
              GetData="ServiceTypeService.GetPagedAsync"
-             ExportHeaders="@(new[] { "Name", "Is Evaluation" })"
-             ExportMapper="@(s => new object?[] { s.Name, s.IsEvaluation ? "Yes" : "No" })">
+             ExportHeaders="@(new[] { "Name", "Is Evaluation", "Billing Code" })"
+             ExportMapper="@(s => new object?[] { s.Name, s.IsEvaluation ? "Yes" : "No", s.BillingCode })">
 
     <CustomActionContent>
         <MudButton Variant="Variant.Filled"
@@ -32,6 +32,9 @@
         </GridCell>
         <GridCell TItem="ServiceTypeDTO" Column="IsEvaluation" IsHeader="true">
             <MudTableSortLabel SortLabel="IsEvaluation" T="ServiceTypeDTO">Type</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ServiceTypeDTO" Column="BillingCode" IsHeader="true">
+            <MudTableSortLabel SortLabel="BillingCode" T="ServiceTypeDTO">Billing Code</MudTableSortLabel>
         </GridCell>
     </HeaderContent>
 
@@ -59,6 +62,7 @@
                 @(st.IsEvaluation ? "Evaluation" : "Therapy")
             </MudChip>
         </GridCell>
+        <GridCell TItem="ServiceTypeDTO" Column="BillingCode">@st.BillingCode</GridCell>
     </RowTemplate>
 
 </GenericGrid>

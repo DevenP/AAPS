@@ -15,4 +15,8 @@ public partial class ServiceType
     public string? ServiceType1 { get; set; }
 
     public bool? Eval { get; set; }
+
+    [StringLength(10)]
+    [Unicode(false)]
+    public string? BillingCode { get; set; }
 }

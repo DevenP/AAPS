@@ -36,7 +36,7 @@ public class ServiceTypeService : IServiceTypeService
     public async Task<int> CreateAsync(ServiceTypeDTO dto, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        var entity = new ServiceType { ServiceType1 = dto.Name, Eval = dto.IsEvaluation };
+        var entity = new ServiceType { ServiceType1 = dto.Name, Eval = dto.IsEvaluation, BillingCode = dto.BillingCode };
         db.ServiceTypes.Add(entity);
         await db.SaveChangesAsync(ct);
         return entity.ServiceType_Id;
@@ -48,6 +48,7 @@ public class ServiceTypeService : IServiceTypeService
         var entity = await db.ServiceTypes.FindAsync(new object[] { id }, ct) ?? throw new KeyNotFoundException();
         entity.ServiceType1 = dto.Name;
         entity.Eval = dto.IsEvaluation;
+        entity.BillingCode = dto.BillingCode;
         await db.SaveChangesAsync(ct);
     }
 
@@ -67,7 +68,8 @@ public class ServiceTypeService : IServiceTypeService
     {
         Id = s.ServiceType_Id,
         Name = s.ServiceType1,
-        IsEvaluation = s.Eval ?? false
+        IsEvaluation = s.Eval ?? false,
+        BillingCode = s.BillingCode
     };
 
 }
