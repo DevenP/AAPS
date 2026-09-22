@@ -602,6 +602,16 @@ public class ImportService : IImportService
         // Add already-skipped rows from parse phase
         skippedRowNumbers.AddRange(preview.SkippedRows.Select(r => r.RowNumber));
 
+        // Para service types ("Para - Health", "Para - Behavior Support", ...) arrive as free text on
+        // the approval and need to exist in the Service Types list so rates can be entered against them.
+        // Track what's already there and add any new para type the moment it's seen.
+        var knownServiceTypes = (await db.ServiceTypes
+                .Where(t => t.ServiceType1 != null)
+                .Select(t => t.ServiceType1!)
+                .ToListAsync(ct))
+            .Select(n => n.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         foreach (var row in preview.ValidRows)
         {
             int i = row.RowNumber; // actual Excel row index
@@ -622,6 +632,15 @@ public class ImportService : IImportService
 
                 string studentId = Get(6)!;
                 string serviceType = Get(21)!;
+
+                // Auto-create a new para service type so it shows up for rate entry (a child never has
+                // more than one para, so each "Para - X" is its own billable type).
+                if (Para.IsPara(serviceType) && knownServiceTypes.Add(serviceType.Trim()))
+                {
+                    db.ServiceTypes.Add(new ServiceType { ServiceType1 = serviceType.Trim(), Eval = false });
+                    await db.SaveChangesAsync(ct);
+                }
+
                 string remainingFreq = Get(29)!;
                 string dur = Get(27)!;
                 string grpSize = Get(25)!;
