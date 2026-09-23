@@ -133,6 +133,8 @@ public class StatementService : IStatementService
                      && s.OverMandate != true
                      && s.OverDuration != true
                      && s.UnderGroup != true
+                     && s.OverDailyCap != true
+                     && s.Weekend != true
                      && s.Entry_Id != null
                      && s.bRate != null
                      && s.pRate != null);

@@ -1,4 +1,5 @@
 using AAPS.Application.Abstractions.Services;
+using AAPS.Application.Common;
 using AAPS.Application.Common.Paging;
 using AAPS.Application.Common.Settings;
 using AAPS.Application.DTO;
@@ -265,12 +266,22 @@ public class BillingService : IBillingService
 
         var entryIds = sesiRows.Select(r => r.Entry_Id!.Value).Distinct().ToList();
 
-        // Step 3: Fetch mandates - Remaining_Freq and Grp_Size for aSes/aFreq/aGrs/aType/aYear
+        // Step 3: Fetch mandates - Remaining_Freq and Grp_Size for aSes/aFreq/aGrs/aType/aYear.
+        // Service_Type + DailyCapMinutes drive the para-specific subtype code and session length.
         var mandates = await db.Mandates.AsNoTracking()
             .Where(m => entryIds.Contains(m.Entry_Id))
-            .Select(m => new { m.Entry_Id, m.MandateStart, m.MandateEnd, m.Remaining_Freq, m.Grp_Size, m.Dur })
+            .Select(m => new { m.Entry_Id, m.MandateStart, m.MandateEnd, m.Remaining_Freq, m.Grp_Size, m.Dur, m.Service_Type, m.DailyCapMinutes })
             .ToListAsync(ct);
         var mandateDict = mandates.ToDictionary(m => m.Entry_Id);
+
+        // Para subtype codes (Health = HP, Crisis = CP) are set per service type in Configuration;
+        // fall back to the built-in mapping for any that haven't been given a code yet.
+        var billingCodeDict = (await db.ServiceTypes.AsNoTracking()
+                .Where(t => t.ServiceType1 != null && t.BillingCode != null)
+                .Select(t => new { t.ServiceType1, t.BillingCode })
+                .ToListAsync(ct))
+            .GroupBy(t => t.ServiceType1!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().BillingCode!, StringComparer.OrdinalIgnoreCase);
 
         // Step 4: Fetch vendor portal - MIN(VendorPortal_Id) per (Entry_Id, pSsn), matches proc subquery
         var vendorPortals = await db.VendorPortals.AsNoTracking()
@@ -301,10 +312,21 @@ public class BillingService : IBillingService
                         : m.MandateStart.Value.Year).ToString()
                     : "";
 
-                // aType: LEFT(Service_Type,1) + group size logic
+                // Para approvals carry a daily minute cap; those bill differently: the subtype is the
+                // DOE para code (HP/CP) and the session length is the mandate's daily cap, not the
+                // regular type/group and approval-duration logic used for related services.
+                var isPara = m?.DailyCapMinutes != null;
+
+                // aType: LEFT(Service_Type,1) + group size logic; para uses its billing code instead.
                 var svcFirst = r.Service_Type?.Length > 0 ? r.Service_Type[0].ToString() : "";
                 var grpInt = int.TryParse(m?.Grp_Size?.Trim(), out var gs) ? gs : 0;
                 var aType = svcFirst + (grpInt == 1 ? "1" : svcFirst == "S" ? "P" : "T");
+                if (isPara)
+                {
+                    var paraType = m!.Service_Type?.Trim() ?? "";
+                    aType = (billingCodeDict.TryGetValue(paraType, out var code) ? code : null)
+                            ?? Para.CodeFor(paraType) ?? aType;
+                }
 
                 // Remaining_Freq is "{count}x {TypeWord}" (e.g. "2x Weekly", "38x In Total").
                 var remFreq = m?.Remaining_Freq ?? "";
@@ -322,8 +344,11 @@ public class BillingService : IBillingService
                 var grpSizeRaw = m?.Grp_Size ?? "";
                 var aGrs = grpSizeRaw.Length >= 2 ? grpSizeRaw : "0" + grpSizeRaw;
 
-                // aDur: LEFT(Mandates.Dur, 2) - mandate approval duration, not actual session duration
+                // aDur: LEFT(Mandates.Dur, 2) - mandate approval duration, not actual session duration.
+                // Para bills a whole-day session length equal to the approval's daily cap (e.g. 420).
                 var aDur = (m?.Dur?.Length >= 2 ? m.Dur.Substring(0, 2) : m?.Dur) ?? "";
+                if (isPara)
+                    aDur = m!.DailyCapMinutes!.Value.ToString();
 
                 // Date fields formatted as MM/dd/yyyy (SQL CONVERT format 101).
                 // MandateStart, MandateEnd, bServiceDate use CONVERT(char(12),...) which pads to 12 chars
@@ -342,6 +367,7 @@ public class BillingService : IBillingService
                 {
                     FundCode = fundCode,
                     BillingMonth = dos?.ToString("yyyy-MM") ?? "",
+                    IsPara = isPara,
                     Row = BuildRow(
                         aYear, vp.pBoro ?? "", r.GDistrict ?? "", fundCode, vp.pSchool ?? "",
                         r.Provider_Last_Name ?? "", r.Provider_First_Name ?? "", r.SsnStripped,
@@ -353,7 +379,7 @@ public class BillingService : IBillingService
                 };
             })
             .Where(x => x != null)
-            .GroupBy(x => (x!.FundCode, x.BillingMonth))
+            .GroupBy(x => (x!.FundCode, x.BillingMonth, x.IsPara))
             .ToList();
 
         // Step 6: Write files - OutputPath/{year}/{month}/{fundCode}_{yyyy-MM}_{ddMMyyHHmm}.txt
@@ -371,8 +397,11 @@ public class BillingService : IBillingService
 
         foreach (var group in groups)
         {
-            var (fundCode, billingMonth) = group.Key;
-            var fileName = $"{fundCode}_{billingMonth}_{timestamp}.txt";
+            var (fundCode, billingMonth, isPara) = group.Key;
+            // Para bills are uploaded to the Vendor Portal's Para Professional target, separate from
+            // the related-services RS invoice, so they go in their own file (same layout).
+            var prefix = isPara ? "PARA_" : "";
+            var fileName = $"{prefix}{fundCode}_{billingMonth}_{timestamp}.txt";
             var filePath = Path.Combine(destFolder, fileName);
 
             var sb = new StringBuilder();
