@@ -52,6 +52,7 @@ public class BillingService : IBillingService
                      && s.OverDuration != true
                      && s.UnderGroup != true
                      && s.OverDailyCap != true
+                     && s.Weekend != true
                      && s.Entry_Id != null
                      && s.bRate != null
                      && s.pRate != null);

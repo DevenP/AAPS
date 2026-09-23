@@ -157,4 +157,7 @@ public record SesiDTO
 
     [DisplayField("Over Daily Cap", GroupName = "Alerts")]
     public bool IsOverDailyCap { get; set; }
+
+    [DisplayField("Weekend", GroupName = "Alerts")]
+    public bool IsWeekend { get; set; }
 }

@@ -120,6 +120,7 @@ public class DashboardService : IDashboardService
                 s.OverDuration == true ||
                 s.UnderGroup == true ||
                 s.OverDailyCap == true ||
+                s.Weekend == true ||
                 s.bRate == null ||
                 s.pRate == null)
             .OrderByDescending(s => s.date_of_Service)
@@ -138,6 +139,7 @@ public class DashboardService : IDashboardService
                 IsOverDuration = s.OverDuration == true,
                 IsUnderGroup = s.UnderGroup == true,
                 IsOverDailyCap = s.OverDailyCap == true,
+                IsWeekend = s.Weekend == true,
                 BRateFlag = s.bRate == null,
                 PRateFlag = s.pRate == null,
             })

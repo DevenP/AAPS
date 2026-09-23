@@ -175,6 +175,10 @@ public partial class Sesi
     // held as un-billable until the cap is raised.
     public bool? OverDailyCap { get; set; }
 
+    // Para only: the session is dated on a Saturday or Sunday. Para is authorized Monday-Friday
+    // only, so a weekend session is held as un-billable.
+    public bool? Weekend { get; set; }
+
     // Current loss/return state (#6/#20): null = normal, "Loss" = written off,
     // "Returned" = funds returned to the DOE. Full trail lives in PaymentTransaction.
     [StringLength(20)]
