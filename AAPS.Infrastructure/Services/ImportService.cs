@@ -1068,6 +1068,7 @@ public class ImportService : IImportService
                 CSE = Get(7),
                 CSE_District = Get(8),
                 Admin_DBN = Get(9),
+                School_Name = Get(12),
                 GDistrict = gDistrict,
                 Borough = Get(14),
                 Mandate_Short = Get(15),

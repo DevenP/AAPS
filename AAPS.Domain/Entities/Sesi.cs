@@ -50,6 +50,10 @@ public partial class Sesi
     [Unicode(false)]
     public string? Admin_DBN { get; set; }
 
+    [StringLength(100)]
+    [Unicode(false)]
+    public string? School_Name { get; set; }
+
     [StringLength(5)]
     [Unicode(false)]
     public string? GDistrict { get; set; }

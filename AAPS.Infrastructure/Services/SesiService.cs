@@ -342,6 +342,8 @@ public class SesiService : ISesiService
                 ActualSize = s.Actual_Size,
                 AssignmentClaimed = s.Assignment_Claimed,
                 GDistrict = s.GDistrict,
+                AdminDbn = s.Admin_DBN,
+                SchoolName = s.School_Name,
                 ProviderPaidDate = s.pPaid,
                 Voucher = s.Voucher,
 
@@ -793,6 +795,7 @@ public class SesiService : ISesiService
         Cse = s.CSE,
         CseDistrict = s.CSE_District,
         AdminDbn = s.Admin_DBN,
+        SchoolName = s.School_Name,
         GDistrict = s.GDistrict,
         Borough = s.Borough,
         MandateShort = s.Mandate_Short,

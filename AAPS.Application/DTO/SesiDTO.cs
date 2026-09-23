@@ -34,8 +34,11 @@ public record SesiDTO
     [DisplayField("CSE District", browsable: false)]
     public string? CseDistrict { get; set; }
 
-    [DisplayField("Admin DBN", browsable: false)]
+    [DisplayField("Admin DBN", GroupName = "Student")]
     public string? AdminDbn { get; set; }
+
+    [DisplayField("School Name", GroupName = "Student")]
+    public string? SchoolName { get; set; }
 
     [DisplayField("G District", GroupName = "Student")]
     public string? GDistrict { get; set; }
