@@ -7,6 +7,8 @@ public interface IMandateService
 {
     Task<PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default);
 
+    Task<PagedResult<ApprovalUtilizationDTO>> GetApprovalUtilizationAsync(PagedRequest request, CancellationToken ct = default);
+
     Task<MandateDTO?> GetByIdAsync(int id, CancellationToken ct = default);
 
     Task<int> CreateAsync(MandateDTO dto, CancellationToken ct = default);

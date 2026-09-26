@@ -137,6 +137,100 @@ public class MandateService : IMandateService
         return await query.ToPagedResultAsync(request, ct, performSearch: false);
     }
 
+    public const string UnderUtilizedPctKey = "Report.UnderUtilizedPct";
+    public const int UnderUtilizedPctDefault = 80;
+
+    // How much of each approval's authorized service actually got delivered in the selected period.
+    // Expected sessions come from the frequency (e.g. "5x Weekly") applied to the approval's active
+    // days within the period (never counting into the future); actual = sessions delivered. Approvals
+    // delivering below the configured percent are flagged so missed/under-billed service is visible.
+    public async Task<PagedResult<ApprovalUtilizationDTO>> GetApprovalUtilizationAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        var underPct = await _settings.GetIntAsync(UnderUtilizedPctKey, UnderUtilizedPctDefault, ct);
+        var today = DateTime.Today;
+        var from = request.DateFrom;
+        var to = request.DateTo;
+
+        var mandQuery = db.Mandates.AsNoTracking().Where(m => m.MandateStart != null && m.MandateEnd != null);
+        if (from.HasValue || to.HasValue)
+        {
+            var f = from ?? DateTime.MinValue;
+            var t = to ?? DateTime.MaxValue;
+            mandQuery = mandQuery.Where(m => m.MandateStart <= t && m.MandateEnd >= f);
+        }
+        var mandates = await mandQuery
+            .Select(m => new { m.Entry_Id, m.Student_ID, m.Last_Name, m.First_Name, m.Service_Type, m.Provider, m.Remaining_Freq, m.MandateStart, m.MandateEnd })
+            .ToListAsync(ct);
+
+        // Delivered session counts per approval within the period.
+        var sesQuery = db.Seses.AsNoTracking().Where(s => s.Entry_Id != null);
+        if (from.HasValue) sesQuery = sesQuery.Where(s => s.date_of_Service >= from);
+        if (to.HasValue) sesQuery = sesQuery.Where(s => s.date_of_Service <= to);
+        var counts = (await sesQuery
+                .GroupBy(s => s.Entry_Id!.Value)
+                .Select(g => new { EntryId = g.Key, Count = g.Count() })
+                .ToListAsync(ct))
+            .ToDictionary(x => x.EntryId, x => x.Count);
+
+        var list = new List<ApprovalUtilizationDTO>(mandates.Count);
+        foreach (var m in mandates)
+        {
+            var (freqN, freqType) = ParseFreq(m.Remaining_Freq);
+
+            var effStart = Max(m.MandateStart!.Value.Date, from?.Date ?? m.MandateStart.Value.Date);
+            var effEnd = Min(Min(m.MandateEnd!.Value.Date, to?.Date ?? m.MandateEnd.Value.Date), today);
+
+            int expected = 0;
+            if (freqN > 0 && effEnd >= effStart)
+            {
+                var days = (effEnd - effStart).TotalDays + 1;
+                expected = freqType switch
+                {
+                    "W" => (int)Math.Round(freqN * (days / 7.0), MidpointRounding.AwayFromZero),
+                    "M" => (int)Math.Round(freqN * (days / 30.44), MidpointRounding.AwayFromZero),
+                    _ => freqN, // In Total (or unknown) - the whole-period authorized count
+                };
+            }
+
+            int actual = counts.TryGetValue(m.Entry_Id, out var c) ? c : 0;
+            int pct = expected > 0 ? (int)Math.Round(actual * 100.0 / expected) : (actual > 0 ? 100 : 0);
+
+            list.Add(new ApprovalUtilizationDTO
+            {
+                StudentId = m.Student_ID,
+                StudentName = (m.Last_Name ?? "") + ", " + (m.First_Name ?? ""),
+                ServiceType = m.Service_Type,
+                Provider = m.Provider,
+                Frequency = m.Remaining_Freq,
+                ExpectedSessions = expected,
+                ActualSessions = actual,
+                UtilizationPct = pct,
+                IsUnderUtilized = expected > 0 && pct < underPct
+            });
+        }
+
+        return await list.ToPagedResultAsync(request with { DateFrom = null, DateTo = null }, ct);
+    }
+
+    private static DateTime Max(DateTime a, DateTime b) => a > b ? a : b;
+    private static DateTime Min(DateTime a, DateTime b) => a < b ? a : b;
+
+    // Parses "{count}x {TypeWord}" into the count and a code: W = Weekly, M = Monthly, T = In Total.
+    private static (int Count, string Type) ParseFreq(string? remainingFreq)
+    {
+        if (string.IsNullOrWhiteSpace(remainingFreq)) return (0, "");
+        int x = remainingFreq.IndexOf('x');
+        var countPart = x > 0 ? remainingFreq[..x] : remainingFreq;
+        int.TryParse(new string(countPart.Where(char.IsDigit).ToArray()), out var n);
+        var typePart = (x >= 0 && x + 1 < remainingFreq.Length ? remainingFreq[(x + 1)..] : "").Trim();
+        string type =
+            typePart.StartsWith("In Total", StringComparison.OrdinalIgnoreCase) ? "T" :
+            typePart.StartsWith("Week", StringComparison.OrdinalIgnoreCase) ? "W" :
+            typePart.StartsWith("Month", StringComparison.OrdinalIgnoreCase) ? "M" : "";
+        return (n, type);
+    }
+
     public async Task<MandateDTO?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();

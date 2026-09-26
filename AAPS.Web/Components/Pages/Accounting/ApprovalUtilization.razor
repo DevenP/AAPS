@@ -1,0 +1,50 @@
+@page "/approvalutilization"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IMandateService MandateService
+
+<GenericGrid @ref="_grid" TItem="ApprovalUtilizationDTO"
+             Title="Approval Utilization"
+             DefaultSortLabel="UtilizationPct"
+             Columns="@(new[] { "StudentId", "StudentName", "ServiceType", "Provider", "Frequency", "ExpectedSessions", "ActualSessions", "UtilizationPct", "UnderUtilized" })"
+             GetData="MandateService.GetApprovalUtilizationAsync"
+             ShowSemesterFilter="true"
+             ExportHeaders="@(new[] { "Student ID", "Student Name", "Service Type", "Provider", "Frequency", "Expected Sessions", "Delivered Sessions", "Utilization %", "Under Utilized" })"
+             ExportMapper="@(r => new object?[] { r.StudentId, r.StudentName, r.ServiceType, r.Provider, r.Frequency, r.ExpectedSessions, r.ActualSessions, r.UtilizationPct, r.IsUnderUtilized ? "Yes" : "No" })">
+
+    <HeaderContent>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="StudentId" IsHeader="true"><MudTableSortLabel SortLabel="StudentId" T="ApprovalUtilizationDTO">Student ID</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="StudentName" IsHeader="true"><MudTableSortLabel SortLabel="StudentName" T="ApprovalUtilizationDTO">Student</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="ServiceType" IsHeader="true"><MudTableSortLabel SortLabel="ServiceType" T="ApprovalUtilizationDTO">Service Type</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="Provider" IsHeader="true"><MudTableSortLabel SortLabel="Provider" T="ApprovalUtilizationDTO">Provider</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="Frequency" IsHeader="true"><MudTableSortLabel SortLabel="Frequency" T="ApprovalUtilizationDTO">Frequency</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="ExpectedSessions" IsHeader="true"><MudTableSortLabel SortLabel="ExpectedSessions" T="ApprovalUtilizationDTO">Expected</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="ActualSessions" IsHeader="true"><MudTableSortLabel SortLabel="ActualSessions" T="ApprovalUtilizationDTO">Delivered</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="UtilizationPct" IsHeader="true"><MudTableSortLabel SortLabel="UtilizationPct" T="ApprovalUtilizationDTO">Utilization %</MudTableSortLabel></GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="UnderUtilized" IsHeader="true"><MudTableSortLabel SortLabel="IsUnderUtilized" T="ApprovalUtilizationDTO">Under Utilized</MudTableSortLabel></GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="r">
+        <GridCell TItem="ApprovalUtilizationDTO" Column="StudentId">@r.StudentId</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="StudentName">@r.StudentName</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="ServiceType">@r.ServiceType</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="Provider">@r.Provider</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="Frequency">@r.Frequency</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="ExpectedSessions">@r.ExpectedSessions</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="ActualSessions">@r.ActualSessions</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="UtilizationPct">@r.UtilizationPct%</GridCell>
+        <GridCell TItem="ApprovalUtilizationDTO" Column="UnderUtilized">
+            @if (r.IsUnderUtilized)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Text">Under</MudChip>
+            }
+        </GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<ApprovalUtilizationDTO> _grid = default!;
+}
