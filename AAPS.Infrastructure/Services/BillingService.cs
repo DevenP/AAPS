@@ -137,6 +137,30 @@ public class BillingService : IBillingService
         return await all.ToPagedResultAsync(request with { SortBy = null, Search = null, ColumnFilters = null }, ct);
     }
 
+    // Per-provider rollup of billable pay for the selected period - how much each provider is owed
+    // and how much of that is still unpaid. Grouped in memory over the shared billable base query.
+    public async Task<PagedResult<ProviderPaySummaryDTO>> GetProviderPaySummaryAsync(PagedRequest request, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+
+        var rows = await ApplySemester(BuildBaseQuery(db), request.DateFrom, request.DateTo)
+            .Select(r => new { r.Provider, r.ProviderAmount, r.ProviderPaidOn })
+            .ToListAsync(ct);
+
+        var summary = rows
+            .GroupBy(r => r.Provider ?? "")
+            .Select(g => new ProviderPaySummaryDTO
+            {
+                Provider = g.Key,
+                Sessions = g.Count(),
+                TotalProviderAmount = g.Sum(x => x.ProviderAmount ?? 0m),
+                UnpaidProviderAmount = g.Where(x => x.ProviderPaidOn == null).Sum(x => x.ProviderAmount ?? 0m)
+            })
+            .ToList();
+
+        return await summary.ToPagedResultAsync(request with { DateFrom = null, DateTo = null }, ct);
+    }
+
     public async Task<BillingSummary> GetSummaryAsync(string search, Dictionary<string, string> columnFilters, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();

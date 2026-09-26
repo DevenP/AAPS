@@ -15,4 +15,5 @@ public interface IBillingService
     Task BulkUpdateBillingDatesAsync(List<int> sesisIds, bool applyBilled, DateTime? billed, bool applyBilledPaid, DateTime? billedPaid, bool applyProviderPaid, DateTime? providerPaid, CancellationToken ct = default);
     Task<BillingGenerateResult> GenerateBillingFilesAsync(string search, Dictionary<string, string> columnFilters, IList<int>? selectedIds = null, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
     Task<List<int>> GetIdsAsync(PagedRequest request, CancellationToken ct = default);
+    Task<PagedResult<ProviderPaySummaryDTO>> GetProviderPaySummaryAsync(PagedRequest request, CancellationToken ct = default);
 }

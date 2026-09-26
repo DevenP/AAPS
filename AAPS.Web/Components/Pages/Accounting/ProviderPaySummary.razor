@@ -1,0 +1,43 @@
+@page "/providerpaysummary"
+@using AAPS.Application.Abstractions.Services
+@using AAPS.Application.Common.Extensions
+@using AAPS.Application.DTO
+@using AAPS.Web.Components.Shared
+@inject IBillingService BillingService
+
+<GenericGrid @ref="_grid" TItem="ProviderPaySummaryDTO"
+             Title="Provider Pay Summary"
+             DefaultSortLabel="Provider"
+             Columns="@(new[] { "Provider", "Sessions", "TotalProviderAmount", "UnpaidProviderAmount" })"
+             GetData="BillingService.GetProviderPaySummaryAsync"
+             ShowSemesterFilter="true"
+             ExportHeaders="@(new[] { "Provider", "Sessions", "Total Provider Pay", "Unpaid Provider Pay" })"
+             ExportMapper="@(r => new object?[] { r.Provider, r.Sessions, r.TotalProviderAmount, r.UnpaidProviderAmount })">
+
+    <HeaderContent>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="Provider" IsHeader="true">
+            <MudTableSortLabel SortLabel="Provider" T="ProviderPaySummaryDTO">Provider</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="Sessions" IsHeader="true">
+            <MudTableSortLabel SortLabel="Sessions" T="ProviderPaySummaryDTO">Sessions</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="TotalProviderAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="TotalProviderAmount" T="ProviderPaySummaryDTO">Total Provider Pay</MudTableSortLabel>
+        </GridCell>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="UnpaidProviderAmount" IsHeader="true">
+            <MudTableSortLabel SortLabel="UnpaidProviderAmount" T="ProviderPaySummaryDTO">Unpaid Provider Pay</MudTableSortLabel>
+        </GridCell>
+    </HeaderContent>
+
+    <RowTemplate Context="r">
+        <GridCell TItem="ProviderPaySummaryDTO" Column="Provider">@r.Provider</GridCell>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="Sessions">@r.Sessions</GridCell>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="TotalProviderAmount">@r.TotalProviderAmount.ToString("C2")</GridCell>
+        <GridCell TItem="ProviderPaySummaryDTO" Column="UnpaidProviderAmount">@r.UnpaidProviderAmount.ToString("C2")</GridCell>
+    </RowTemplate>
+
+</GenericGrid>
+
+@code {
+    private GenericGrid<ProviderPaySummaryDTO> _grid = default!;
+}
