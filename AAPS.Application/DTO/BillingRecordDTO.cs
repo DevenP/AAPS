@@ -46,6 +46,9 @@ public class BillingRecordDTO
     [DisplayField("Billed On", GroupName = "Billing")]
     public DateTime? Billed { get; set; }
 
+    [DisplayField("Not Yet Billed", GroupName = "Billing")]
+    public bool IsUnbilled { get; set; }
+
     [DisplayField("Bill Paid On", GroupName = "Billing")]
     public DateTime? BilledPaidOn { get; set; }
 

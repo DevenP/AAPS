@@ -97,6 +97,7 @@ public class BillingService : IBillingService
                 Duration = s.Duration,
                 Frequency = s.Assignment_Claimed,
                 Billed = s.Billed,
+                IsUnbilled = s.Billed == null,
                 BilledPaidOn = s.bPaid,
                 ProviderPaidOn = s.pPaid,
                 BillingRate = s.bRate,
