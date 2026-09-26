@@ -107,7 +107,9 @@
         }
         else
         {
-            <MudTooltip Text="Export to Excel">
+            @* Placement Left: this is the right-most toolbar button, so a default (bottom/right)
+               tooltip overflows the viewport edge and creates a scrollbar-flicker loop on hover. *@
+            <MudTooltip Text="Export to Excel" Placement="Placement.Left">
                 <MudIconButton Icon="@Icons.Material.Filled.Download" OnClick="Export" Color="Color.Success" />
             </MudTooltip>
         }
