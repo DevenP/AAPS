@@ -15,17 +15,28 @@ public class MandateService : IMandateService
     private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly ILogger<MandateService> _logger;
     private readonly IFlagRecalculationService _flagRecalc;
+    private readonly ISettingsService _settings;
 
-    public MandateService(IDbContextFactory<AppDbContext> factory, ILogger<MandateService> logger, IFlagRecalculationService flagRecalc)
+    public const string ExpiringSoonDaysKey = "Mandate.ExpiringSoonDays";
+    public const int ExpiringSoonDaysDefault = 30;
+
+    public MandateService(IDbContextFactory<AppDbContext> factory, ILogger<MandateService> logger, IFlagRecalculationService flagRecalc, ISettingsService settings)
     {
         _factory = factory;
         _logger = logger;
         _flagRecalc = flagRecalc;
+        _settings = settings;
     }
 
     public async Task<PagedResult<MandateDTO>> GetPagedAsync(PagedRequest request, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
+
+        // An approval counts as "expiring soon" when its end date is within the configured window.
+        var expDays = await _settings.GetIntAsync(ExpiringSoonDaysKey, ExpiringSoonDaysDefault, ct);
+        var today = DateTime.Today;
+        var expCutoff = today.AddDays(expDays);
+
         var assignedIds = db.Seses
             .Where(s => s.Entry_Id != null)
             .Select(s => s.Entry_Id)
@@ -113,6 +124,7 @@ public class MandateService : IMandateService
                         ParentEmail = m.Parent_Email,
                         MandateStart = m.MandateStart,
                         MandateEnd = m.MandateEnd,
+                        IsExpiringSoon = m.MandateEnd != null && m.MandateEnd >= today && m.MandateEnd <= expCutoff,
                         FileName = m.FileName,
                         RowNumber = m.RowNumber,
                         ServiceStartDate = m.Service_Start_Date,

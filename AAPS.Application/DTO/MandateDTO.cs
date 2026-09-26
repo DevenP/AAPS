@@ -107,6 +107,9 @@ public record MandateDTO
     [DisplayField("Mandate End", GroupName = "Dates")]
     public DateTime? MandateEnd { get; set; }
 
+    [DisplayField("Expiring Soon", GroupName = "Dates")]
+    public bool IsExpiringSoon { get; set; }
+
     [DisplayField("Service Start Date", GroupName = "Dates")]
     public DateTime? ServiceStartDate { get; set; }
 

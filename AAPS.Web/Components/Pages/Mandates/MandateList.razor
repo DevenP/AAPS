@@ -14,11 +14,11 @@
 <GenericGrid @ref="_grid" TItem="MandateDTO"
              Title="Approvals"
              DefaultSortLabel="LastName"
-             Columns="@(new[] { "Actions", "IsMismatched", "ConferenceDate", "StudentId", "LastName", "HomeDistrict", "Cse", "CseDistrict", "Grade", "DateOfBirth", "AdminDbn", "D75", "ServiceType", "Language", "GroupSize", "Duration", "DailyCap", "ServiceLocation", "RemainingFrequency", "Provider", "FirstAttendDate", "MandateId", "PrimaryPhone1", "PrimaryPhone2", "MandateStart", "MandateEnd", "FileName", "RowNumber", "ServiceStartDate", "IepType", "SchoolName", "AgencyName", "AuthPhysicalDbn", "AssignmentId", "ParentLastName", "ParentEmail" })"
+             Columns="@(new[] { "Actions", "IsMismatched", "ConferenceDate", "StudentId", "LastName", "HomeDistrict", "Cse", "CseDistrict", "Grade", "DateOfBirth", "AdminDbn", "D75", "ServiceType", "Language", "GroupSize", "Duration", "DailyCap", "ServiceLocation", "RemainingFrequency", "Provider", "FirstAttendDate", "MandateId", "PrimaryPhone1", "PrimaryPhone2", "MandateStart", "MandateEnd", "ExpiringSoon", "FileName", "RowNumber", "ServiceStartDate", "IepType", "SchoolName", "AgencyName", "AuthPhysicalDbn", "AssignmentId", "ParentLastName", "ParentEmail" })"
              GetData="MandateService.GetPagedAsync"
              ShowSemesterFilter="true"
-             ExportHeaders="@(new[] { DN(nameof(MandateDTO.IsMismatched)), DN(nameof(MandateDTO.ConferenceDate)), DN(nameof(MandateDTO.StudentId)), DN(nameof(MandateDTO.LastName)), DN(nameof(MandateDTO.HomeDistrict)), DN(nameof(MandateDTO.Cse)), DN(nameof(MandateDTO.CseDistrict)), DN(nameof(MandateDTO.Grade)), DN(nameof(MandateDTO.DateOfBirth)), DN(nameof(MandateDTO.AdminDbn)), DN(nameof(MandateDTO.D75)), DN(nameof(MandateDTO.ServiceType)), DN(nameof(MandateDTO.Language)), DN(nameof(MandateDTO.GroupSize)), DN(nameof(MandateDTO.Duration)), DN(nameof(MandateDTO.DailyCapMinutes)), DN(nameof(MandateDTO.ServiceLocation)), DN(nameof(MandateDTO.RemainingFrequency)), DN(nameof(MandateDTO.Provider)), DN(nameof(MandateDTO.FirstAttendDate)), DN(nameof(MandateDTO.MandateId)), DN(nameof(MandateDTO.PrimaryPhone1)), DN(nameof(MandateDTO.PrimaryPhone2)), DN(nameof(MandateDTO.MandateStart)), DN(nameof(MandateDTO.MandateEnd)), DN(nameof(MandateDTO.FileName)), DN(nameof(MandateDTO.RowNumber)), DN(nameof(MandateDTO.ServiceStartDate)), DN(nameof(MandateDTO.IepType)), DN(nameof(MandateDTO.SchoolName)), DN(nameof(MandateDTO.AgencyName)), DN(nameof(MandateDTO.AuthPhysicalDbn)), DN(nameof(MandateDTO.AssignmentId)), DN(nameof(MandateDTO.ParentLastName)), DN(nameof(MandateDTO.ParentEmail)) })"
-             ExportMapper="@(m => new object?[] { m.IsMismatched, m.ConferenceDate?.ToString("MM/dd/yyyy"), m.StudentId, CombineName(m.LastName, m.FirstName), m.HomeDistrict, m.Cse, m.CseDistrict, m.Grade, m.DateOfBirth?.ToString("MM/dd/yyyy"), m.AdminDbn, m.D75, m.ServiceType, m.Language, m.GroupSize, m.Duration, m.DailyCapMinutes, m.ServiceLocation, m.RemainingFrequency, m.Provider, m.FirstAttendDate?.ToString("MM/dd/yyyy"), m.MandateId, m.PrimaryPhone1, m.PrimaryPhone2, m.MandateStart?.ToString("MM/dd/yyyy"), m.MandateEnd?.ToString("MM/dd/yyyy"), m.FileName, m.RowNumber, m.ServiceStartDate?.ToString("MM/dd/yyyy"), m.IepType, m.SchoolName, m.AgencyName, m.AuthPhysicalDbn, m.AssignmentId, CombineName(m.ParentLastName, m.ParentFirstName), m.ParentEmail })">
+             ExportHeaders="@(new[] { DN(nameof(MandateDTO.IsMismatched)), DN(nameof(MandateDTO.ConferenceDate)), DN(nameof(MandateDTO.StudentId)), DN(nameof(MandateDTO.LastName)), DN(nameof(MandateDTO.HomeDistrict)), DN(nameof(MandateDTO.Cse)), DN(nameof(MandateDTO.CseDistrict)), DN(nameof(MandateDTO.Grade)), DN(nameof(MandateDTO.DateOfBirth)), DN(nameof(MandateDTO.AdminDbn)), DN(nameof(MandateDTO.D75)), DN(nameof(MandateDTO.ServiceType)), DN(nameof(MandateDTO.Language)), DN(nameof(MandateDTO.GroupSize)), DN(nameof(MandateDTO.Duration)), DN(nameof(MandateDTO.DailyCapMinutes)), DN(nameof(MandateDTO.ServiceLocation)), DN(nameof(MandateDTO.RemainingFrequency)), DN(nameof(MandateDTO.Provider)), DN(nameof(MandateDTO.FirstAttendDate)), DN(nameof(MandateDTO.MandateId)), DN(nameof(MandateDTO.PrimaryPhone1)), DN(nameof(MandateDTO.PrimaryPhone2)), DN(nameof(MandateDTO.MandateStart)), DN(nameof(MandateDTO.MandateEnd)), DN(nameof(MandateDTO.IsExpiringSoon)), DN(nameof(MandateDTO.FileName)), DN(nameof(MandateDTO.RowNumber)), DN(nameof(MandateDTO.ServiceStartDate)), DN(nameof(MandateDTO.IepType)), DN(nameof(MandateDTO.SchoolName)), DN(nameof(MandateDTO.AgencyName)), DN(nameof(MandateDTO.AuthPhysicalDbn)), DN(nameof(MandateDTO.AssignmentId)), DN(nameof(MandateDTO.ParentLastName)), DN(nameof(MandateDTO.ParentEmail)) })"
+             ExportMapper="@(m => new object?[] { m.IsMismatched, m.ConferenceDate?.ToString("MM/dd/yyyy"), m.StudentId, CombineName(m.LastName, m.FirstName), m.HomeDistrict, m.Cse, m.CseDistrict, m.Grade, m.DateOfBirth?.ToString("MM/dd/yyyy"), m.AdminDbn, m.D75, m.ServiceType, m.Language, m.GroupSize, m.Duration, m.DailyCapMinutes, m.ServiceLocation, m.RemainingFrequency, m.Provider, m.FirstAttendDate?.ToString("MM/dd/yyyy"), m.MandateId, m.PrimaryPhone1, m.PrimaryPhone2, m.MandateStart?.ToString("MM/dd/yyyy"), m.MandateEnd?.ToString("MM/dd/yyyy"), m.IsExpiringSoon ? "Yes" : "No", m.FileName, m.RowNumber, m.ServiceStartDate?.ToString("MM/dd/yyyy"), m.IepType, m.SchoolName, m.AgencyName, m.AuthPhysicalDbn, m.AssignmentId, CombineName(m.ParentLastName, m.ParentFirstName), m.ParentEmail })">
 
     <HeaderContent>
         <GridCell TItem="MandateDTO" Column="Actions" IsHeader="true"></GridCell>
@@ -97,6 +97,9 @@
         <GridCell TItem="MandateDTO" Column="MandateEnd" IsHeader="true">
             <MudTableSortLabel SortLabel="MandateEnd" T="MandateDTO">@_grid?.GetDisplayName("MandateEnd")</MudTableSortLabel>
         </GridCell>
+        <GridCell TItem="MandateDTO" Column="ExpiringSoon" IsHeader="true">
+            <MudTableSortLabel SortLabel="IsExpiringSoon" T="MandateDTO">@_grid?.GetDisplayName("IsExpiringSoon")</MudTableSortLabel>
+        </GridCell>
         <GridCell TItem="MandateDTO" Column="FileName" IsHeader="true">
             <MudTableSortLabel SortLabel="FileName" T="MandateDTO">@_grid?.GetDisplayName("FileName")</MudTableSortLabel>
         </GridCell>
@@ -166,6 +169,12 @@
         <GridCell TItem="MandateDTO" Column="PrimaryPhone2">@m.PrimaryPhone2</GridCell>
         <GridCell TItem="MandateDTO" Column="MandateStart">@m.MandateStart?.ToString("MM/dd/yyyy")</GridCell>
         <GridCell TItem="MandateDTO" Column="MandateEnd">@m.MandateEnd?.ToString("MM/dd/yyyy")</GridCell>
+        <GridCell TItem="MandateDTO" Column="ExpiringSoon">
+            @if (m.IsExpiringSoon)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Text">Expiring</MudChip>
+            }
+        </GridCell>
         <GridCell TItem="MandateDTO" Column="FileName">@m.FileName</GridCell>
         <GridCell TItem="MandateDTO" Column="RowNumber">@m.RowNumber</GridCell>
         <GridCell TItem="MandateDTO" Column="ServiceStartDate">@m.ServiceStartDate?.ToString("MM/dd/yyyy")</GridCell>
