@@ -338,6 +338,13 @@ public class SesiService : ISesiService
                 IsOverDailyCap = s.OverDailyCap ?? false,
                 IsWeekend = s.Weekend ?? false,
 
+                // Any billing-blocking exception on this row (drives the "exceptions only" quick filter).
+                // Missing-assignment is handled separately as it can't be evaluated in SQL.
+                HasException = s.Entry_Id == null || s.Provider_Id == null
+                    || s.Overlap == true || s.OverMandate == true || s.OverDuration == true
+                    || s.UnderGroup == true || s.OverDailyCap == true || s.Weekend == true
+                    || s.bRate == null || s.pRate == null,
+
                 LanguageProvided = s.Language_Provided,
                 ActualSize = s.Actual_Size,
                 AssignmentClaimed = s.Assignment_Claimed,

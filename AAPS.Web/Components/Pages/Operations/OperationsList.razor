@@ -42,7 +42,7 @@
              RowClassFunc="OperationRowClass"
              Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "AdminDbn", "SchoolName", "ServiceType", "LanguageProvided", "AssignmentClaimed", "Duration", "ActualSize", "EntryId", "ProviderPaidDate", "BilledDate", "BilledPaidDate", "Voucher", "AssignId", "Id" })"
              DefaultSortLabel="DateOfService"
-             GetData="SesiService.GetOperationsPagedAsync"
+             GetData="LoadOperations"
              ShowSemesterFilter="true"
              ExportHeaders="@(new[] { DN(nameof(OperationsDTO.DateOfService)), DN(nameof(OperationsDTO.StartTime)), DN(nameof(OperationsDTO.EndTime)), DN(nameof(OperationsDTO.ProviderLastName)), DN(nameof(OperationsDTO.GDistrict)), DN(nameof(OperationsDTO.StudentId)), DN(nameof(OperationsDTO.StudentLastName)), DN(nameof(OperationsDTO.AdminDbn)), DN(nameof(OperationsDTO.SchoolName)), DN(nameof(OperationsDTO.ServiceType)), DN(nameof(OperationsDTO.LanguageProvided)), DN(nameof(OperationsDTO.AssignmentClaimed)), DN(nameof(OperationsDTO.Duration)), DN(nameof(OperationsDTO.ActualSize)), DN(nameof(OperationsDTO.EntryId)), DN(nameof(OperationsDTO.ProviderPaidDate)), DN(nameof(OperationsDTO.BilledDate)), DN(nameof(OperationsDTO.BilledPaidDate)), DN(nameof(OperationsDTO.Voucher)), DN(nameof(OperationsDTO.AssignId)), DN(nameof(OperationsDTO.Id)) })"
              ExportMapper="@(op => new object?[] { op.DateOfService?.ToString("MM/dd/yyyy"), op.StartTime, op.EndTime, CombineName(op.ProviderLastName, op.ProviderFirstName), op.GDistrict, op.StudentId, CombineName(op.StudentLastName, op.StudentFirstName), op.AdminDbn, op.SchoolName, op.ServiceType, op.LanguageProvided, op.AssignmentClaimed, op.Duration, op.ActualSize, op.EntryId, op.ProviderPaidDate?.ToString("MM/dd/yyyy"), op.BilledDate?.ToString("MM/dd/yyyy"), op.BilledPaidDate?.ToString("MM/dd/yyyy"), op.Voucher, op.AssignId, op.Id })"
@@ -50,6 +50,9 @@
              OnFiltersChanged="ClearSelection">
 
     <CustomActionContent>
+        <MudSwitch @bind-Value="_exceptionsOnly" @bind-Value:after="ReloadGrid"
+                   Color="Color.Error" Size="Size.Small" Class="mr-3 align-self-center"
+                   Label="Exceptions only" />
         @if (_busy)
         {
             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -250,6 +253,29 @@
 
 @code {
     private GenericGrid<OperationsDTO> _grid = default!;
+
+    private bool _exceptionsOnly = false;
+
+    // Wraps the operations query so the "Exceptions only" switch can restrict results to rows that
+    // have a billing-blocking exception, on top of whatever filters/search are active.
+    private Task<PagedResult<OperationsDTO>> LoadOperations(PagedRequest request, CancellationToken ct)
+    {
+        if (_exceptionsOnly)
+        {
+            var filters = request.ColumnFilters is null
+                ? new Dictionary<string, string>()
+                : new Dictionary<string, string>(request.ColumnFilters);
+            filters["HasException"] = "true";
+            request = request with { ColumnFilters = filters };
+        }
+        return SesiService.GetOperationsPagedAsync(request, ct);
+    }
+
+    private async Task ReloadGrid()
+    {
+        ClearSelection();
+        if (_grid is not null) await _grid.ReloadServerData();
+    }
 
     protected override void OnInitialized() => FlagRecalc.StateChanged += OnFlagStateChanged;
 

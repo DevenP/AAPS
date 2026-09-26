@@ -19,6 +19,9 @@ namespace AAPS.Application.DTO
         [DisplayField("Missing Assignment", GroupName = "Alerts")]
         public bool AssignFlag { get; set; }
 
+        [DisplayField("Has Exception", GroupName = "Alerts")]
+        public bool HasException { get; set; }
+
         [DisplayField("Assign ID", GroupName = "Billing")]
         public string? AssignId { get; set; }
 
