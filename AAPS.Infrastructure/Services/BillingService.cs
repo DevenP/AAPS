@@ -17,12 +17,20 @@ public class BillingService : IBillingService
     private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly ILogger<BillingService> _logger;
     private readonly BillingSettings _settings;
+    private readonly ISettingsService _settingsService;
 
-    public BillingService(IDbContextFactory<AppDbContext> factory, ILogger<BillingService> logger, IOptions<BillingSettings> settings)
+    // Settings keys for the agency's DOE identity + billable funds, editable in Configuration.
+    private const string KeyAgencyCode = "Billing.AgencyCode";
+    private const string KeyProviderId = "Billing.ProviderId";
+    private const string KeyProviderType = "Billing.ProviderType";
+    private const string KeyBillableFunds = "Billing.BillableFundCodes";
+
+    public BillingService(IDbContextFactory<AppDbContext> factory, ILogger<BillingService> logger, IOptions<BillingSettings> settings, ISettingsService settingsService)
     {
         _factory = factory;
         _logger = logger;
         _settings = settings.Value;
+        _settingsService = settingsService;
     }
 
     // Shared base query - same filters used by the grid and file generation
@@ -208,6 +216,16 @@ public class BillingService : IBillingService
 
         await using var db = _factory.CreateDbContext();
 
+        // The agency's DOE identity + billable fund codes come from Settings (editable in
+        // Configuration); fall back to the long-standing values if a key is missing.
+        var agencyCode = await _settingsService.GetAsync(KeyAgencyCode, ct) ?? "AD08";
+        var agencyProviderId = await _settingsService.GetAsync(KeyProviderId, ct) ?? "463312411";
+        var providerType = await _settingsService.GetAsync(KeyProviderType, ct) ?? "A";
+        var fundsRaw = await _settingsService.GetAsync(KeyBillableFunds, ct) ?? "4410,4411,4412";
+        var billableFunds = fundsRaw
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         HashSet<int> matchingIds;
         int skippedPaidCount = 0;
         if (selectedIds != null && selectedIds.Count > 0)
@@ -300,7 +318,7 @@ public class BillingService : IBillingService
                 if (vp == null) return null;
 
                 var fundCode = vp.pFund ?? "";
-                if (fundCode is not ("4410" or "4411" or "4412")) return null;
+                if (!billableFunds.Contains(fundCode)) return null;
 
                 mandateDict.TryGetValue(r.Entry_Id!.Value, out var m);
                 var dos = r.date_of_Service;
@@ -370,6 +388,7 @@ public class BillingService : IBillingService
                     IsPara = isPara,
                     Row = BuildRow(
                         aYear, vp.pBoro ?? "", r.GDistrict ?? "", fundCode, vp.pSchool ?? "",
+                        providerType, agencyCode, agencyProviderId,
                         r.Provider_Last_Name ?? "", r.Provider_First_Name ?? "", r.SsnStripped,
                         r.Student_ID ?? "", r.First_Name ?? "", r.Last_Name ?? "",
                         aType, mandateStart, mandateEnd,
@@ -446,6 +465,7 @@ public class BillingService : IBillingService
 
     private static string BuildRow(
         string aYear, string boro, string district, string fund, string school,
+        string providerType, string agencyCode, string agencyProviderId,
         string providerLast, string providerFirst, string ssn,
         string studentId, string studentFirst, string studentLast,
         string aType, string mandateStart, string mandateEnd,
@@ -459,9 +479,9 @@ public class BillingService : IBillingService
             .Append(district).Append('\t')
             .Append(fund).Append('\t')
             .Append(school).Append('\t')
-            .Append("A\t")
-            .Append("AD08\t")
-            .Append("463312411\t")
+            .Append(providerType).Append('\t')
+            .Append(agencyCode).Append('\t')
+            .Append(agencyProviderId).Append('\t')
             .Append(providerLast).Append('\t')
             .Append(providerFirst).Append('\t')
             .Append(ssn).Append('\t')

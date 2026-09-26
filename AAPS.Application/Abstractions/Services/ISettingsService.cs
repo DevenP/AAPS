@@ -15,6 +15,9 @@ public interface ISettingsService
     /// <summary>One setting row by its key, or null when it doesn't exist.</summary>
     Task<SettingDTO?> GetByKeyAsync(string key, CancellationToken ct = default);
 
+    /// <summary>The raw stored value for a key, or null when it isn't set.</summary>
+    Task<string?> GetAsync(string key, CancellationToken ct = default);
+
     /// <summary>The stored value parsed as an int, or <paramref name="fallback"/> when missing or unparseable.</summary>
     Task<int> GetIntAsync(string key, int fallback, CancellationToken ct = default);
 

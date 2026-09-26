@@ -34,14 +34,19 @@ public class SettingsService : ISettingsService
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<int> GetIntAsync(string key, int fallback, CancellationToken ct = default)
+    public async Task<string?> GetAsync(string key, CancellationToken ct = default)
     {
         await using var db = _factory.CreateDbContext();
-        var raw = await db.SystemSettings
+        return await db.SystemSettings
             .AsNoTracking()
             .Where(s => s.SettingKey == key)
             .Select(s => s.SettingValue)
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<int> GetIntAsync(string key, int fallback, CancellationToken ct = default)
+    {
+        var raw = await GetAsync(key, ct);
         return int.TryParse(raw, out var value) ? value : fallback;
     }
 
