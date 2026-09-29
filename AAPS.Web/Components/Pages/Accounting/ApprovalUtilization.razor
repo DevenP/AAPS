@@ -7,6 +7,7 @@
 
 <GenericGrid @ref="_grid" TItem="ApprovalUtilizationDTO"
              Title="Approval Utilization"
+             Description="Compares each approval's authorized service against the sessions actually delivered in the selected period, so you can spot students being under-served or under-billed. Expected sessions come from the approval's frequency and its active days so far."
              DefaultSortLabel="UtilizationPct"
              Columns="@(new[] { "StudentId", "StudentName", "ServiceType", "Provider", "Frequency", "ExpectedSessions", "ActualSessions", "UtilizationPct", "UnderUtilized" })"
              GetData="MandateService.GetApprovalUtilizationAsync"

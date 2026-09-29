@@ -8,6 +8,7 @@
 
 <GenericGrid @ref="_grid" TItem="GDistrictDTO"
              Title="Districts"
+             Description="The list of districts used across the app for rates, filtering, and reports."
              DefaultSortLabel="DistrictCode"
              Columns="@(new[] { "Actions", "DistrictCode" })"
              GetData="DistrictService.GetPagedAsync"

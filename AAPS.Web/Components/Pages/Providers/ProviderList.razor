@@ -10,6 +10,7 @@
 
 <GenericGrid @ref="_grid" TItem="ProviderDTO"
              Title="Providers"
+             Description="Your providers and their details - contact info, service types, compliance documents, and status. Advanced Search can pull providers missing a given document."
              RowClassFunc="RowClass"
              DefaultSortLabel="LastName"
              Columns="@(new[] { "Actions", "IsActive", "LastName", "FirstName", "Phone", "Email", "NpiNumber", "License1", "CorporationName", "AssignedCount", "Ssn", "ServiceType" })"

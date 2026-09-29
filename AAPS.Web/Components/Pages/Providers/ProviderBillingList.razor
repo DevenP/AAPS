@@ -9,6 +9,7 @@
 <GenericGrid TItem="ProviderBillingDTO"
              @ref="_grid"
              Title="Provider Billing"
+             Description="Sessions from the provider-payment side - what each provider delivered and the amount owed and paid to them."
              DefaultSortLabel="DateOfService"
              Columns="@(new[] { "StudentId", "StudentLastName", "ProviderLastName", "EntryId", "DateOfService", "StartTime", "EndTime", "Duration", "ServiceType", "GDistrict", "BilledRate", "BilledAmount", "BilledDate", "BilledPaidDate", "ProviderRate", "ProviderAmount", "ProviderPaidDate", "Voucher" })"
              GetData="SesiService.GetProviderBillingPagedAsync"

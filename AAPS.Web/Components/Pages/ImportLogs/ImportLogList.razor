@@ -6,6 +6,7 @@
 
 <GenericGrid @ref="_grid" TItem="ImportLogDTO"
              Title="Import History"
+             Description="A log of every file import - when it ran, what type of file, how many rows came in, and any that were skipped."
              DefaultSortLabel="ImportDate"
              Columns="@(new[] { "ImportDate", "FileName", "ImportRecord" })"
              GetData="ImportLogService.GetPagedAsync">

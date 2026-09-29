@@ -9,6 +9,7 @@
 
 <GenericGrid @ref="_grid" TItem="BillingRateDTO"
              Title="Billing Rates"
+             Description="The rates billed to the DOE for each service type, district, and language. A rate entered here is used to price sessions when they're imported."
              DefaultSortLabel="District"
              Columns="@(new[] { "Actions", "District", "ServiceType", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="BillingRateService.GetPagedAsync"

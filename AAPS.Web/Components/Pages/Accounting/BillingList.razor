@@ -18,6 +18,7 @@
 
 <GenericGrid @ref="_grid" TItem="BillingRecordDTO"
              Title="Billing"
+             Description="Every session that's ready to bill to the DOE. From here you generate the DOE billing files and provider statements, and record when each session was billed and paid. Use 'Not yet billed' to see what still needs to go on a file."
              RowClassFunc="BillingRowClass"
              Columns="@(new[] { "Checkbox", "Actions", "DateOfService", "StartTime", "EndTime", "Provider", "StudentId", "Student", "ServiceType", "Frequency", "Duration", "ActualSize", "EntryId", "AssignId", "Billed", "Voucher", "VoucherAmount", "UnpaidBalance", "AdjustmentStatus", "VoucherBalancePaid", "ProviderPaidOn", "ProviderAmount", "BillingRate", "ProviderRate", "SesisId" })"
              GetData="LoadBilling"

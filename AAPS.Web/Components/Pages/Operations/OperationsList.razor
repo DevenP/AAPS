@@ -38,6 +38,7 @@
 <GenericGrid TItem="OperationsDTO"
              @ref="_grid"
              Title="Operations"
+             Description="Every delivered session, with alerts for anything that would block billing - missing approval or provider, overlaps, over-mandate, over the para daily cap, weekend para, or missing rates. Flip 'Exceptions only' to work just the problem rows."
              Height="83vh"
              RowClassFunc="OperationRowClass"
              Columns="@(new[] { "Checkbox", "Actions", "Alerts", "DateOfService", "StartTime", "EndTime", "ProviderLastName", "GDistrict", "StudentId", "StudentLastName", "AdminDbn", "SchoolName", "ServiceType", "LanguageProvided", "AssignmentClaimed", "Duration", "ActualSize", "EntryId", "ProviderPaidDate", "BilledDate", "BilledPaidDate", "Voucher", "AssignId", "Id" })"

@@ -7,6 +7,7 @@
 
 <GenericGrid @ref="_grid" TItem="ProviderPaySummaryDTO"
              Title="Provider Pay Summary"
+             Description="How much each provider is owed for the selected period - session count, total pay, and the amount still unpaid - rolled up one row per provider."
              DefaultSortLabel="Provider"
              Columns="@(new[] { "Provider", "Sessions", "TotalProviderAmount", "UnpaidProviderAmount" })"
              GetData="BillingService.GetProviderPaySummaryAsync"

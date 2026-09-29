@@ -13,6 +13,7 @@
 
 <GenericGrid @ref="_grid" TItem="MandateDTO"
              Title="Approvals"
+             Description="Every service approval (mandate) imported from the DOE - the authorized service, frequency, and dates. Approvals ending soon are flagged, and paraprofessional approvals show a daily minute cap you can adjust with the pencil."
              DefaultSortLabel="LastName"
              Columns="@(new[] { "Actions", "IsMismatched", "ConferenceDate", "StudentId", "LastName", "HomeDistrict", "Cse", "CseDistrict", "Grade", "DateOfBirth", "AdminDbn", "D75", "ServiceType", "Language", "GroupSize", "Duration", "DailyCap", "ServiceLocation", "RemainingFrequency", "Provider", "FirstAttendDate", "MandateId", "PrimaryPhone1", "PrimaryPhone2", "MandateStart", "MandateEnd", "ExpiringSoon", "FileName", "RowNumber", "ServiceStartDate", "IepType", "SchoolName", "AgencyName", "AuthPhysicalDbn", "AssignmentId", "ParentLastName", "ParentEmail" })"
              GetData="MandateService.GetPagedAsync"

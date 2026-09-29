@@ -11,6 +11,7 @@
 
 <GenericGrid @ref="_grid" TItem="ProviderRateDTO"
              Title="Provider Rates"
+             Description="The rates paid to providers for each service type, district, and language. A rate entered here is used to price provider pay when sessions are imported."
              DefaultSortLabel="ProviderLastName"
              Columns="@(new[] { "Actions", "ProviderFirstName", "ProviderLastName", "ServiceType", "District", "GroupSize", "Language", "Rate", "EffectiveDate", "IsActive" })"
              GetData="ProviderRateService.GetPagedAsync"

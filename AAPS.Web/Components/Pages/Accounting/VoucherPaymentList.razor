@@ -8,6 +8,7 @@
 
 <GenericGrid @ref="_grid" TItem="PaymentDTO"
              Title="Voucher Payments"
+             Description="DOE voucher payments imported against billed sessions, used to reconcile what the DOE actually paid versus what was billed."
              DefaultSortLabel="DateOfService"
              Columns="@(new[] { "Voucher", "InvoiceNumber", "BatchId", "Provider", "DateOfService", "StartTime", "EndTime", "AdminDbn", "ServiceType", "ServiceSubtype", "StudentId", "BilledAmount", "VoucherAmount", "UnpaidBalance", "IvrConfirm", "BilledOn" })"
              GetData="PaymentService.GetPagedAsync">

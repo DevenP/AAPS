@@ -12,6 +12,7 @@
 
 <GenericGrid @ref="_grid" TItem="EvalDTO"
              Title="Evaluations"
+             Description="Student evaluations and their assigned providers, including payment status. Searchable by student or provider name."
              DefaultSortLabel="StudentLastName"
              Columns="@(new[] { "Actions", "StudentLastName", "StudentFirstName", "StudentId", "District", "ServiceType", "Language", "Phone", "ParentLastName", "ParentFirstName", "EvalReceivedDate", "ProviderLastName", "ProviderFirstName", "AssignedDate", "AppointmentDate", "ReportReceivedDate", "EvalDate", "ReportSubmittedDate", "Status", "Contact", "BillPaidDate", "Voucher", "PaidAmount", "Balance", "PaymentStatus" })"
              GetData="EvalService.GetPagedAsync"

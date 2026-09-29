@@ -8,6 +8,7 @@
 
 <GenericGrid @ref="_grid" TItem="LanguageDTO"
              Title="Languages"
+             Description="The list of service languages used across the app for rates, filtering, and reports."
              DefaultSortLabel="Name"
              Columns="@(new[] { "Actions", "Name", "Code" })"
              GetData="LanguageService.GetPagedAsync"

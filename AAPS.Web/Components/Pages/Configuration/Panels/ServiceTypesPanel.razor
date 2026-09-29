@@ -8,6 +8,7 @@
 
 <GenericGrid @ref="_grid" TItem="ServiceTypeDTO"
              Title="Service Types"
+             Description="The services you deliver (OT, Speech, Paraprofessional, etc.), each with an optional DOE billing code. New paraprofessional types are added here automatically on import; you can set or change a code with the pencil."
              DefaultSortLabel="Name"
              Columns="@(new[] { "Actions", "Name", "IsEvaluation", "BillingCode" })"
              GetData="ServiceTypeService.GetPagedAsync"

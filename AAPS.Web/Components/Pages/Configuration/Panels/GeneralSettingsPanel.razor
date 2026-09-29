@@ -8,6 +8,7 @@
 
 <GenericGrid @ref="_grid" TItem="SettingDTO"
              Title="General Settings"
+             Description="Values the app uses in its calculations - like the paraprofessional 100% day length and the agency's DOE billing codes - that you can change here without a code update. Edit a value with the pencil."
              DefaultSortLabel="Key"
              Columns="@(new[] { "Actions", "Key", "Value", "Description" })"
              GetData="SettingsService.GetPagedAsync"

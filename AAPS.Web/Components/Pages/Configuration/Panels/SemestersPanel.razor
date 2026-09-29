@@ -8,6 +8,7 @@
 
 <GenericGrid @ref="_grid" TItem="SemesterDTO"
              Title="Semesters"
+             Description="The school terms that power the date filters throughout the app. Each has a start and end date."
              DefaultSortLabel="StartDate"
              Columns="@(new[] { "Actions", "Code", "StartDate", "EndDate" })"
              GetData="SemesterService.GetPagedAsync"
